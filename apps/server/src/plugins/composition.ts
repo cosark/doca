@@ -467,7 +467,11 @@ export async function composeServerPlugins(
     registerStorePluginIcons(
       runtime.api,
       runtime.auth,
-      iconPluginIds,
+      async (id) =>
+        iconPluginIds.has(id) ||
+        (await manager.inventory()).plugins.some(
+          (plugin) => plugin.id === id && plugin.source !== "local",
+        ),
       manager.store,
     );
     registerPluginMobileSessions(

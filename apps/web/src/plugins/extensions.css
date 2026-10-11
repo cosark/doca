@@ -7,18 +7,10 @@
 .plugin-slot:empty {
   display: none;
 }
-.plugin-store-icon {
+.plugin-slot-display-both > button {
   display: inline-flex;
-  flex-shrink: 0;
   align-items: center;
-  justify-content: center;
-}
-.plugin-store-icon > img {
-  display: block;
-  object-fit: contain;
-}
-.plugin-store-icon > img[hidden] {
-  display: none;
+  gap: 8px;
 }
 .plugin-view {
   min-width: 0;

@@ -2,7 +2,7 @@ import { createContent } from "@core/workflows/resources.js";
 import { randomUUID } from "node:crypto";
 import { searchKnowledge } from "../apps/server/src/services/ai/knowledge-search.js";
 import Fastify from "fastify";
-import { afterEach, beforeEach, expect, it } from "vitest";
+import { afterEach, beforeEach, expect, it, vi } from "vitest";
 import { openTestDatabase } from "./database.js";
 import { createUser, type Actor } from "@core/modules/identity/passwords.js";
 import { AppError, fail } from "@core/shared/errors.js";
@@ -23,6 +23,7 @@ let searchService: Awaited<ReturnType<typeof registerSearch>>;
 let hits: { id: string; [key: string]: unknown }[];
 let calls: { method: string; path: string; body: any }[];
 let taskStatuses: string[], batchDiagnostic: string, taskError: string;
+let historicalBatchDiagnostic: string, onTaskPoll: (() => void) | undefined;
 const root = "/api/v1/admin/search/embeddings";
 const headers = { "x-test-admin": "yes" };
 const body = () => ({
@@ -74,11 +75,17 @@ async function setup() {
           if (brokenEmbedderRead) return new Response("down", { status: 503 });
           return Response.json(remote);
         }
-        if (path.startsWith("/tasks/"))
+        if (path.startsWith("/tasks/")) {
+          onTaskPoll?.();
           return Response.json({
             status: taskStatuses.shift() ?? remoteStatus,
             batchUid: batchDiagnostic ? 7 : null,
             error: { message: taskError, code: "bad_api_key" },
+          });
+        }
+        if (path === "/batches")
+          return Response.json({
+            results: [{ stats: { embedderRequests: { lastError: historicalBatchDiagnostic } } }],
           });
         if (path.startsWith("/batches/"))
           return Response.json({
@@ -205,6 +212,8 @@ beforeEach(async () => {
   taskStatuses = [];
   batchDiagnostic = "";
   taskError = "model-private-key";
+  historicalBatchDiagnostic = "";
+  onTaskPoll = undefined;
   app = await setup();
 });
 afterEach(async () => {
@@ -257,6 +266,51 @@ it("fails indexing only after the remote task reports a terminal failure", async
     }),
   ).rejects.toThrow("搜索索引任务失败：model-private-key");
   expect(calls.filter((call) => call.path === "/tasks/43")).toHaveLength(2);
+});
+
+it("continues waiting for the same accepted indexing task beyond five minutes", async () => {
+  taskStatuses = ["enqueued", "processing", "succeeded"];
+  const clock = vi.spyOn(Date, "now");
+  const later = Date.now() + 600000;
+  onTaskPoll = () => clock.mockReturnValue(later);
+  try {
+    await expect(
+      searchService.searchHost.upsertProjections({
+        source: documentSearchSource,
+        projections: [{ id: "slow-task", text: "Searchable content" }],
+      }),
+    ).resolves.toBeUndefined();
+    expect(calls.filter((call) => call.path === "/tasks/43")).toHaveLength(3);
+    expect(
+      calls.filter((call) => call.method === "POST" && call.path.endsWith("/documents")),
+    ).toHaveLength(1);
+  } finally {
+    clock.mockRestore();
+    onTaskPoll = undefined;
+  }
+});
+
+it("does not attribute historical batch errors to a newly queued embedding task", async () => {
+  remoteStatus = "enqueued";
+  taskError = "";
+  historicalBatchDiagnostic = "AccountQuotaExceeded from an older task";
+  expect((await save()).statusCode).toBe(202);
+  const status = (await get("/api/v1/admin/search")).json();
+  expect(status.embedding).toMatchObject({ status: "enqueued", taskUid: 42, error: null });
+  expect(status.syncDiagnostic).toBeNull();
+  expect(calls.some((call) => call.path === "/batches")).toBe(false);
+});
+
+it("reports the active embedding task's own batch diagnostic", async () => {
+  remoteStatus = "processing";
+  taskError = "";
+  batchDiagnostic = "current embedding server returned 429";
+  historicalBatchDiagnostic = "unrelated historical quota error";
+  await save();
+  const status = (await get("/api/v1/admin/search")).json();
+  expect(status.embedding.error).toBe(batchDiagnostic);
+  expect(status.syncDiagnostic).toContain(batchDiagnostic);
+  expect(status.syncDiagnostic).not.toContain(historicalBatchDiagnostic);
 });
 
 it("reports each failed rebuild source and its redacted cause", async () => {
