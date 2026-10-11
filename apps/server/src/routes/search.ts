@@ -11,7 +11,6 @@ import { createContent } from "@core/workflows/resources.js";
 import type { DB } from "@db/index.js";
 import { transact } from "@db/transactions.js";
 import {
-  embeddingFailureNotice,
   safeEmbeddingError,
   registerSearchEmbeddings,
 } from "./search-embeddings.js";
@@ -131,17 +130,13 @@ export async function registerSearch(
     return res.json();
   }
   async function waitTask(c: Config, task: any) {
-    // Embedding batches can spend more than 30s in Meilisearch. A short
-    // timeout causes the same document job to submit another task while the
-    // original task is still running, creating an unbounded task queue.
-    const deadline = Date.now() + 300000;
+    // An accepted task may remain queued behind long embedding batches.
+    // Keep waiting for its terminal status instead of abandoning it and
+    // resubmitting or deleting an index that Meilisearch is still preparing.
+    const startedAt = Date.now();
     let lastBatchCheck = 0;
     let batchError = "";
     for (;;) {
-      if (Date.now() >= deadline)
-        throw new Error(
-          `索引任务超时，请稍后重试（任务 ${task.taskUid}）${batchError ? `：${batchError}` : ""}`,
-        );
       if (stopping) throw new Error("服务正在停止");
       const result = await request(c, `/tasks/${task.taskUid}`);
       if (result.status === "succeeded") return;
@@ -158,7 +153,7 @@ export async function registerSearch(
       }
       // lastError describes an embedder attempt, not the task's final status.
       // Meilisearch retries internally while processing. Keep the diagnostic
-      // for a timeout, but do not resubmit work that it is still processing.
+      // for a terminal failure, but do not resubmit work still processing.
       if (result.batchUid != null && Date.now() - lastBatchCheck >= 1000) {
         lastBatchCheck = Date.now();
         try {
@@ -170,26 +165,9 @@ export async function registerSearch(
           // Optional batch diagnostics do not determine task completion.
         }
       }
-      await new Promise((r) => setTimeout(r, 250));
-    }
-  }
-  async function latestEmbeddingError(c: Config) {
-    try {
-      const batches = await request(
-        c,
-        "/batches?limit=20",
-        "GET",
-        undefined,
-        2000,
+      await new Promise((r) =>
+        setTimeout(r, Date.now() - startedAt >= 30000 ? 1000 : 250),
       );
-      const message = batches.results
-        ?.map((batch: any) => batch.stats?.embedderRequests?.lastError)
-        .find((value: unknown): value is string => !!value);
-      return message
-        ? `${embeddingFailureNotice(message)} 详情：${safeEmbeddingError(message)}`
-        : null;
-    } catch {
-      return null;
     }
   }
   let job: Promise<void> | null = null;
@@ -328,12 +306,6 @@ export async function registerSearch(
         error: error instanceof Error ? error.message : "Meilisearch 不可达",
       };
     }
-    // A failed embedding batch is historical once the current configuration
-    // task succeeds. Do not let that old batch keep the whole index card red.
-    const syncDiagnostic =
-      c.enabled && embedding.status !== "succeeded"
-        ? await latestEmbeddingError(c)
-        : null;
     return {
       ...c,
       enabled: !!c.enabled,
@@ -341,7 +313,12 @@ export async function registerSearch(
       imageRecognitionAvailable: false,
       reconciliation: await reconciler.status(),
       embedding,
-      syncDiagnostic,
+      // refreshStatus reads only this task and its own batch. Global batch
+      // history can belong to older credentials or unrelated indexes.
+      syncDiagnostic:
+        embedding.status !== "succeeded" && embedding.error
+          ? embedding.notice
+          : null,
       credentialConfigured: !!runtime.apiKey,
       indexing,
       lastError,
@@ -528,15 +505,22 @@ export async function registerSearch(
       });
     await processing;
   };
-  const timer = setInterval(() => {
-    void drain();
-  }, 1000);
-  timer.unref();
-  api.addHook("preClose", async () => {
+  let timer: ReturnType<typeof setInterval> | undefined;
+  api.addHook("onReady", async () => {
+    // Core modules register their sources during mount. Starting sooner can
+    // consume persisted jobs while the source registry is still empty.
+    if (stopping) return;
+    timer = setInterval(() => void drain(), 1000);
+    timer.unref();
+  });
+  const stop = async () => {
     stopping = true;
-    clearInterval(timer);
+    if (timer) clearInterval(timer);
     if (job) await job;
     if (processing) await processing;
+  };
+  api.addHook("preClose", async () => {
+    await stop();
     await searchHost.dispose();
   });
   async function documentIdsForFileTopic(
@@ -642,6 +626,7 @@ export async function registerSearch(
 
   return {
 
+    stop,
     searchHost,
     registerSource,
     knowledgeIndex,

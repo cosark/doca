@@ -15,6 +15,7 @@ import {
 import { api } from "@web/shared/api.js";
 import { useI18n } from "@web/shared/i18n.js";
 import { MoreNavigation, NavigationArea } from "@web/plugins/navigation.js";
+import { PluginStoreIcon } from "@web/plugins/store-icon.js";
 import "./navigation.css";
 type State = {
   revision: number;
@@ -250,6 +251,9 @@ export function NavigationSettings() {
               <article className="navigation-entry-card" key={entry.id}>
                 <header>
                   <h4>
+                    {entry.pluginId && (
+                      <PluginStoreIcon pluginId={entry.pluginId} />
+                    )}
                     {entry.title[locale]}{" "}
                     {entry.pluginId && (
                       <Tag color="blue">{t("navigation.pluginEntry")}</Tag>

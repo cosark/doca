@@ -37,6 +37,7 @@ afterEach(async () => {
 });
 function fixture(fetcher: typeof fetch) {
   const app = Fastify();
+  const eligibleIds = new Set([pluginId]);
   apps.push(app);
   app.setErrorHandler((error, _request, reply) =>
     reply.code(error instanceof AppError ? error.status : 500).send({
@@ -48,7 +49,7 @@ function fixture(fetcher: typeof fetch) {
     (request) => {
       if (request.headers.cookie !== "session=test") fail(401, "Sign in");
     },
-    new Set([pluginId]),
+    async (id) => eligibleIds.has(id),
     new PluginStore("https://store.example", fetcher),
   );
   const request = (id = pluginId, authenticated = true) =>
@@ -56,7 +57,7 @@ function fixture(fetcher: typeof fetch) {
       url: `/api/v1/plugin-icons/${id}`,
       headers: authenticated ? { cookie: "session=test" } : {},
     });
-  return { app, request };
+  return { app, request, eligibleIds };
 }
 
 it("serves the store's exact PNG to signed-in users and shares concurrent reads", async () => {
@@ -98,6 +99,23 @@ it("refreshes changed store branding after the 60-second memory cache expires", 
   expect(fetcher).toHaveBeenCalledTimes(1);
   now += 1;
   expect((await request()).statusCode).toBe(404);
+  expect(fetcher).toHaveBeenCalledTimes(2);
+});
+
+it("resolves branding for newly managed plugins before startup and while disabled", async () => {
+  const fetcher = vi.fn(async (input: RequestInfo | URL) => {
+    const id = new URL(String(input)).pathname.split("/").at(-1)!;
+    return Response.json(detail(icon, id));
+  });
+  const { request, eligibleIds } = fixture(fetcher as typeof fetch);
+  for (const id of ["pending.plugin", "disabled.plugin"]) {
+    expect((await request(id)).statusCode).toBe(404);
+    eligibleIds.add(id);
+    expect((await request(id)).rawPayload).toEqual(png);
+  }
+  expect(fetcher).toHaveBeenCalledTimes(2);
+  eligibleIds.delete("disabled.plugin");
+  expect((await request("disabled.plugin")).statusCode).toBe(404);
   expect(fetcher).toHaveBeenCalledTimes(2);
 });
 

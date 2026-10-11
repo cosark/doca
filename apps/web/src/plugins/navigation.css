@@ -56,7 +56,7 @@
 .sidebar .nav-web-left a[data-entry-id="doca.ai"]:hover{background:var(--assistant-surface)}
 .sidebar .nav-web-left a[data-entry-id="doca.ai"].active{color:var(--assistant-text);background:#fff}
 @media(max-width:1200px){
-  .app-shell:not(.navigation-expanded)>.sidebar .configured-navigation:not(.nav-web-leftMore) a>span,
+  .app-shell:not(.navigation-expanded)>.sidebar .configured-navigation:not(.nav-web-leftMore) a>span:not(.plugin-store-icon),
   .app-shell:not(.navigation-expanded)>.sidebar .navigation-more>summary>span{display:none}
   .app-shell:not(.navigation-expanded)>.sidebar .configured-navigation:not(.nav-web-leftMore) a,
   .app-shell:not(.navigation-expanded)>.sidebar .navigation-more>summary{justify-content:center;padding-left:10px;padding-right:10px}

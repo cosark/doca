@@ -512,6 +512,8 @@ export async function createApp(db: DB, options: CreateAppOptions) {
   // disposed only from application close (or startup rollback below).
   api.addHook("preClose", async () => {
     pluginServices(db).continuationsReady = false;
+    // Drain search work while its document/file sources are still registered.
+    await pluginComposition.search.stop();
     await pluginComposition.host.dispose();
   });
   const search = pluginComposition.search;
@@ -1562,6 +1564,7 @@ export async function createApp(db: DB, options: CreateAppOptions) {
   try {
     await api.ready();
   } catch (error) {
+    await pluginComposition.search.stop();
     await pluginComposition.host.dispose();
     if (webhookTimer) clearInterval(webhookTimer);
     await webhookDispatching;

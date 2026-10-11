@@ -6,7 +6,7 @@ import type { PluginStore } from "./store.js";
 export function registerStorePluginIcons(
   api: FastifyInstance,
   authenticate: (request: FastifyRequest) => unknown,
-  pluginIds: ReadonlySet<string>,
+  isManagedPlugin: (id: string) => boolean | Promise<boolean>,
   store: PluginStore,
 ) {
   const cache = new Map<
@@ -48,8 +48,10 @@ export function registerStorePluginIcons(
     async (request, reply) => {
       authenticate(request);
       reply.header("Cache-Control", "no-store");
-      // Only running store/npm installations may resolve public store branding.
-      if (!pluginIds.has(request.params.id)) fail(404, "Plugin icon not found");
+      // Branding also belongs on installed/pending/disabled plugin cards.
+      // Eligibility never enables a plugin or changes its installation source.
+      if (!(await isManagedPlugin(request.params.id)))
+        fail(404, "Plugin icon not found");
       const image = await imageFor(request.params.id);
       if (!image) fail(404, "Plugin icon not found");
       return reply

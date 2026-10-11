@@ -178,11 +178,8 @@ export function PluginSlot({
                 }
               }}
             >
-              {display === "icon" ? (
-                <PluginStoreIcon pluginId={placement.pluginId} />
-              ) : (
-                title?.[context.locale]
-              )}
+              <PluginStoreIcon pluginId={placement.pluginId} />
+              {display === "both" && <span>{title?.[context.locale]}</span>}
             </button>
           </Tooltip>
         );

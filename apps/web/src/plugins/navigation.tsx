@@ -1,4 +1,5 @@
 import { PluginSlot, useExtensionContext } from "./extensions.js";
+import { PluginStoreIcon } from "./store-icon.js";
 import { webPluginRegistry } from "./registry.js";
 import { useEffect, useRef, useState } from "react";
 import { Tooltip } from "antd";
@@ -186,11 +187,18 @@ export function NavigationArea({
               }
             >
               {display !== "text" && (
-                <Icon
-                  size={
-                    slot === "web.topRight" || slot === "web.more" ? 20 : 16
-                  }
-                />
+                entry.pluginId && !p.icon ? (
+                  <PluginStoreIcon
+                    pluginId={entry.pluginId}
+                    size={slot === "web.topRight" || slot === "web.more" ? 20 : 16}
+                  />
+                ) : (
+                  <Icon
+                    size={
+                      slot === "web.topRight" || slot === "web.more" ? 20 : 16
+                    }
+                  />
+                )
               )}
               {display !== "icon" && <span>{title}</span>}
             </a>

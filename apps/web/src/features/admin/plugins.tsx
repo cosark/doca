@@ -38,6 +38,7 @@ import type {
 import { api } from "@web/shared/api.js";
 import { useI18n } from "@web/shared/i18n.js";
 import { PluginDescription } from "./plugin-description.js";
+import { PluginStoreIcon } from "@web/plugins/store-icon.js";
 import "./plugins.css";
 const categoryIcons: Record<string, typeof Package> = {
   productivity: Sparkles,
@@ -779,17 +780,20 @@ export function Plugins() {
                 {visible.map((p) => {
                   const remote = "summary" in p ? (p as StorePlugin) : null,
                     installedItem = installed.find((x) => x.id === p.id);
-                  const Icon =
-                    categoryIcons[remote?.categoryId ?? ""] ?? Package;
+                  const storeIcon = remote
+                    ? remote.icon
+                    : installedItem?.source === "local"
+                      ? null
+                      : catalog?.items.find((item) => item.id === p.id)?.icon;
                   return (
                     <article className="plugin-card" key={p.id}>
                       <div className="plugin-card-top">
                         <div className="plugin-icon">
-                          {remote?.icon ? (
-                            <img src={remote.icon} alt="" />
-                          ) : (
-                            <Icon size={34} />
-                          )}
+                          <PluginStoreIcon
+                            pluginId={p.id}
+                            size={44}
+                            icon={storeIcon}
+                          />
                         </div>
                         <span className="plugin-version">
                           {remote?.latestVersion || installedItem?.version
@@ -918,6 +922,17 @@ export function Plugins() {
           </button>
           <div className="plugin-info-card">
             <div className="plugin-detail-title">
+              <PluginStoreIcon
+                pluginId={detail}
+                size={44}
+                icon={
+                  remoteDetail
+                    ? remoteDetail.plugin.icon
+                    : local?.source === "local"
+                      ? null
+                      : undefined
+                }
+              />
               <h3>{remoteDetail?.plugin.name ?? local?.name ?? detail}</h3>
               {remoteDetail?.plugin.official === true && (
                 <span className="plugin-badge plugin-official-badge">
