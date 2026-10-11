@@ -2,7 +2,7 @@
 
 [English](README.md)
 
-Doca 是面向个人和小团队的文档与知识工作台。本套文档覆盖 0.1.18 发行版，并注明相关组件契约与实现限制。
+Doca 是面向个人和小团队的文档与知识工作台。本套文档覆盖 0.1.19 发行版，并注明相关组件契约与实现限制。
 
 [Demo 体验](https://d.smartdoca.cc) · [插件商城](https://store.smartdoca.cc)
 
@@ -11,6 +11,7 @@ Doca 是面向个人和小团队的文档与知识工作台。本套文档覆盖
 ## 开始使用
 
 - [快速开始](quickstart.zh-CN.md)：拉取代码 → 配置 `.env` → 拉取镜像 → 启动 → 初始化管理员密码。
+- [无需访问 GitHub 的部署](deployment-without-github.zh-CN.md)：拷贝部署文件，在线拉镜像或离线加载，再初始化管理员。
 - [功能与边界](features.zh-CN.md)：核心、独立插件及尚未提供的能力。
 - [配置说明](configuration.zh-CN.md)：必填配置和可选服务。
 - [使用指南](user-guide.zh-CN.md)：文档、知识库、文件、搜索与 AI。
@@ -30,6 +31,6 @@ Doca 是面向个人和小团队的文档与知识工作台。本套文档覆盖
 
 ## 技术参考与项目记录
 
-[HTTP API](api.zh-CN.md) · [数据库](database.zh-CN.md) · [插件 SDK 契约](plugin-sdk-contract.zh-CN.md) · [插件存储契约](plugin-horizontal-scaling.zh-CN.md) · [协同契约](collaboration-sdk-contract.zh-CN.md) · [文件交换](editor-file-exchange-contract.zh-CN.md) · [0.1.18 发行说明](releases/0.1.18.zh-CN.md) · [文档维护](documentation.zh-CN.md) · [研发与验收资料](research.zh-CN.md)
+[HTTP API](api.zh-CN.md) · [数据库](database.zh-CN.md) · [插件 SDK 契约](plugin-sdk-contract.zh-CN.md) · [插件存储契约](plugin-horizontal-scaling.zh-CN.md) · [协同契约](collaboration-sdk-contract.zh-CN.md) · [文件交换](editor-file-exchange-contract.zh-CN.md) · [0.1.19 发行说明](releases/0.1.19.zh-CN.md) · [文档维护](documentation.zh-CN.md) · [研发与验收资料](research.zh-CN.md)
 
 运行中的应用提供 `/api/openapi.json`。相关契约会标明拟议能力；设计记录不代表接口已经导出。研发资料保留原始语言和日期。

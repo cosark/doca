@@ -2339,6 +2339,7 @@ export const zh = {
   "searchAdmin.differences": "已安排修复",
   "searchAdmin.pending": "待修复",
   "searchAdmin.syncFailed": "同步失败，正在自动重试",
+  "searchAdmin.rebuildFailed": "索引重建失败",
   "searchAdmin.diagnostics": "查看向量任务详情",
   "searchAdmin.unnamed": "未命名",
   "searchAdmin.unread": "未读取",

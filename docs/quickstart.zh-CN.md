@@ -2,16 +2,18 @@
 
 [English](quickstart.md)
 
-本指南使用已发布的 Docker 镜像，在一台服务器上安装 Doca 0.1.18，数据库采用 SQLite，文件存储采用本地目录。需要 Git、Docker Engine、Docker Compose 插件，以及指向服务器的域名。同机反向代理可以提供 HTTPS，可信内网也支持 HTTP。运行镜像不需要安装 Node.js 或 pnpm。
+本指南使用已发布的 Docker 镜像，在一台服务器上安装 Doca 0.1.19，数据库采用 SQLite，文件存储采用本地目录。需要 Git、Docker Engine、Docker Compose 插件，以及指向服务器的域名。同机反向代理可以提供 HTTPS，可信内网也支持 HTTP。运行镜像不需要安装 Node.js 或 pnpm。
 
-这是全新安装流程。已有部署请先阅读[发行要求](releases/0.1.18.zh-CN.md)：本版拒绝旧数据库基线，不提供自动迁移。保留已有数据库、文件和配置。
+这是全新安装流程。已有部署请先阅读[发行要求](releases/0.1.19.zh-CN.md)：本版拒绝旧数据库基线，不提供自动迁移。保留已有数据库、文件和配置。
+
+服务器无法访问 GitHub 时，可直接转交 Compose、环境变量示例、安全策略和管理员脚本，无需拉取源码。见[无需访问 GitHub 的部署](deployment-without-github.zh-CN.md)，其中提供可复制的 Compose 和 `.env`，以及离线镜像交付与初始化步骤。
 
 ## 1. 拉取代码
 
 检出与镜像一致的版本，确保 Compose 和管理员脚本与发行版本匹配：
 
 ```sh
-git clone --branch v0.1.18 --depth 1 https://github.com/smartdoca/doca.git
+git clone --branch v0.1.19 --depth 1 https://github.com/smartdoca/doca.git
 cd doca
 ```
 
@@ -56,7 +58,7 @@ Caddy 终止 TLS，并转发 HTTP 和 WebSocket。域名解析需指向这台服
 docker compose pull
 ```
 
-Compose 使用 `docker.io/smartdoca/doca:0.1.18`。这一步下载已构建镜像，不构建检出的源码。
+Compose 使用 `docker.io/smartdoca/doca:0.1.19`。这一步下载已构建镜像，不构建检出的源码。
 
 ## 4. 启动
 
@@ -68,7 +70,7 @@ docker compose ps
 等待容器健康，健康检查应返回：
 
 ```json
-{"status":"ok","version":"0.1.18"}
+{"status":"ok","version":"0.1.19"}
 ```
 
 启动失败时，用 `docker compose logs --tail=100 doca` 查看日志。Compose 端口绑定在 `127.0.0.1`，浏览器通过反向代理访问配置的 HTTP(S) 地址。

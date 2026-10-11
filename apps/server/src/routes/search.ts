@@ -136,9 +136,12 @@ export async function registerSearch(
     // original task is still running, creating an unbounded task queue.
     const deadline = Date.now() + 300000;
     let lastBatchCheck = 0;
+    let batchError = "";
     for (;;) {
       if (Date.now() >= deadline)
-        throw new Error(`索引任务超时，请稍后重试（任务 ${task.taskUid}）`);
+        throw new Error(
+          `索引任务超时，请稍后重试（任务 ${task.taskUid}）${batchError ? `：${batchError}` : ""}`,
+        );
       if (stopping) throw new Error("服务正在停止");
       const result = await request(c, `/tasks/${task.taskUid}`);
       if (result.status === "succeeded") return;
@@ -147,26 +150,24 @@ export async function registerSearch(
           result.error?.message ||
           result.error?.code ||
           result.error?.link ||
+          batchError ||
           "未提供具体原因";
         throw new Error(
           `搜索索引任务${result.status === "canceled" ? "已取消" : "失败"}：${reason}`,
         );
       }
-      // Meilisearch may expose the useful embedding failure on the batch
-      // while the individual document task is still marked as processing.
+      // lastError describes an embedder attempt, not the task's final status.
+      // Meilisearch retries internally while processing. Keep the diagnostic
+      // for a timeout, but do not resubmit work that it is still processing.
       if (result.batchUid != null && Date.now() - lastBatchCheck >= 1000) {
         lastBatchCheck = Date.now();
         try {
           const batch = await request(c, `/batches/${result.batchUid}`);
           const reason = batch.stats?.embedderRequests?.lastError;
           if (typeof reason === "string" && reason.trim())
-            throw new Error(`搜索索引任务失败：${reason.trim()}`);
-        } catch (error) {
-          if (
-            error instanceof Error &&
-            error.message.startsWith("搜索索引任务失败：")
-          )
-            throw error;
+            batchError = safeEmbeddingError(reason).slice(0, 500);
+        } catch {
+          // Optional batch diagnostics do not determine task completion.
         }
       }
       await new Promise((r) => setTimeout(r, 250));
@@ -197,7 +198,7 @@ export async function registerSearch(
     indexing = true;
     lastError = "";
     job = (async () => {
-      const failures: unknown[] = [];
+      const failures: string[] = [];
       let rebuilt = 0;
       for (const source of searchHost.registry.list()) {
         if (stopping) break;
@@ -208,7 +209,12 @@ export async function registerSearch(
           });
           rebuilt++;
         } catch (error) {
-          failures.push(error);
+          const detail = safeEmbeddingError(
+            error instanceof Error ? error.message : String(error),
+          ).slice(0, 500);
+          failures.push(
+            `${source.descriptor.pluginId}/${source.descriptor.sourceId}：${detail}`,
+          );
         }
       }
       if (rebuilt) {
@@ -216,9 +222,8 @@ export async function registerSearch(
         await reconciler.schedule();
       }
       if (failures.length)
-        throw new AggregateError(
-          failures,
-          `${failures.length} 个搜索来源重建失败`,
+        throw new Error(
+          `${failures.length} 个搜索来源重建失败\n${failures.join("\n")}`,
         );
     })()
       .catch((e) => {
