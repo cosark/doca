@@ -158,7 +158,7 @@ export function SearchSettings() {
         enqueue: t("searchAdmin.enqueue"),
         waiting: t("searchAdmin.waiting"),
       }[data.reconciliation.phase];
-  const syncError = data.lastError || data.reconciliation.lastError;
+  const syncError = data.reconciliation.lastError;
   return (
     <div className="search-settings-layout">
       <section
@@ -369,6 +369,12 @@ export function SearchSettings() {
                       })
                     : ""}
                 </small>
+              </div>
+            )}
+            {data.lastError && (
+              <div className="search-sync-error" role="alert">
+                <strong>{t("searchAdmin.rebuildFailed")}</strong>
+                <pre>{data.lastError}</pre>
               </div>
             )}
             {data.embedding &&

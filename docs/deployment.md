@@ -2,7 +2,7 @@
 
 [中文](deployment.zh-CN.md)
 
-One server can run the published image `docker.io/smartdoca/doca:0.1.18`. A single container uses SQLite and does not need PostgreSQL or Redis. Use those only when you run more than one application replica. See [single instance and horizontal scaling](horizontal-scaling.md).
+One server can run the published image `docker.io/smartdoca/doca:0.1.19`. A single container uses SQLite and does not need PostgreSQL or Redis. Use those only when you run more than one application replica. See [single instance and horizontal scaling](horizontal-scaling.md).
 
 ## Requirements
 
@@ -14,7 +14,7 @@ The proxy must forward HTTP and the WebSocket path `/api/v1/ws`. Keep the origin
 
 ## Files
 
-On the server, use a checkout of this repository. The image does not contain `scripts/bootstrap-admin.sh` or `scripts/reset-admin-password.sh`. Those scripts stay on the host and start a one-off container.
+Use a matching release checkout or transfer the [deployment bundle for servers without GitHub access](deployment-without-github.md). The business server does not need a source checkout. The image does not contain `scripts/bootstrap-admin.sh` or `scripts/reset-admin-password.sh`; those scripts stay on the host and start a one-off container. Include the `docker/chromium-seccomp.json` policy referenced by Compose as well.
 
 ```sh
 cp docker.env.example .env
@@ -26,7 +26,7 @@ Edit `.env` before the first start.
 
 File storage also requires `DOCA_FILE_STORE_ID` and `DOCA_FILE_STORES_JSON`, as provided by `docker.env.example`. Backend paths and credentials are read from the environment; the administration page is read-only. See [file storage](storage.md).
 
-0.1.18 uses database baseline `doca-2026-10-09-history-storage-v1`. Normal startup rejects earlier baselines and never upgrades automatically. The exact 0.1.13 baseline `doca-2026-10-08-knowledge-books-v2` supports the explicit offline upgrade below; other baselines are rejected. Preserve databases, files, configuration and the credential master key; see the [release requirements](releases/0.1.15.md).
+0.1.19 uses database baseline `doca-2026-10-09-history-storage-v1`. Normal startup rejects earlier baselines and never upgrades automatically. The exact 0.1.13 baseline `doca-2026-10-08-knowledge-books-v2` supports the explicit offline upgrade below; other baselines are rejected. Preserve databases, files, configuration and the credential master key; see the [release requirements](releases/0.1.15.md).
 
 `DOCA_ORIGIN` is the origin users type in the browser. HTTP and HTTPS are accepted, including in production. Use only the origin without a subpath, query, or fragment; a root trailing slash is normalized.
 
@@ -40,7 +40,7 @@ The Docker example already supplies the required file-store values. For a fresh 
 
 ### Upgrade from 0.1.13
 
-Stop every Doca instance and back up databases (including SQLite WAL), file storage and configuration. Keep the original `DOCA_CREDENTIAL_MASTER_KEY`. Check out `v0.1.18`, pull the image and run one offline maintenance container with the existing deployment environment:
+Stop every Doca instance and back up databases (including SQLite WAL), file storage and configuration. Keep the original `DOCA_CREDENTIAL_MASTER_KEY`. Check out `v0.1.19`, pull the image and run one offline maintenance container with the existing deployment environment:
 
 ```sh
 docker compose stop
@@ -57,7 +57,7 @@ docker compose pull
 docker compose up -d
 ```
 
-`docker compose up -d` pulls `docker.io/smartdoca/doca:0.1.18`. Add `--build` only when you want an image built from this checkout.
+`docker compose up -d` pulls `docker.io/smartdoca/doca:0.1.19`. Add `--build` only when you want an image built from this checkout.
 
 Check the container:
 
@@ -68,7 +68,7 @@ curl -fsS -H 'Host: docs.example.com' http://127.0.0.1:39120/health
 
 Replace `docs.example.com` with the host in your configured origin, including its port if nonstandard. The built-in container probe already supplies this Host; wait for `docker compose ps` to show `healthy`. A bare loopback curl is rejected with 421.
 
-A healthy process returns `{"status":"ok","version":"0.1.18"}`.
+A healthy process returns `{"status":"ok","version":"0.1.19"}`.
 
 Document rendering also needs its deployment checks: this checkout adds LibreOffice and sandboxed Chromium, while optional SAM requires a separate trusted Linux runtime. See [Docker document renderers](docker-rendering.md) for component availability, the included Chromium seccomp policy and the explicit SAM mount. A healthy server alone does not verify those tools.
 
@@ -151,8 +151,8 @@ Set the static hashed-file **Cache policy** separately: Minimum TTL 0, Default/M
 A static Nginx CDN can serve a release directory as follows, with standard `mime.types` loaded by the server:
 
 ```nginx
-location /doca/0.1.18/assets/ {
-    alias /srv/doca/0.1.18/assets/;
+location /doca/0.1.19/assets/ {
+    alias /srv/doca/0.1.19/assets/;
     add_header Cache-Control "public, max-age=31536000, immutable";
     add_header Access-Control-Allow-Origin "https://doca.example.com";
 }
@@ -161,7 +161,7 @@ location /doca/0.1.18/assets/ {
 When proxying Doca `/assets/`, hide the existing origin header with `proxy_hide_header Cache-Control;` before adding its replacement. The example omits `always` so missing files do not receive a year-long 404 cache. Check the final CDN response:
 
 ```sh
-curl -I https://cdn.example.com/doca/0.1.18/assets/<actual-hashed-JS-filename>.js
+curl -I https://cdn.example.com/doca/0.1.19/assets/<actual-hashed-JS-filename>.js
 ```
 
 Verify Cache-Control, Content-Type and CORS. HTML stays on Doca with revalidation. For document images and protected files, use [storage: browser image caching and the file CDN](storage.md#browser-image-caching-and-the-file-cdn).

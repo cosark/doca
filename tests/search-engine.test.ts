@@ -48,12 +48,29 @@ it("configures Meilisearch only as admin, indexes documents, filters stale/priva
     title: "搜索测试知识库",
   });
   const calls: { path: string; body: any }[] = [];
+  const indexes = new Set<string>();
   let broken = false;
   const mockFetch: typeof fetch = async (input, init) => {
     const url = new URL(String(input));
     const body = init?.body ? JSON.parse(String(init.body)) : undefined;
     calls.push({ path: url.pathname, body });
     if (broken) return new Response("down", { status: 503 });
+    if (url.pathname === "/indexes" && init?.method === "POST") {
+      indexes.add(body.uid);
+      return Response.json({ taskUid: 1 });
+    }
+    if (/^\/indexes\/[^/]+$/.test(url.pathname)) {
+      const name = decodeURIComponent(url.pathname.slice("/indexes/".length));
+      if (init?.method === "DELETE") {
+        indexes.delete(name);
+        return Response.json({ taskUid: 1 });
+      }
+      return indexes.has(name)
+        ? Response.json({ uid: name, primaryKey: "id" })
+        : Response.json({ code: "index_not_found" }, { status: 404 });
+    }
+    if (url.pathname.endsWith("/settings/embedders") && init?.method === "GET")
+      return Response.json({});
     if (url.pathname.endsWith("/search"))
       return Response.json({
         hits: [

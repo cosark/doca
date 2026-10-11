@@ -7,6 +7,7 @@ import { openTestDatabase } from "./database.js";
 import { createUser, type Actor } from "@core/modules/identity/passwords.js";
 import { AppError, fail } from "@core/shared/errors.js";
 import { registerSearch } from "../apps/server/src/routes/search.js";
+import { documentSearchSource } from "../apps/server/src/services/search/sources.js";
 import { embeddingFailureNotice } from "../apps/server/src/routes/search-embeddings.js";
 import { aiConfig, aiDefaults, saveAIConfig } from "@core/modules/ai/config.js";
 import type { DB } from "@db/index.js";
@@ -21,6 +22,7 @@ let remote: Record<string, any>,
 let searchService: Awaited<ReturnType<typeof registerSearch>>;
 let hits: { id: string; [key: string]: unknown }[];
 let calls: { method: string; path: string; body: any }[];
+let taskStatuses: string[], batchDiagnostic: string, taskError: string;
 const root = "/api/v1/admin/search/embeddings";
 const headers = { "x-test-admin": "yes" };
 const body = () => ({
@@ -74,8 +76,13 @@ async function setup() {
         }
         if (path.startsWith("/tasks/"))
           return Response.json({
-            status: remoteStatus,
-            error: { message: "model-private-key", code: "bad_api_key" },
+            status: taskStatuses.shift() ?? remoteStatus,
+            batchUid: batchDiagnostic ? 7 : null,
+            error: { message: taskError, code: "bad_api_key" },
+          });
+        if (path.startsWith("/batches/"))
+          return Response.json({
+            stats: { embedderRequests: { lastError: batchDiagnostic } },
           });
         if (path.endsWith("/search") && value?.hybrid && brokenSemantic)
           return Response.json(
@@ -86,6 +93,8 @@ async function setup() {
           return Response.json({
             hits: hits.map((h) => ({ _rankingScore: 0.8, ...h })),
           });
+        if (path.endsWith("/documents") && method === "POST")
+          return Response.json({ taskUid: 43 });
         if (path.endsWith("/documents"))
           return Response.json({ results: [], total: 0 });
         return Response.json({ status: "available", taskUid: 43 });
@@ -193,6 +202,9 @@ beforeEach(async () => {
   brokenEmbedderRead = false;
   ambiguous = false;
   calls = [];
+  taskStatuses = [];
+  batchDiagnostic = "";
+  taskError = "model-private-key";
   app = await setup();
 });
 afterEach(async () => {
@@ -216,6 +228,133 @@ const remove = (overrides: Record<string, unknown> = {}) =>
   });
 const writes = () =>
   calls.filter((c) => c.method === "PATCH" && c.path.endsWith("/embedders"));
+
+it("waits for the accepted indexing task when an embedder attempt fails during processing", async () => {
+  taskStatuses = ["processing", "processing", "succeeded"];
+  batchDiagnostic = "embedding server replied with 429 TooManyRequests";
+  await expect(
+    searchService.searchHost.upsertProjections({
+      source: documentSearchSource,
+      projections: [{ id: "transient-error", text: "Searchable content" }],
+    }),
+  ).resolves.toBeUndefined();
+  expect(calls.filter((call) => call.path === "/batches/7")).toHaveLength(1);
+  expect(calls.filter((call) => call.path === "/tasks/43")).toHaveLength(3);
+  expect(
+    calls.filter(
+      (call) => call.method === "POST" && call.path.endsWith("/documents"),
+    ),
+  ).toHaveLength(1);
+});
+
+it("fails indexing only after the remote task reports a terminal failure", async () => {
+  taskStatuses = ["processing", "failed"];
+  batchDiagnostic = "temporary embedder request error";
+  await expect(
+    searchService.searchHost.upsertProjections({
+      source: documentSearchSource,
+      projections: [{ id: "terminal-error", text: "Searchable content" }],
+    }),
+  ).rejects.toThrow("搜索索引任务失败：model-private-key");
+  expect(calls.filter((call) => call.path === "/tasks/43")).toHaveLength(2);
+});
+
+it("reports each failed rebuild source and its redacted cause", async () => {
+  remoteStatus = "failed";
+  taskError =
+    'AccountQuotaExceeded; {"apiKey":"hidden-json-key"}; Bearer hidden-bearer';
+  await app.inject({
+    method: "POST",
+    url: "/api/v1/admin/search/reindex",
+    headers,
+  });
+  let status: any;
+  for (let i = 0; i < 100; i++) {
+    status = (await get("/api/v1/admin/search")).json();
+    if (!status.indexing) break;
+    await new Promise((resolve) => setTimeout(resolve, 10));
+  }
+  expect(status.indexing).toBe(false);
+  expect(status.lastError).toContain("3 个搜索来源重建失败");
+  for (const source of [
+    "doca.documents/documents",
+    "doca.files/files",
+    "doca.documents/knowledge-chunks",
+  ])
+    expect(status.lastError).toContain(
+      `${source}：搜索索引任务失败：AccountQuotaExceeded`,
+    );
+  expect(status.lastError).not.toContain("hidden-json-key");
+  expect(status.lastError).not.toContain("hidden-bearer");
+});
+
+it("recovers all rebuild sources after binding an existing remote embedder to its host model", async () => {
+  remoteStatus = "succeeded";
+  remote = {
+    knowledge_v1: {
+      source: "openAi",
+      model: "text-embedding-3-small",
+      url: "https://api.openai.com/v1/embeddings",
+      apiKey: "***",
+      documentTemplate: "{{doc.title}}\n{{doc.text}}",
+      documentTemplateMaxBytes: 8000,
+    },
+  };
+  const document = await createContent(db).create(actor, {
+    kind: "document",
+    format: "markdown",
+    title: "问题",
+  });
+  async function rebuild() {
+    await app.inject({
+      method: "POST",
+      url: "/api/v1/admin/search/reindex",
+      headers,
+    });
+    let status: any;
+    for (let i = 0; i < 100; i++) {
+      status = (await get("/api/v1/admin/search")).json();
+      if (!status.indexing) break;
+      await new Promise((resolve) => setTimeout(resolve, 10));
+    }
+    expect(status.indexing).toBe(false);
+    return status;
+  }
+  const failed = await rebuild();
+  for (const source of [
+    "doca.documents/documents",
+    "doca.files/files",
+    "doca.documents/knowledge-chunks",
+  ])
+    expect(failed.lastError).toContain(
+      `${source}：独立索引需要在 Doca 中绑定对应向量模型`,
+    );
+  expect(
+    calls.filter(
+      (call) => call.method === "POST" && call.path.endsWith("/documents"),
+    ),
+  ).toHaveLength(0);
+
+  expect((await save()).statusCode).toBe(202);
+  expect((await get(root + "/status")).json().status).toBe("succeeded");
+  calls = [];
+  expect((await rebuild()).lastError).toBe("");
+  expect(
+    calls.some(
+      (call) =>
+        call.method === "POST" &&
+        call.path.endsWith("/documents") &&
+        call.body.some(
+          (indexed: any) => indexed.id === document.id && indexed.title === "问题",
+        ),
+    ),
+  ).toBe(true);
+  expect(
+    writes().every(
+      (call) => call.body.knowledge_v1.apiKey === "model-private-key",
+    ),
+  ).toBe(true);
+});
 
 it.each(["query", "settings"])(
   "keeps Meilisearch keyword search available when vector %s fails",

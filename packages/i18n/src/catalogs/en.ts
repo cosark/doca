@@ -2546,6 +2546,7 @@ export const en = {
   "searchAdmin.differences": "Repairs scheduled",
   "searchAdmin.pending": "Pending repairs",
   "searchAdmin.syncFailed": "Sync failed; retrying automatically",
+  "searchAdmin.rebuildFailed": "Index rebuild failed",
   "searchAdmin.diagnostics": "View embedding task details",
   "searchAdmin.unnamed": "Unnamed",
   "searchAdmin.unread": "Not retrieved",

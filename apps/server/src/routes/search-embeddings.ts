@@ -69,7 +69,10 @@ function supported(e: any) {
 export function safeEmbeddingError(message: string) {
   return message
     .replace(/Bearer\s+\S+/gi, "Bearer ***")
-    .replace(/(api[-_ ]?key\s*[:=]\s*)\S+/gi, "$1***")
+    .replace(
+      /(["']?api[-_ ]?key["']?\s*[:=]\s*)(?:"[^"]*"|'[^']*'|\S+)/gi,
+      "$1***",
+    )
     .replace(/model-private-key/gi, "模型密钥")
     .trim();
 }

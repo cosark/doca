@@ -105,8 +105,13 @@ export class MeilisearchSearchProvider<
       this.#configuredSources.has(sourceKey) &&
       !this.#initializedConfiguredTargets.has(target)
     ) {
-      physical = config.index_name;
-      this.#physicalOverrides.set(this.#logicalKey(config, name), physical);
+      // Bootstrap may populate a new configured index directly. An existing
+      // active index must survive a failed rebuild: write a separate version
+      // and publish it through the atomic swap only after all tasks succeed.
+      if (!(await this.#exists(config, config.index_name))) {
+        physical = config.index_name;
+        this.#physicalOverrides.set(this.#logicalKey(config, name), physical);
+      }
       this.#initializedConfiguredTargets.add(target);
     }
     if (!(await this.#exists(config, physical))) {

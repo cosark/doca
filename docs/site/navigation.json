@@ -74,6 +74,11 @@
         "部署说明"
       ],
       [
+        "deployment-without-github",
+        "Deploy without GitHub",
+        "无需访问 GitHub 的部署"
+      ],
+      [
         "storage",
         "File storage",
         "文件存储"
@@ -246,6 +251,11 @@
     "en": "Releases",
     "zh": "发行记录",
     "pages": [
+      [
+        "releases/0.1.19",
+        "0.1.19",
+        "0.1.19"
+      ],
       [
         "releases/0.1.18",
         "0.1.18",

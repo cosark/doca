@@ -22,7 +22,7 @@ fi
 
 export DOCA_RESET_ADMIN_LOGIN DOCA_RESET_ADMIN_PASSWORD
 trap 'unset DOCA_RESET_ADMIN_LOGIN DOCA_RESET_ADMIN_PASSWORD DOCA_RESET_ADMIN_PASSWORD_CONFIRM' EXIT
-docker compose run --rm --no-deps \
+docker compose run --rm --no-deps --pull never \
   -e DOCA_RESET_ADMIN_LOGIN \
   -e DOCA_RESET_ADMIN_PASSWORD \
   doca node --import tsx apps/server/src/bootstrap/reset-admin-password.ts

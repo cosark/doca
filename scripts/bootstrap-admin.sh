@@ -22,7 +22,7 @@ fi
 
 export DOCA_BOOTSTRAP_LOGIN DOCA_BOOTSTRAP_PASSWORD
 trap 'unset DOCA_BOOTSTRAP_LOGIN DOCA_BOOTSTRAP_PASSWORD DOCA_BOOTSTRAP_PASSWORD_CONFIRM' EXIT
-docker compose run --rm \
+docker compose run --rm --pull never \
   -e DOCA_BOOTSTRAP_LOGIN \
   -e DOCA_BOOTSTRAP_PASSWORD \
   doca node --import tsx apps/server/src/bootstrap/admin.ts

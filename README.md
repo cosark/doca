@@ -90,11 +90,11 @@ Doca 把**在线文档、Markdown、在线表格、幻灯片、无限画布、�
 
 ## Docker 快速开始
 
-需要 Git、Docker Engine、Docker Compose，以及通过反向代理访问的 HTTP(S) 地址。本流程在新空数据库中安装已发布的 0.1.18 镜像。已有部署更换版本前，先阅读[发行要求](https://smartdoca.github.io/doca/#/zh-cn/releases/0.1.18)并保留原数据。
+需要 Git、Docker Engine、Docker Compose，以及通过反向代理访问的 HTTP(S) 地址。本流程在新空数据库中安装已发布的 0.1.19 镜像。已有部署更换版本前，先阅读[发行要求](https://smartdoca.github.io/doca/#/zh-cn/releases/0.1.19)并保留原数据。
 
 ```sh
 # 1. 拉取对应发行版代码
-git clone --branch v0.1.18 --depth 1 https://github.com/smartdoca/doca.git
+git clone --branch v0.1.19 --depth 1 https://github.com/smartdoca/doca.git
 cd doca
 
 # 2. 配置环境变量
@@ -118,6 +118,8 @@ bash scripts/bootstrap-admin.sh
 
 [完整快速开始](https://smartdoca.github.io/doca/#/zh-cn/getting-started/quickstart)包含 `.env`、反向代理、健康检查、管理员恢复和数据保留说明。
 
+业务服务器无法访问 GitHub 时，按[无需访问 GitHub 的部署](https://smartdoca.github.io/doca/#/zh-cn/operations/deployment-without-github)转交部署文件即可，不需要 Git 或源码。交付方执行 `node scripts/pack-deployment.mjs` 生成部署包；指南也提供可复制的 Compose、`.env` 和初始化步骤。镜像仓库也不通时，可通过 `docker save` / `docker load` 离线交付同版本镜像。
+
 ## 源码开发
 
 需要 Node.js 22.12 或更新版本，以及 pnpm 11.25.0：
@@ -136,7 +138,7 @@ pnpm dev
 - [部署与配置](https://smartdoca.github.io/doca/#/zh-cn/operations/deployment)
 - [插件开发](https://smartdoca.github.io/doca/#/zh-cn/plugins/plugin-development)
 - [HTTP API](https://smartdoca.github.io/doca/#/zh-cn/reference/api)，运行中的应用还提供 `/api/openapi.json`。
-- [发行记录](https://smartdoca.github.io/doca/#/zh-cn/releases/0.1.18)
+- [发行记录](https://smartdoca.github.io/doca/#/zh-cn/releases/0.1.19)
 - [文档源码](docs/README.zh-CN.md)
 
 预览文档时，执行 `pnpm docs:dev` 并打开 `http://127.0.0.1:39140/#/zh-cn/`。`pnpm docs:check` 校验双语覆盖和本地链接。GitHub Pages 设置见[文档维护](docs/documentation.zh-CN.md)。
