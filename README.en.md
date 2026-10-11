@@ -142,6 +142,11 @@ Open `http://127.0.0.1:39130`. Initialize the administrator with `bash scripts/b
 
 For a documentation preview, run `pnpm docs:dev` and open `http://127.0.0.1:39140/#/en/`. `pnpm docs:check` verifies bilingual coverage and local links. GitHub Pages setup is in [documentation maintenance](docs/documentation.md).
 
+## Contact the author
+
+- WeChat: `smartdoca`
+- Email: [smartdoca@163.com](mailto:smartdoca@163.com)
+
 ## License
 
 [MIT](LICENSE). The separately published rich text, spreadsheet, Markdown, canvas, and slides editors use the same license.
