@@ -143,6 +143,11 @@ pnpm dev
 
 预览文档时，执行 `pnpm docs:dev` 并打开 `http://127.0.0.1:39140/#/zh-cn/`。`pnpm docs:check` 校验双语覆盖和本地链接。GitHub Pages 设置见[文档维护](docs/documentation.zh-CN.md)。
 
+## 联系作者
+
+- 微信：`smartdoca`
+- 邮箱：[smartdoca@163.com](mailto:smartdoca@163.com)
+
 ## 许可证
 
 [MIT](LICENSE)。单独发布的富文本、表格、Markdown、画布和幻灯片编辑器采用同一许可证。
