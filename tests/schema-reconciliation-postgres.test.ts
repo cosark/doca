@@ -1,6 +1,7 @@
 import { expect, it } from "vitest";
 import { openTestDatabase } from "./database.js";
 import { createSchema } from "@db/create-schema.js";
+import { sql } from "kysely";
 
 it.skipIf(!process.env.DOCA_TEST_POSTGRES)(
   "upgrades and rechecks an isolated PostgreSQL old schema",
@@ -76,6 +77,29 @@ it.skipIf(!process.env.DOCA_TEST_POSTGRES)(
       expect(
         await db.selectFrom("file_folder_invitations").selectAll().execute(),
       ).toEqual([]);
+      const baseline = await db
+        .selectFrom("schema_baseline")
+        .selectAll()
+        .executeTakeFirstOrThrow();
+      expect(typeof baseline.structure_json).toBe("string");
+      expect(
+        JSON.parse(baseline.structure_json!).file_folder_invitations,
+      ).toBeDefined();
+      const version = (
+        await sql<{
+          server_version_num: string;
+        }>`show server_version_num`.execute(db)
+      ).rows[0]!.server_version_num;
+      if (Number(version) >= 180000) {
+        const constraints = await sql<{ definition: string }>`
+          select pg_get_constraintdef(oid) as definition from pg_constraint
+          where contype='n' and conrelid='file_folder_share_links'::regclass`.execute(
+          db,
+        );
+        expect(constraints.rows.map((row) => row.definition)).toContain(
+          "NOT NULL revision",
+        );
+      }
       await createSchema(db);
       await db.schema
         .createTable("retained_business_data")
@@ -88,6 +112,34 @@ it.skipIf(!process.env.DOCA_TEST_POSTGRES)(
           .selectAll()
           .executeTakeFirstOrThrow(),
       ).toMatchObject({ token: "original-token", max_members: null });
+    } finally {
+      await db.destroy();
+    }
+  },
+);
+
+it.skipIf(!process.env.DOCA_TEST_POSTGRES)(
+  "still rejects changes to existing PostgreSQL column nullability",
+  async () => {
+    const db = await openTestDatabase({ driver: "sqlite", path: ":memory:" });
+    try {
+      await sql`alter table file_folder_share_links alter column revision drop not null`.execute(
+        db,
+      );
+      await expect(createSchema(db)).rejects.toMatchObject({
+        changes: expect.arrayContaining([
+          expect.objectContaining({
+            kind: "review",
+            table: "file_folder_share_links",
+            column: "revision",
+            reason: "column type, default or constraints changed",
+          }),
+        ]),
+      });
+      const column = (await db.introspection.getTables())
+        .find((table) => table.name === "file_folder_share_links")!
+        .columns.find((column) => column.name === "revision")!;
+      expect(column.isNullable).toBe(true);
     } finally {
       await db.destroy();
     }

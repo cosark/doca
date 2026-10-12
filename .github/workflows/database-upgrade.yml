@@ -1,0 +1,63 @@
+name: Database upgrade
+
+on:
+  pull_request:
+    paths:
+      - "packages/db/**"
+      - "tests/schema-reconciliation*.test.ts"
+      - "tests/database.ts"
+      - "tests/folder-sharing.test.ts"
+      - "tests/files.test.ts"
+      - "package.json"
+      - "pnpm-lock.yaml"
+      - ".github/workflows/database-upgrade.yml"
+  push:
+    branches: [main]
+    paths:
+      - "packages/db/**"
+      - "tests/schema-reconciliation*.test.ts"
+      - "tests/database.ts"
+      - "tests/folder-sharing.test.ts"
+      - "tests/files.test.ts"
+      - "package.json"
+      - "pnpm-lock.yaml"
+      - ".github/workflows/database-upgrade.yml"
+
+permissions:
+  contents: read
+
+jobs:
+  postgres:
+    name: PostgreSQL ${{ matrix.version }}
+    runs-on: ubuntu-latest
+    strategy:
+      fail-fast: false
+      matrix:
+        version: [17, 18]
+    services:
+      postgres:
+        image: postgres:${{ matrix.version }}
+        env:
+          POSTGRES_DB: doca_test
+          POSTGRES_USER: postgres
+          POSTGRES_PASSWORD: isolated-test
+        ports:
+          - 5432:5432
+        options: >-
+          --health-cmd "pg_isready -U postgres -d doca_test"
+          --health-interval 5s
+          --health-timeout 5s
+          --health-retries 10
+    steps:
+      - uses: actions/checkout@v4
+      - uses: actions/setup-node@v4
+        with:
+          node-version: "22"
+      - name: Enable pnpm
+        run: corepack enable && corepack prepare pnpm@11.25.0 --activate
+      - name: Install dependencies
+        run: pnpm install --frozen-lockfile
+      - name: Verify isolated upgrades and folder sharing
+        env:
+          DOCA_TEST_POSTGRES: postgres://postgres:isolated-test@127.0.0.1:5432/doca_test
+        run: pnpm exec vitest run tests/schema-reconciliation-postgres.test.ts tests/folder-sharing.test.ts tests/files.test.ts --maxWorkers=2
