@@ -11,6 +11,8 @@ import { queueMobilePush } from "../mobile/push.js";
 import { createUserDirectory } from "../discovery/users.js";
 import { directoryIds } from "../discovery/directory.js";
 import type { Actor } from "../identity/passwords.js";
+import { authorizeFileFolder } from "../access/file-access.js";
+import { AppError } from "../../shared/errors.js";
 
 export { directoryIds, type DirectoryMode } from "../discovery/directory.js";
 export type CommentInline =
@@ -316,15 +318,21 @@ export async function notificationPage(db: DB, actor: Actor, offset: number) {
       { role?: string; includeDescendants?: boolean } | undefined;
     let show =
       r && (await managementVisible(db, actor, r, ctx.resources, ctx.grants));
+    let folderTitle: string | undefined;
     if (n.ticket_id) {
       const ticket = await db
         .selectFrom("tickets")
-        .select(["user_id", "hidden_for_user_id", "kind", "operation_json"])
+        .select(["user_id", "hidden_for_user_id", "kind", "operation_json", "resource_kind", "resource_id"])
         .where("id", "=", n.ticket_id)
         .executeTakeFirst();
+      if (ticket?.resource_kind === "folder" && ticket.resource_id) {
+        try { folderTitle = (await authorizeFileFolder(db, actor, ticket.resource_id)).folder.name; }
+        catch (error) { if (!(error instanceof AppError) || ![403, 404].includes(error.status)) throw error; }
+      }
       if (
         ticket &&
-        ["access.approved", "invitation.accepted"].includes(n.type)
+        (["access.approved", "invitation.accepted"].includes(n.type) ||
+          (ticket.resource_kind === "folder" && n.type === "resource.permissions_changed"))
       ) {
         const operation = JSON.parse(ticket.operation_json ?? "{}");
         grantedPermission = {
@@ -351,11 +359,11 @@ export async function notificationPage(db: DB, actor: Actor, offset: number) {
         ? { actor_id: null, actorName: null }
         : {}),
       title:
-        n.ticket_id && !canRead
+        folderTitle ?? (n.ticket_id && !canRead
           ? "工单"
           : n.type.startsWith("access.") && !canRead
             ? "权限申请"
-            : n.title,
+            : n.title),
     });
   }
   return {

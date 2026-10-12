@@ -331,7 +331,7 @@ it("rejects earlier baselines and partial new storage schemas without modifying 
     .set({ id: "doca-2026-09-27" })
     .where("id", "=", CURRENT_SCHEMA_BASELINE)
     .execute();
-  await expect(createSchema(db)).rejects.toThrow("baseline is not supported");
+  await expect(createSchema(db)).rejects.toThrow("compatibility generation is not supported");
   expect(
     await db.selectFrom("plugin_storage_namespaces").selectAll().execute(),
   ).toHaveLength(2);
@@ -341,7 +341,7 @@ it("rejects earlier baselines and partial new storage schemas without modifying 
     .where("id", "=", "doca-2026-09-27")
     .execute();
   await db.schema.dropTable("plugin_private_objects").execute();
-  await expect(createSchema(db)).rejects.toThrow("incomplete or unsupported");
+  await expect(createSchema(db)).rejects.toThrow("schema changes require review");
   expect(
     (await currentSchemaTables(db)).some(
       (t) => t.name === "plugin_private_objects",

@@ -2,7 +2,21 @@ import { currentSchemaTables } from "./introspection.js";
 import type { Kysely } from "kysely";
 import { sql } from "kysely";
 import { createKnowledgeBookSchema } from "./knowledge-books-schema.js";
-import { createHistorySchema, HISTORY_SCHEMA_BASELINE, PRE_HISTORY_SCHEMA_BASELINE, HISTORY_ROLLBACK_BASELINE, validateHistorySchema } from "./history-schema.js";
+import {
+  createHistorySchema,
+  HISTORY_SCHEMA_BASELINE,
+  PRE_HISTORY_SCHEMA_BASELINE,
+  HISTORY_ROLLBACK_BASELINE,
+} from "./history-schema.js";
+import {
+  reconcileSchema,
+  recordSchemaStructure,
+  inspectSchema,
+  SchemaReviewRequired,
+} from "./schema-reconciliation.js";
+import { transact, databaseDriver, registerDriver } from "./transactions.js";
+import { inheritDatabaseRuntimeScope } from "./runtime-scope.js";
+import type { DB } from "./schema.js";
 
 const schemaStatements = [
   `CREATE TABLE IF NOT EXISTS "plugin_webview_auth" ("id" varchar(64) primary key,"kind" varchar(16) not null,"plugin_id" varchar(100) not null,"parent_session" varchar(64) not null,"expires_at" varchar(32) not null);`,
@@ -150,7 +164,10 @@ const fileSchemaStatements = [
   `CREATE INDEX IF NOT EXISTS "file_folders_parent" on "file_folders" ("owner_id", "parent_id", "deleted_at", "name");`,
   `CREATE TABLE IF NOT EXISTS "file_folder_shares" ("folder_id" varchar(36) not null references "file_folders" ("id") on delete cascade, "user_id" varchar(36) not null references "users" ("id") on delete cascade, "role" varchar(16) not null, "version" integer default 1 not null, "created_at" varchar(32) not null, "updated_at" varchar(32) not null, constraint "file_folder_shares_pk" primary key ("folder_id", "user_id"), constraint "file_folder_share_role" check (role in ('admin','reader')), constraint "file_folder_share_version" check (version > 0));`,
   `CREATE INDEX IF NOT EXISTS "file_folder_shares_user" on "file_folder_shares" ("user_id", "folder_id", "role");`,
-  `CREATE TABLE IF NOT EXISTS "file_folder_share_links" ("folder_id" varchar(36) primary key references "file_folders" ("id") on delete cascade, "token" varchar(64) not null unique, "token_hash" varchar(64) not null unique, "role" varchar(16) default 'reader' not null, "enabled" integer default 1 not null, "created_by" varchar(36) not null references "users" ("id"), "created_at" varchar(32) not null, "updated_at" varchar(32) not null, constraint "file_folder_link_role" check (role in ('admin','reader')));`,
+  `CREATE TABLE IF NOT EXISTS "file_folder_share_links" ("folder_id" varchar(36) primary key references "file_folders" ("id") on delete cascade, "token" varchar(64) not null unique, "token_hash" varchar(64) not null unique, "role" varchar(16) default 'reader' not null, "enabled" integer default 1 not null, "created_by" varchar(36) not null references "users" ("id"), "created_at" varchar(32) not null, "updated_at" varchar(32) not null, "max_members" integer default null check (max_members is null or max_members > 0), "expires_at" varchar(32), "revision" integer default 1 not null, constraint "file_folder_link_role" check (role in ('admin','reader')));`,
+  `CREATE TABLE file_folder_link_members (folder_id varchar(36) not null references file_folders(id) on delete cascade, token_hash varchar(64) not null, user_id varchar(36) not null references users(id) on delete cascade, created_at varchar(32) not null, primary key(folder_id, token_hash, user_id));`,
+  `CREATE TABLE file_folder_invitations (id varchar(36) primary key, folder_id varchar(36) not null references file_folders(id) on delete cascade, user_id varchar(36) not null references users(id) on delete cascade, role varchar(16) not null check (role in ('admin','reader')), state varchar(16) not null check (state in ('pending','accepted','rejected','cancelled')), invited_by varchar(36) not null references users(id), message text not null, created_at varchar(32) not null, updated_at varchar(32) not null);`,
+  `CREATE UNIQUE INDEX folder_pending_invitation on file_folder_invitations(folder_id, user_id) where state='pending';`,
   `CREATE TABLE IF NOT EXISTS "file_items" ("id" varchar(36) primary key, "storage_namespace" varchar(120) default 'host' not null, "owner_id" varchar(36) not null references "users" ("id") on delete cascade, "parent_type" varchar(16) not null, "parent_id" varchar(36) not null, "storage_object_id" varchar(36) not null references "file_storage_objects" ("id"), "name" varchar(255) not null, "mime" varchar(160) not null, "size" bigint not null, "metadata" text default '{}' not null, "ai_description_override" text, "locked" integer default 0 not null, "version" integer default 1 not null, "created_at" varchar(32) not null, "updated_at" varchar(32) not null, "deleted_at" varchar(32), "delete_batch" varchar(36), constraint "file_item_parent_type" check (parent_type in ('system','folder','document')), constraint "file_item_size" check (size >= 0), constraint "file_item_version" check (version > 0));`,
   `CREATE INDEX IF NOT EXISTS "file_items_parent" on "file_items" ("owner_id", "parent_type", "parent_id", "deleted_at", "name");`,
   `CREATE INDEX IF NOT EXISTS "file_items_storage" on "file_items" ("storage_object_id", "deleted_at");`,
@@ -301,11 +318,6 @@ async function createKnowledgeSchema(db: Kysely<any>) {
 export const CURRENT_SCHEMA_BASELINE = HISTORY_SCHEMA_BASELINE;
 
 async function createSystemSchema(db: Kysely<any>) {
-  await sql
-    .raw(
-      `CREATE TABLE IF NOT EXISTS "schema_baseline" ("id" varchar(64) primary key, "created_at" varchar(32) not null)`,
-    )
-    .execute(db);
   const now = new Date().toISOString();
   await db
     .insertInto("schema_baseline")
@@ -313,95 +325,50 @@ async function createSystemSchema(db: Kysely<any>) {
     .execute();
 }
 
-export async function validateSchema(db: Kysely<any>) {
+async function validateBaseline(db: Kysely<any>) {
   const hasSchema = (await currentSchemaTables(db)).some(
     (table) => table.name === "schema_baseline",
   );
   if (!hasSchema)
     throw new Error(
-      "Database is not a current Doca baseline; create a new database",
+      "Database has no recognized compatibility generation; review the existing structure and data before upgrading; no data was changed",
     );
   const baselines = await db
     .selectFrom("schema_baseline")
     .select("id")
     .execute();
-  if (baselines.length === 1 && baselines[0]?.id === PRE_HISTORY_SCHEMA_BASELINE)
-    throw new Error("Database baseline requires explicit offline history:upgrade --apply; no data was changed");
+  if (
+    baselines.length === 1 &&
+    baselines[0]?.id === PRE_HISTORY_SCHEMA_BASELINE
+  )
+    throw new Error(
+      "Database baseline requires explicit offline history:upgrade --apply; no data was changed",
+    );
   if (baselines.length === 1 && baselines[0]?.id === HISTORY_ROLLBACK_BASELINE)
-    throw new Error("Database baseline has an interrupted history rollback; finish history:rollback with a new manifest before starting the host");
+    throw new Error(
+      "Database baseline has an interrupted history rollback; finish history:rollback with a new manifest before starting the host",
+    );
   if (baselines.length !== 1 || baselines[0]?.id !== CURRENT_SCHEMA_BASELINE)
     throw new Error(
-      "Database baseline is not supported; create a new database",
+      "Database compatibility generation is not supported; an explicitly reviewed data conversion is required; no data was changed",
     );
-  const required: Record<string, readonly string[]> = {
-    plugin_archives: [
-      "sha256",
-      "plugin_id",
-      "version",
-      "store_id",
-      "object_key",
-      "size",
-      "file_index",
-      "created_at",
-    ],
-    storage_profiles: ["id", "active", "created_at"],
-    plugin_storage_namespaces: [
-      "plugin_id",
-      "namespace",
-      "data_version",
-      "generation",
-      "state",
-      "definition",
-      "created_at",
-    ],
-    plugin_object_garbage: ["id", "store_id", "object_key", "created_at"],
-    plugin_credential_keys: ["id", "fingerprint", "created_at"],
-    plugin_credentials: [
-      "plugin_id",
-      "namespace",
-      "generation",
-      "id",
-      "revision",
-      "sealed",
-      "created_at",
-      "updated_at",
-    ],
-    plugin_private_objects: [
-      "plugin_id",
-      "generation",
-      "id",
-      "store_id",
-      "object_key",
-      "mime",
-      "size",
-      "sha256",
-      "created_at",
-    ],
-  };
-  const tables = await currentSchemaTables(db);
-  for (const [name, columns] of Object.entries(required)) {
-    const table = tables.find((t) => t.name === name);
-    if (
-      !table ||
-      table.columns.length !== columns.length ||
-      columns.some((c) => !table.columns.some((v) => v.name === c))
-    )
-      throw new Error(
-        "Current database storage structure is incomplete or unsupported; restore a complete database",
-      );
-  }
-  await validateHistorySchema(db);
 }
 
-export async function createSchema(db: Kysely<any>) {
-  if ((await currentSchemaTables(db)).length > 0) {
-    await validateSchema(db);
-    return;
-  }
+export async function validateSchema(db: Kysely<any>) {
+  await transact(db as DB, async (tx) => {
+    await validateBaseline(tx);
+    const changes = await inspectSchema(tx, createCurrentStructure, {
+      newTables: [],
+      newColumns: [],
+    });
+    if (changes.length) throw new SchemaReviewRequired(changes);
+  });
+}
 
+/** Latest structure only. Used for both fresh databases and upgrade planning. */
+export async function createCurrentStructure(db: Kysely<any>) {
   for (const statement of schemaStatements)
     await sql.raw(statement).execute(db);
-
   await createFileSchema(db);
   await createDiscoverySchema(db);
   await createSearchSchema(db);
@@ -409,8 +376,60 @@ export async function createSchema(db: Kysely<any>) {
   await createKnowledgeBookSchema(db);
   await createHistorySchema(db);
   await createMobileSchema(db);
-  await seedSystemRows(db);
-  await createSystemSchema(db);
+  await sql
+    .raw(
+      `CREATE TABLE schema_baseline (id varchar(64) primary key, created_at varchar(32) not null, structure_json text default '{}' not null)`,
+    )
+    .execute(db);
+}
+
+// These declarations authorize additive changes within the current compatibility generation.
+// Historical values come from the latest DDL; installed footprints prevent repairing lost data as an upgrade.
+export const schemaEvolution = {
+  newTables: ["file_folder_link_members", "file_folder_invitations"],
+  newColumns: [
+    "file_folder_share_links.max_members",
+    "file_folder_share_links.expires_at",
+    "file_folder_share_links.revision",
+    "schema_baseline.structure_json",
+  ],
+};
+
+export async function createSchema(db: Kysely<any>) {
+  const run = async (tx: Kysely<any>) => {
+    if (databaseDriver(tx) === "postgres")
+      await sql`select pg_advisory_xact_lock(hashtextextended(current_schema() || ':doca-schema', 0))`.execute(
+        tx,
+      );
+    const existing = await currentSchemaTables(tx);
+    if (existing.length) {
+      if (
+        databaseDriver(tx) === "sqlite" &&
+        existing.some((t) => t.name === "schema_baseline")
+      )
+        await sql`update schema_baseline set created_at=created_at`.execute(tx);
+      // Keep the existing semantic history upgrade/rollback gates.
+      await validateBaseline(tx);
+      await reconcileSchema(tx, createCurrentStructure, schemaEvolution);
+    } else {
+      await createCurrentStructure(tx);
+      await seedSystemRows(tx);
+      await createSystemSchema(tx);
+      await recordSchemaStructure(tx, createCurrentStructure);
+    }
+  };
+  if (databaseDriver(db) === "postgres" && !db.isTransaction) {
+    // Take a fresh catalog snapshot after waiting for the schema lock. A serializable
+    // transaction would retain a snapshot from before the preceding host's upgrade.
+    await db
+      .transaction()
+      .setIsolationLevel("read committed")
+      .execute(async (tx) => {
+        registerDriver(tx as unknown as DB, "postgres");
+        inheritDatabaseRuntimeScope(db as DB, tx);
+        await run(tx);
+      });
+  } else await transact(db as DB, run);
 }
 
 async function createMobileSchema(db: Kysely<any>) {

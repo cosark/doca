@@ -16,7 +16,7 @@ export function registerTickets(
       status?: string;
       onlyMine?: boolean;
       resourceId?: string;
-      resourceKind?: "document" | "library";
+      resourceKind?: "document" | "library" | "folder";
       offset?: number;
     };
   }>(
@@ -38,7 +38,7 @@ export function registerTickets(
             onlyMine: Type.Optional(Type.Boolean()),
             resourceId: Type.Optional(uuid),
             resourceKind: Type.Optional(
-              Type.Union([Type.Literal("document"), Type.Literal("library")]),
+              Type.Union([Type.Literal("document"), Type.Literal("library"), Type.Literal("folder")]),
             ),
             offset: Type.Optional(
               Type.Integer({ minimum: 0, maximum: 100000 }),

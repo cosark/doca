@@ -3503,6 +3503,7 @@ export const en = {
   "ticket.applicant": "Requester",
   "ticket.requestedRole": "Requested access",
   "ticket.grantedRole": "Access granted",
+  "ticket.directGrant": "Direct permission grant",
   "ticket.inviteScope": "Invite scope",
   "ticket.resourceKind": "Item type",
   "ticket.resourceId": "Item ID",

@@ -355,7 +355,7 @@ it("rejects the 0.1.9 baseline and missing credential tables without repairing o
     .set({ id: "doca-2026-10-03-storage-v1" })
     .where("id", "=", CURRENT_SCHEMA_BASELINE)
     .execute();
-  await expect(createSchema(db)).rejects.toThrow("baseline is not supported");
+  await expect(createSchema(db)).rejects.toThrow("compatibility generation is not supported");
   expect((await a.get(created.id))?.value).toBe("preserve");
   await db
     .updateTable("schema_baseline")
@@ -363,7 +363,7 @@ it("rejects the 0.1.9 baseline and missing credential tables without repairing o
     .where("id", "=", "doca-2026-10-03-storage-v1")
     .execute();
   await db.schema.dropTable("plugin_credentials").execute();
-  await expect(createSchema(db)).rejects.toThrow("incomplete or unsupported");
+  await expect(createSchema(db)).rejects.toThrow("schema changes require review");
   expect(
     (await currentSchemaTables(db)).some(
       (t) => t.name === "plugin_credentials",

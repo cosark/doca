@@ -4,7 +4,7 @@
 
 当前基线为 `doca-2026-10-09-history-storage-v1`。[create-schema.ts](../packages/db/src/create-schema.ts) 定义建表、索引、外键和检查约束；[schema.ts](../packages/db/src/schema.ts) 定义 Kysely 类型；[connection.ts](../packages/db/src/connection.ts) 管理连接；[transactions.ts](../packages/db/src/transactions.ts) 管理事务和冲突重试。
 
-空数据库按当前结构初始化，启动时校验基线及必需的存储、凭证结构。正常启动拒绝旧基线，不自动迁移或转换；仅上一基线可按[发行要求](releases/0.1.15.zh-CN.md)显式离线升级，保留原数据、文件和配置。已有 document_templates 表保留，不提供原 CRUD，也不自动注册为资源来源，见[模板与素材](creation-resources.zh-CN.md)。这些是现有实现事实，不是新的迁移方案。
+空数据库按当前结构初始化。启动时比较最新 DDL 与已安装结构，在支持的兼容代际内自动补齐已审定的新增结构。破坏性与语义差异会在持久化修改前报告确认计划；最新已安装结构记录用于区分新增字段与原有字段丢失。见[数据库结构演进](database-schema-evolution.md)。不兼容的更早基线仍会被拒绝；仅准确上一基线可按[发行要求](releases/0.1.15.zh-CN.md)显式离线升级。保留原数据、文件和配置。已有 document_templates 表保留，不提供原 CRUD，也不自动注册为资源来源，见[模板与素材](creation-resources.zh-CN.md)。
 
 ## 连接、初始化与备份
 
@@ -59,7 +59,7 @@ AI 会话分别保存用户主动提及、用户明确批准和展示/历史关�
 
 | 表 | 字段 |
 | --- | --- |
-| `schema_baseline` | `id`, `created_at` |
+| `schema_baseline` | `id`, `created_at`, `structure_json` |
 | `file_operation_receipts` | `plugin_id`, `user_id`, `operation`, `operation_key`, `request_hash`, `status`, `result`, `object_id`, `profile_id`, `object_key`, `cleanup_at`, `created_at` |
 | `ai_session_resources` | `session_id`, `kind`, `resource_id`, `title`, `href`, `touched_at` |
 | `ai_sessions` | `approved_resource_ids`, `mentioned_resource_ids`, `id`, `user_id`, `title`, `model_id`, `resource_ids`, `archived`, `revision`, `created_at`, `updated_at` |
@@ -119,7 +119,9 @@ AI 会话分别保存用户主动提及、用户明确批准和展示/历史关�
 | `folder_entries` | `folder_id`, `user_id`, `state`, `updated_at` |
 | `file_folders` | `storage_namespace`, `id`, `owner_id`, `parent_id`, `name`, `version`, `created_at`, `updated_at`, `deleted_at`, `delete_batch` |
 | `file_folder_shares` | `folder_id`, `user_id`, `role`, `version`, `created_at`, `updated_at` |
-| `file_folder_share_links` | `folder_id`, `token`, `token_hash`, `role`, `enabled`, `created_by`, `created_at`, `updated_at` |
+| `file_folder_share_links` | `folder_id`, `token`, `token_hash`, `role`, `enabled`, `created_by`, `created_at`, `updated_at`, `max_members`, `expires_at`, `revision` |
+| `file_folder_link_members` | `folder_id`, `token_hash`, `user_id`, `created_at` |
+| `file_folder_invitations` | `id`, `folder_id`, `user_id`, `role`, `state`, `invited_by`, `message`, `created_at`, `updated_at` |
 | `file_items` | `storage_namespace`, `id`, `owner_id`, `parent_type`, `parent_id`, `storage_object_id`, `name`, `mime`, `size`, `metadata`, `ai_description_override`, `locked`, `version`, `created_at`, `updated_at`, `deleted_at`, `delete_batch` |
 | `file_bindings` | `id`, `file_id`, `owner_plugin`, `owner_type`, `owner_id`, `role`, `created_at` |
 | `file_recognition_settings` | `id`, `config`, `revision` |

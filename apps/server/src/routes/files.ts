@@ -27,7 +27,7 @@ import { createHash, randomBytes, randomUUID } from "node:crypto";
 import { Type } from "@sinclair/typebox";
 import type { FastifyInstance, FastifyRequest } from "fastify";
 import { authorize } from "@core/modules/access/queries.js";
-import { canChangeMemberRole, type Role } from "@core/modules/access/roles.js";
+import { createFolderSharing } from "@core/modules/access/folder-sharing.js";
 import type { Actor } from "@core/modules/identity/passwords.js";
 import { AppError, fail } from "@core/shared/errors.js";
 import { isRetiredKnowledgeSessionFile, knowledgeFolderKind, knowledgeFileLocation, projectKnowledgeSessionFiles, readKnowledgeSessionFolder, requireKnowledgeFolder } from "@core/modules/knowledge/file-folders.js";
@@ -79,14 +79,6 @@ const parentType = Type.Union([
   Type.Literal("document"),
 ]);
 type ParentType = "system" | "folder" | "document";
-const folderAclRole = (role: "owner" | "admin" | "reader" | undefined): Role =>
-  role === "owner"
-    ? "owner"
-    : role === "admin"
-      ? "manager"
-      : role === "reader"
-        ? "reader"
-        : "none";
 
 function cleanName(value: string, fallback = "未命名") {
   const name = value.replace(/[\x00-\x1f\x7f/\\]/g, "_").trim();
@@ -1540,85 +1532,33 @@ export function registerFiles(
     return { items };
   });
 
+  const sharing = createFolderSharing(db);
+  const folderShareRole = Type.Union([
+    Type.Literal("admin"),
+    Type.Literal("reader"),
+  ]);
   api.put<{
     Params: { id: string };
-    Body: { userId: string; role: "admin" | "reader" };
+    Body: { userId: string; role: "admin" | "reader"; message?: string };
   }>(
     "/api/v1/files/folders/:id/shares",
     {
       schema: {
         tags: ["Files"],
-        summary: "新增或调整共享文件夹成员",
+        summary: "邀请或调整共享文件夹成员",
         params: Type.Object({ id: uuid }),
-        body: Type.Object({
-          userId: Type.String({ minLength: 1, maxLength: 80 }),
-          role: Type.Union([Type.Literal("admin"), Type.Literal("reader")]),
-        }),
+        body: Type.Object(
+          {
+            userId: Type.String({ minLength: 1, maxLength: 80 }),
+            role: folderShareRole,
+            message: Type.Optional(Type.String({ maxLength: 1000 })),
+          },
+          { additionalProperties: false },
+        ),
       },
     },
-    async (req) => {
-      const actor = auth(req);
-      const access = await folderAccess(db, actor, req.params.id, 3);
-      if (access.folder.parent_id !== "shared")
-        fail(400, "只有共享文件夹的第一层目录可以设置共享");
-      const target = await db
-        .selectFrom("users")
-        .select(["id", "status"])
-        .where((eb) =>
-          eb.or([
-            eb("id", "=", req.body.userId),
-            eb("public_id", "=", req.body.userId),
-          ]),
-        )
-        .executeTakeFirst();
-      if (!target || target.status !== "active")
-        fail(404, "用户不存在或已停用");
-      if (target.id === access.folder.owner_id)
-        fail(400, "所有者不需要额外授权");
-      const now = new Date().toISOString();
-      const old = await db
-        .selectFrom("file_folder_shares")
-        .selectAll()
-        .where("folder_id", "=", req.params.id)
-        .where("user_id", "=", target.id)
-        .executeTakeFirst();
-      if (
-        !canChangeMemberRole(
-          folderAclRole(access.role),
-          folderAclRole(old?.role),
-          folderAclRole(req.body.role),
-        )
-      )
-        fail(403, "只有所有者可以调整管理员权限");
-      if (old) {
-        await db
-          .updateTable("file_folder_shares")
-          .set({
-            role: req.body.role,
-            version: old.version + 1,
-            updated_at: now,
-          })
-          .where("folder_id", "=", req.params.id)
-          .where("user_id", "=", target.id)
-          .where("version", "=", old.version)
-          .executeTakeFirstOrThrow();
-      } else {
-        await db
-          .insertInto("file_folder_shares")
-          .values({
-            folder_id: req.params.id,
-            user_id: target.id,
-            role: req.body.role,
-            version: 1,
-            created_at: now,
-            updated_at: now,
-          })
-          .execute();
-      }
-      return { ok: true };
-    },
+    async (req) => sharing.invite(auth(req), req.params.id, req.body),
   );
-
   api.delete<{ Params: { id: string; userId: string } }>(
     "/api/v1/files/folders/:id/shares/:userId",
     {
@@ -1631,32 +1571,8 @@ export function registerFiles(
         }),
       },
     },
-    async (req) => {
-      const actor = auth(req);
-      const access = await folderAccess(db, actor, req.params.id, 3);
-      const member = await db
-        .selectFrom("file_folder_shares")
-        .select(["role"])
-        .where("folder_id", "=", req.params.id)
-        .where("user_id", "=", req.params.userId)
-        .executeTakeFirst();
-      if (
-        !canChangeMemberRole(
-          folderAclRole(access.role),
-          folderAclRole(member?.role),
-          null,
-        )
-      )
-        fail(403, "只有所有者可以调整管理员权限");
-      await db
-        .deleteFrom("file_folder_shares")
-        .where("folder_id", "=", req.params.id)
-        .where("user_id", "=", req.params.userId)
-        .execute();
-      return { ok: true };
-    },
+    async (req) => sharing.remove(auth(req), req.params.id, req.params.userId),
   );
-
   api.get<{ Params: { id: string } }>(
     "/api/v1/files/folders/:id/share-link",
     {
@@ -1666,37 +1582,18 @@ export function registerFiles(
         params: Type.Object({ id: uuid }),
       },
     },
-    async (req) => {
-      const actor = auth(req);
-      const access = await folderAccess(db, actor, req.params.id, 3);
-      if (access.folder.parent_id !== "shared")
-        fail(400, "只有共享文件夹根目录可以创建分享链接");
-      const row = await db
-        .selectFrom("file_folder_share_links")
-        .selectAll()
-        .where("folder_id", "=", req.params.id)
-        .executeTakeFirst();
-      return row
-        ? {
-            enabled: !!row.enabled,
-            role: row.role,
-            token: row.token,
-            url: `#/shared-files/join?token=${row.token}`,
-            isOwner: access.role === "owner",
-          }
-        : {
-            enabled: false,
-            role: "reader",
-            token: null,
-            url: null,
-            isOwner: access.role === "owner",
-          };
-    },
+    async (req) => sharing.linkInfo(auth(req), req.params.id),
   );
-
   api.put<{
     Params: { id: string };
-    Body: { enabled: boolean; role: "admin" | "reader"; rotate?: boolean };
+    Body: {
+      enabled: boolean;
+      role: "admin" | "reader";
+      rotate?: boolean;
+      maxMembers?: number | null;
+      expiresAt?: string | null;
+      revision?: number | null;
+    };
   }>(
     "/api/v1/files/folders/:id/share-link",
     {
@@ -1704,111 +1601,52 @@ export function registerFiles(
         tags: ["Files"],
         summary: "设置共享文件夹分享链接",
         params: Type.Object({ id: uuid }),
-        body: Type.Object({
-          enabled: Type.Boolean(),
-          role: Type.Union([Type.Literal("admin"), Type.Literal("reader")]),
-          rotate: Type.Optional(Type.Boolean()),
-        }),
+        body: Type.Object(
+          {
+            enabled: Type.Boolean(),
+            role: folderShareRole,
+            rotate: Type.Optional(Type.Boolean()),
+            maxMembers: Type.Optional(
+              Type.Unsafe<number | null>({
+                type: ["integer", "null"],
+                minimum: 1,
+              }),
+            ),
+            expiresAt: Type.Optional(
+              Type.Unsafe<string | null>({
+                type: ["string", "null"],
+                format: "date-time",
+              }),
+            ),
+            revision: Type.Optional(
+              Type.Unsafe<number | null>({
+                type: ["integer", "null"],
+                minimum: 1,
+              }),
+            ),
+          },
+          { additionalProperties: false },
+        ),
       },
     },
-    async (req) => {
-      const actor = auth(req);
-      const access = await folderAccess(db, actor, req.params.id, 3);
-      if (access.folder.parent_id !== "shared")
-        fail(400, "只有共享文件夹根目录可以创建分享链接");
-      if (req.body.role === "admin" && access.role !== "owner")
-        fail(403, "只有所有者可以创建管理员分享链接");
-      const old = await db
-        .selectFrom("file_folder_share_links")
-        .selectAll()
-        .where("folder_id", "=", req.params.id)
-        .executeTakeFirst();
-      const token =
-        !old || req.body.rotate
-          ? randomBytes(32).toString("base64url")
-          : old.token;
-      const now = new Date().toISOString();
-      const row: Schema["file_folder_share_links"] = {
-        folder_id: req.params.id,
-        token,
-        token_hash: createHash("sha256").update(token).digest("hex"),
-        role: req.body.role,
-        enabled: Number(req.body.enabled),
-        created_by: old?.created_by ?? actor.id,
-        created_at: old?.created_at ?? now,
-        updated_at: now,
-      };
-      await db
-        .insertInto("file_folder_share_links")
-        .values(row)
-        .onConflict((oc) => oc.column("folder_id").doUpdateSet(row))
-        .execute();
-      return {
-        enabled: !!row.enabled,
-        role: row.role,
-        token: row.token,
-        url: `#/shared-files/join?token=${row.token}`,
-        isOwner: access.role === "owner",
-      };
-    },
+    async (req) => sharing.setLink(auth(req), req.params.id, req.body),
   );
-
-  api.post<{ Body: { token: string } }>(
+  api.post<{ Body: { token: string; accept?: boolean } }>(
     "/api/v1/files/share/redeem",
     {
       schema: {
         tags: ["Files"],
         summary: "加入共享文件夹",
-        body: Type.Object({
-          token: Type.String({ minLength: 20, maxLength: 100 }),
-        }),
+        body: Type.Object(
+          {
+            token: Type.String({ minLength: 20, maxLength: 100 }),
+            accept: Type.Optional(Type.Boolean()),
+          },
+          { additionalProperties: false },
+        ),
       },
     },
-    async (req) => {
-      const actor = auth(req);
-      const hash = createHash("sha256").update(req.body.token).digest("hex");
-      const link = await db
-        .selectFrom("file_folder_share_links")
-        .selectAll()
-        .where("token_hash", "=", hash)
-        .where("enabled", "=", 1)
-        .executeTakeFirst();
-      if (!link) fail(404, "分享链接不存在或已停用");
-      const folder = await db
-        .selectFrom("file_folders")
-        .selectAll()
-        .where("id", "=", link.folder_id)
-        .where("parent_id", "=", "shared")
-        .where("deleted_at", "is", null)
-        .executeTakeFirst();
-      if (!folder) fail(404, "共享文件夹不存在");
-      if (folder.owner_id !== actor.id) {
-        const old = await db
-          .selectFrom("file_folder_shares")
-          .selectAll()
-          .where("folder_id", "=", folder.id)
-          .where("user_id", "=", actor.id)
-          .executeTakeFirst();
-        const role = old?.role === "admin" ? "admin" : link.role;
-        const now = new Date().toISOString();
-        const row: Schema["file_folder_shares"] = {
-          folder_id: folder.id,
-          user_id: actor.id,
-          role,
-          version: (old?.version ?? 0) + 1,
-          created_at: old?.created_at ?? now,
-          updated_at: now,
-        };
-        await db
-          .insertInto("file_folder_shares")
-          .values(row)
-          .onConflict((oc) =>
-            oc.columns(["folder_id", "user_id"]).doUpdateSet(row),
-          )
-          .execute();
-      }
-      return { id: folder.id, name: folder.name };
-    },
+    async (req) => sharing.redeem(auth(req), req.body.token, req.body.accept),
   );
 
   api.post<{

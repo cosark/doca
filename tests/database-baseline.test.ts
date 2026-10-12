@@ -42,7 +42,7 @@ describe("database baseline", () => {
     foreign.close();
 
     await expect(openDatabase({ driver: "sqlite", path })).rejects.toThrow(
-      "create a new database",
+      "no recognized compatibility generation",
     );
   });
 
@@ -70,7 +70,7 @@ describe("database baseline", () => {
     original.close();
 
     await expect(openDatabase({ driver: "sqlite", path })).rejects.toThrow(
-      "Database baseline is not supported",
+      "compatibility generation is not supported",
     );
     const retained = new Sqlite(path, { readonly: true });
     try {

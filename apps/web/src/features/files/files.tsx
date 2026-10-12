@@ -3353,6 +3353,7 @@ export function SharedFoldersPage() {
   const [creating, setCreating] = useState(false);
   const [draftName, setDraftName] = useState(t("fileManager.newSharedFolder"));
   const [saving, setSaving] = useState(false);
+  const [invitation, setInvitation] = useState<{ id: string; name: string; role: string } | null>(null);
 
   async function loadSharedFolders() {
     setLoading(true);
@@ -3377,13 +3378,15 @@ export function SharedFoldersPage() {
       return;
     }
     let active = true;
+    setInvitation(null);
     setLoading(true);
     setError("");
-    void api<{ id: string; name: string }>("/files/share/redeem", "POST", {
+    void api<{ id: string; name: string; pending?: boolean; role: string }>("/files/share/redeem", "POST", {
       token,
     })
       .then((folder) => {
         if (!active) return;
+        if (folder.pending) { setInvitation(folder); setLoading(false); return; }
         window.location.hash = `/shared-files/${folder.id}?name=${encodeURIComponent(folder.name)}`;
       })
       .catch((e) => {
@@ -3418,6 +3421,16 @@ export function SharedFoldersPage() {
     }
   }
 
+  async function acceptLink() {
+    if (!token || saving) return;
+    setSaving(true); setError("");
+    try {
+      const folder = await api<{ id: string; name: string }>("/files/share/redeem", "POST", { token, accept: true });
+      window.location.hash = `/shared-files/${folder.id}?name=${encodeURIComponent(folder.name)}`;
+    } catch (error) { setError((error as Error).message); }
+    finally { setSaving(false); }
+  }
+
   const displayed = items.filter(
     (x) =>
       tab === "all" ||
@@ -3431,7 +3444,11 @@ export function SharedFoldersPage() {
 
   return (
     <section className="shared-folders-page">
-
+      {invitation && <section className="permissions-section" role="dialog" aria-label={t("ticket.invitation")}>
+        <h2>{invitation.name}</h2><p>{t("permissionsUi.grant")}: {invitation.role === "manager" ? t("role.manager") : t("role.reader")}</p>
+        <button className="primary" disabled={saving} onClick={() => void acceptLink()}>{t("ticket.accept")}</button>
+        <button disabled={saving} onClick={() => { window.location.hash = "/shared-files"; }}>{t("common.cancel")}</button>
+      </section>}
       <header className="shared-folders-header">
         <button
           className="primary"
