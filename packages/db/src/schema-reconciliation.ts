@@ -166,12 +166,17 @@ async function postgresCatalog(
       signature: JSON.stringify([row.type, row.nullable, row.default_value]),
     });
   }
+  // PostgreSQL 18 also lists NOT NULL in pg_constraint. Nullability is already
+  // compared in each column signature; including it here would misclassify
+  // approved required-column additions as table-constraint changes.
   const constraints = await sql<{
     table_name: string;
     definition: string;
   }>`select c.relname as table_name,pg_get_constraintdef(k.oid) as definition
     from pg_constraint k join pg_class c on c.oid=k.conrelid join pg_namespace n on n.oid=c.relnamespace
-    where n.nspname=current_schema() order by c.relname,definition`.execute(db);
+    where n.nspname=current_schema() and k.contype <> 'n' order by c.relname,definition`.execute(
+    db,
+  );
   for (const row of constraints.rows)
     catalog.get(row.table_name)?.constraints.push(normalize(row.definition));
   const indexes = await sql<{
