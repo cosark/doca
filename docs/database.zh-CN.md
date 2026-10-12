@@ -4,7 +4,7 @@
 
 当前基线为 `doca-2026-10-09-history-storage-v1`。[create-schema.ts](../packages/db/src/create-schema.ts) 定义建表、索引、外键和检查约束；[schema.ts](../packages/db/src/schema.ts) 定义 Kysely 类型；[connection.ts](../packages/db/src/connection.ts) 管理连接；[transactions.ts](../packages/db/src/transactions.ts) 管理事务和冲突重试。
 
-空数据库按当前结构初始化。启动时比较最新 DDL 与已安装结构，在支持的兼容代际内自动补齐已审定的新增结构。破坏性与语义差异会在持久化修改前报告确认计划；最新已安装结构记录用于区分新增字段与原有字段丢失。见[数据库结构演进](database-schema-evolution.md)。不兼容的更早基线仍会被拒绝；仅准确上一基线可按[发行要求](releases/0.1.15.zh-CN.md)显式离线升级。保留原数据、文件和配置。已有 document_templates 表保留，不提供原 CRUD，也不自动注册为资源来源，见[模板与素材](creation-resources.zh-CN.md)。
+空数据库按当前结构初始化。启动时比较最新 DDL 与已安装结构，在支持的兼容代际内自动补齐已审定的新增结构。破坏性与语义差异会在持久化修改前报告确认计划；最新已安装结构记录用于区分新增字段与原有字段丢失。[数据库升级规范](database-schema-evolution.zh-CN.md) 是后续数据库开发与发布必须遵守的项目约定。不兼容的更早基线仍会被拒绝；仅准确上一基线可按[发行要求](releases/0.1.15.zh-CN.md)显式离线升级。保留原数据、文件和配置。已有 document_templates 表保留，不提供原 CRUD，也不自动注册为资源来源，见[模板与素材](creation-resources.zh-CN.md)。
 
 ## 连接、初始化与备份
 

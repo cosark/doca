@@ -66,8 +66,8 @@ unset DOCA_RESET_ADMIN_LOGIN DOCA_RESET_ADMIN_PASSWORD
 | DOCA_PORT         | 39120                  | API/发布服务端口                    |
 | DOCA_WEB_PORT     | 39130                  | 开发前端端口                        |
 | DOCA_DATABASE     | sqlite                 | sqlite/postgres                     |
-| DOCA_SQLITE_PATH  | ./data/v1/doca.db      | 新版独立数据库                      |
-| DOCA_DATABASE_URL | 无                     | PostgreSQL连接串，专用新数据库      |
+| DOCA_SQLITE_PATH  | ./data/v1/doca.db      | 配置的 SQLite 数据库路径            |
+| DOCA_DATABASE_URL | 无                     | 配置的 PostgreSQL 数据库连接串      |
 | NODE_ENV          | 未设置                 | production强制HTTPS Origin并禁止dev |
 | DOCA_ASSET_BASE   | 空                     | 构建资源的 HTTPS 前缀；空则从本机 `/assets` 提供 |
 
@@ -124,12 +124,18 @@ kubectl logs -f deploy/doca --tail=200
 
 ## 数据保护
 
-- 数据库按当前基线从零创建，默认路径为data/v1/doca.db。
+- 空数据库按最新目标结构创建；受支持的已有库在启动时补齐已审定的新增项。SQLite 默认路径为 `data/v1/doca.db`。
 - 静态目录仅apps/web/dist，不公开.archive、data、.env。
-- 启动自动创建当前 schema，建表失败不监听；正式部署前先备份并验证恢复。
+- 启动对比已安装结构与最新目标；需要确认或验证失败时不监听，升级事务整体回滚。正式部署前先备份并验证恢复。
 - SQLite离线备份应停止全部写入进程后复制完整目录。在线需backup API，不能只复制运行中的主db而漏掉WAL。
 - PostgreSQL用原生备份/恢复流程。数据库灾备由部署运维负责。
 - SIGINT/SIGTERM关闭HTTP、Vite和数据库。生产使用进程管理器重启。
+
+## 数据库改动
+
+修改核心结构或持久化格式前，先阅读并遵守[数据库升级规范](database-schema-evolution.zh-CN.md)。这是后续统一执行的项目约定：新库与升级共用最新 DDL，`schemaEvolution` 声明已确认的新增项，普通增量变化不调整兼容代际。历史字段值、语义及破坏性变化，按 [AGENTS.md](../AGENTS.md) 先确认具体数据保留、验证和恢复方案。
+
+数据库改动须验证隔离 SQLite 和 PostgreSQL 17、18 旧结构，覆盖已有行保留、默认值、重复与并发启动、待确认差异不发生部分写入。发布验收还须升级受影响的实际已发行旧版本创建的数据库。PostgreSQL CI 矩阵位于 `.github/workflows/database-upgrade.yml`，与默认测试互补；已确认的行为或支持范围变化须同步规范和升级说明。
 
 ## 验证
 

@@ -27,7 +27,7 @@ Doca is a document and knowledge workspace for individuals and small teams. This
 
 ## Development and extensions
 
-[Development setup](development.md) · [Architecture](architecture.md) · [Editor integration](editor-integration.md) · [Collaboration](collaboration.md) · [Internationalization](i18n.md) · [Plugin development](plugin-development.md) · [Plugin deployment](plugin-deployment.md)
+[Development setup](development.md) · [Database upgrade contract](database-schema-evolution.md) · [Architecture](architecture.md) · [Editor integration](editor-integration.md) · [Collaboration](collaboration.md) · [Internationalization](i18n.md) · [Plugin development](plugin-development.md) · [Plugin deployment](plugin-deployment.md)
 
 ## Reference and project records
 
