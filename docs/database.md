@@ -4,7 +4,7 @@
 
 The current baseline is `doca-2026-10-09-history-storage-v1`. [create-schema.ts](../packages/db/src/create-schema.ts) defines tables, indexes, foreign keys, and checks; [schema.ts](../packages/db/src/schema.ts) defines Kysely types; [connection.ts](../packages/db/src/connection.ts) opens connections; [transactions.ts](../packages/db/src/transactions.ts) manages transactions and conflict retries.
 
-Empty databases are initialized with the current schema. Startup validates the baseline and required storage/credential shapes and rejects earlier baselines without automatic migration. Only the exact preceding baseline supports the explicit offline history-storage upgrade in the [release requirements](releases/0.1.15.md); preserve data, files and configuration. The existing document_templates table is retained without CRUD or automatic registration as a resource provider; see [templates and materials](creation-resources.md). These are current implementation facts, not a new migration plan.
+Empty databases are initialized with the current schema. Startup compares current DDL with the installed structure and automatically applies reviewed additions within the supported compatibility generation. Destructive and semantic differences produce a review plan before persistent changes; the latest installed footprint distinguishes additions from lost existing fields. See [database structure evolution](database-schema-evolution.md). Earlier incompatible baselines remain gated; only the exact preceding baseline supports the explicit offline history-storage upgrade in the [release requirements](releases/0.1.15.md). Preserve data, files and configuration. The existing document_templates table is retained without CRUD or automatic registration as a resource provider; see [templates and materials](creation-resources.md).
 
 ## Connections, initialization, and backup
 
@@ -59,7 +59,7 @@ The inventory below reflects the current Schema interface. Field names are liste
 
 | Table | Fields |
 | --- | --- |
-| `schema_baseline` | `id`, `created_at` |
+| `schema_baseline` | `id`, `created_at`, `structure_json` |
 | `file_operation_receipts` | `plugin_id`, `user_id`, `operation`, `operation_key`, `request_hash`, `status`, `result`, `object_id`, `profile_id`, `object_key`, `cleanup_at`, `created_at` |
 | `ai_session_resources` | `session_id`, `kind`, `resource_id`, `title`, `href`, `touched_at` |
 | `ai_sessions` | `approved_resource_ids`, `mentioned_resource_ids`, `id`, `user_id`, `title`, `model_id`, `resource_ids`, `archived`, `revision`, `created_at`, `updated_at` |
@@ -119,7 +119,9 @@ The inventory below reflects the current Schema interface. Field names are liste
 | `folder_entries` | `folder_id`, `user_id`, `state`, `updated_at` |
 | `file_folders` | `storage_namespace`, `id`, `owner_id`, `parent_id`, `name`, `version`, `created_at`, `updated_at`, `deleted_at`, `delete_batch` |
 | `file_folder_shares` | `folder_id`, `user_id`, `role`, `version`, `created_at`, `updated_at` |
-| `file_folder_share_links` | `folder_id`, `token`, `token_hash`, `role`, `enabled`, `created_by`, `created_at`, `updated_at` |
+| `file_folder_share_links` | `folder_id`, `token`, `token_hash`, `role`, `enabled`, `created_by`, `created_at`, `updated_at`, `max_members`, `expires_at`, `revision` |
+| `file_folder_link_members` | `folder_id`, `token_hash`, `user_id`, `created_at` |
+| `file_folder_invitations` | `id`, `folder_id`, `user_id`, `role`, `state`, `invited_by`, `message`, `created_at`, `updated_at` |
 | `file_items` | `storage_namespace`, `id`, `owner_id`, `parent_type`, `parent_id`, `storage_object_id`, `name`, `mime`, `size`, `metadata`, `ai_description_override`, `locked`, `version`, `created_at`, `updated_at`, `deleted_at`, `delete_batch` |
 | `file_bindings` | `id`, `file_id`, `owner_plugin`, `owner_type`, `owner_id`, `role`, `created_at` |
 | `file_recognition_settings` | `id`, `config`, `revision` |

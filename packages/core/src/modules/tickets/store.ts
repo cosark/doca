@@ -37,7 +37,7 @@ export async function ticketNotice(
         id,
         user_id: userId,
         actor_id: actorId,
-        resource_id: t.resource_id,
+        resource_id: t.resource_kind === "folder" ? null : t.resource_id,
         ticket_id: t.id,
         type,
         read_at: null,
@@ -87,7 +87,7 @@ export async function syncTicket(
     .where("source_key", "=", input.source_key)
     .executeTakeFirst();
   const now = new Date().toISOString();
-  const resourceKind = input.resource_id
+  const resourceKind = input.resource_kind === "folder" ? "folder" : input.resource_id
     ? (
         await db
           .selectFrom("resources")
@@ -98,7 +98,7 @@ export async function syncTicket(
     : undefined;
   const hidden_for_user_id = old
     ? old.hidden_for_user_id
-    : (await distributionPolicy(db, resourceKind)).ticketReviewers[input.kind]
+    : (await distributionPolicy(db, resourceKind === "folder" ? undefined : resourceKind)).ticketReviewers[input.kind]
       ? null
       : input.user_id;
   const t: Ticket = {
@@ -149,7 +149,9 @@ export async function syncTicket(
       t.status === "pending"
         ? assigned
         : [t.user_id, t.initiator_id, ...assigned],
-      t.kind === "access"
+      t.resource_kind === "folder" && JSON.parse(t.operation_json!).grantMode === "direct"
+        ? "resource.permissions_changed"
+        : t.kind === "access"
         ? "access." + (t.status === "pending" ? "requested" : t.status)
         : t.kind === "invitation"
           ? t.status === "pending"

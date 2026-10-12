@@ -3269,6 +3269,7 @@ export const zh = {
   "ticket.applicant": "申请人",
   "ticket.requestedRole": "申请权限",
   "ticket.grantedRole": "实际授权",
+  "ticket.directGrant": "直接授权",
   "ticket.inviteScope": "邀请范围",
   "ticket.resourceKind": "资源类型",
   "ticket.resourceId": "资源 ID",

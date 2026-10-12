@@ -429,6 +429,79 @@ it("lists shared folders separately and manages their share link", async () => {
   expect(readBack.json().token).toBe(link.json().token);
 });
 
+async function fileTestUser(login: string) {
+  const admin = await db.selectFrom("users").selectAll().where("login", "=", "admin").executeTakeFirstOrThrow();
+  return createUser(db, { login, displayName: login, password }, { actor: { id: admin.id, display_name: admin.display_name, admin: 1 } });
+}
+async function signInFileUser(login: string) {
+  const response = await app.inject({ method: "POST", url: "/api/v1/auth/login", headers: { host: "localhost:39130", origin }, payload: { login, password } });
+  expect(response.statusCode, response.body).toBe(200);
+  cookie = String(response.headers["set-cookie"]).split(";")[0]!;
+}
+
+it("enforces folder link limits, supports custom and unlimited values, and does not count direct members", async () => {
+  const bob = await fileTestUser("bob"), charlie = await fileTestUser("charlie"), ownerCookie = cookie;
+  const folder = (await request("POST", "/files/folders", { name: "限额资料", parentId: "shared" })).json();
+  const link = (await request("PUT", `/files/folders/${folder.id}/share-link`, { enabled: true, role: "reader" })).json();
+  expect(link).toMatchObject({ maxMembers: 1, memberCount: 0 });
+  expect((await request("PUT", `/files/folders/${folder.id}/share-link`, { enabled: true, role: "reader", maxMembers: 0 })).statusCode).toBe(400);
+  await signInFileUser("bob");
+  expect((await request("POST", "/files/share/redeem", { token: link.token })).statusCode).toBe(200);
+  expect((await request("POST", "/files/share/redeem", { token: link.token })).statusCode).toBe(200);
+  await signInFileUser("charlie");
+  expect((await request("POST", "/files/share/redeem", { token: link.token })).statusCode).toBe(403);
+  cookie = ownerCookie;
+  expect((await request("GET", `/files/folders/${folder.id}/share-link`)).json().memberCount).toBe(1);
+  expect((await request("PUT", `/files/folders/${folder.id}/shares`, { userId: charlie.id, role: "reader" })).statusCode).toBe(200);
+  await signInFileUser("charlie");
+  expect((await request("POST", "/files/share/redeem", { token: link.token })).statusCode).toBe(200);
+  cookie = ownerCookie;
+  expect((await request("GET", `/files/folders/${folder.id}/share-link`)).json().memberCount).toBe(1);
+  expect((await request("PUT", `/files/folders/${folder.id}/share-link`, { enabled: true, role: "reader", maxMembers: 17 })).json().maxMembers).toBe(17);
+  const rotated = (await request("PUT", `/files/folders/${folder.id}/share-link`, { enabled: true, role: "reader", rotate: true, maxMembers: null })).json();
+  expect(rotated).toMatchObject({ maxMembers: null, memberCount: 0 });
+  expect(rotated.token).not.toBe(link.token);
+  expect(await db.selectFrom("file_folder_shares").select("user_id").where("folder_id", "=", folder.id).execute()).toEqual(expect.arrayContaining([{ user_id: bob.id }, { user_id: charlie.id }]));
+  await signInFileUser("bob");
+  expect((await request("POST", "/files/share/redeem", { token: link.token })).statusCode).toBe(404);
+});
+
+it("creates visible folder invitation tickets and notifications and grants access only after consent", async () => {
+  const bob = await fileTestUser("bob"), ownerCookie = cookie;
+  await db.updateTable("distribution_settings").set({ config: JSON.stringify({ grantMode: "invite", ticketReviewers: { invitation: true } }) }).execute();
+  const folder = (await request("POST", "/files/folders", { name: "受邀资料", parentId: "shared" })).json();
+  const invited = await request("PUT", `/files/folders/${folder.id}/shares`, { userId: bob.id, role: "reader", message: "请查收" });
+  expect(invited.statusCode, invited.body).toBe(200);
+  expect(invited.json()).toMatchObject({ pending: true });
+  expect(await db.selectFrom("file_folder_shares").selectAll().where("folder_id", "=", folder.id).execute()).toEqual([]);
+  await signInFileUser("bob");
+  const notifications = await request("GET", "/notifications");
+  expect(notifications.statusCode, notifications.body).toBe(200);
+  expect(notifications.json().items).toEqual(expect.arrayContaining([expect.objectContaining({ type: "resource.invited", ticket_id: invited.json().ticketId })]));
+  const mine = await request("GET", "/tickets?onlyMine=true&resourceKind=folder");
+  expect(mine.statusCode, mine.body).toBe(200);
+  expect(mine.json().items).toEqual(expect.arrayContaining([expect.objectContaining({ id: invited.json().ticketId, status: "pending", actions: expect.arrayContaining(["accept", "reject"]) })]));
+  const accepted = await request("POST", `/tickets/${invited.json().ticketId}/actions`, { action: "accept" });
+  expect(accepted.statusCode, accepted.body).toBe(200);
+  expect(accepted.json()).toMatchObject({ status: "completed", resource: { title: folder.name, kind: "folder", url: `#/shared-files/${folder.id}` } });
+  expect((await request("GET", "/files/shared-folders")).json().items).toEqual(expect.arrayContaining([expect.objectContaining({ id: folder.id, role: "reader" })]));
+  cookie = ownerCookie;
+  expect((await request("GET", "/notifications")).json().items).toEqual(expect.arrayContaining([expect.objectContaining({ type: "invitation.accepted", ticket_id: invited.json().ticketId })]));
+});
+
+it("records direct folder grants as completed invitation tickets and notifies the recipient", async () => {
+  const bob = await fileTestUser("bob");
+  const folder = (await request("POST", "/files/folders", { name: "直接资料", parentId: "shared" })).json();
+  const invitation = await request("PUT", `/files/folders/${folder.id}/shares`, { userId: bob.id, role: "reader" });
+  expect(invitation.statusCode, invitation.body).toBe(200);
+  expect(invitation.json()).toMatchObject({ pending: false });
+  await signInFileUser("bob");
+  expect((await request("GET", `/tickets/${invitation.json().ticketId}`)).json()).toMatchObject({ status: "completed", resourceKind: "folder", resource: { title: folder.name } });
+  const notice = (await request("GET", "/notifications")).json();
+  expect(notice.unread).toBe(1);
+  expect(notice.items).toEqual(expect.arrayContaining([expect.objectContaining({ ticket_id: invitation.json().ticketId, type: "resource.permissions_changed", title: folder.name })]));
+});
+
 it("recursively copies folders into a shared destination without duplicating storage", async () => {
   const source = await request("POST", "/files/folders", {
     name: "待共享资料",

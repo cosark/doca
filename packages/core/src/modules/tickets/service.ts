@@ -4,7 +4,9 @@ import { sql } from "kysely";
 import type { DB } from "../../../../db/src/index.js";
 import { transact } from "../../../../db/src/transactions.js";
 import type { Actor } from "../identity/passwords.js";
-import { fail } from "../../shared/errors.js";
+import { AppError, fail } from "../../shared/errors.js";
+import { authorizeFileFolder } from "../access/file-access.js";
+import { createFolderSharing } from "../access/folder-sharing.js";
 import { accessContext, accessibleQuery } from "../access/queries.js";
 import { isResourceOwnerLike, permission } from "../access/policy.js";
 import { createAccessRequests } from "../access/requests.js";
@@ -19,7 +21,11 @@ export const ticketStatus = (t: Ticket) =>
       ? "completed"
       : t.status;
 const accessPredicate = (actor: Actor) =>
-  sql<boolean>`(tickets.user_id = ${actor.id} or tickets.initiator_id = ${actor.id} or ${accessibleQuery(sql.ref("tickets.resource_id"), actor, 1)})`;
+  sql<boolean>`(tickets.user_id = ${actor.id} or tickets.initiator_id = ${actor.id}
+    or (tickets.resource_kind <> 'folder' and ${accessibleQuery(sql.ref("tickets.resource_id"), actor, 1)})
+    or (tickets.resource_kind = 'folder' and exists(select 1 from file_folders f where f.id=tickets.resource_id and f.deleted_at is null
+      and (f.owner_id=${actor.id} or exists(select 1 from file_folder_shares s where s.folder_id=f.id and s.user_id=${actor.id})
+        or exists(select 1 from folder_publications p where p.folder_id=f.id and p.enabled=1)))))`;
 export function createTickets(db: DB) {
   async function context(actor: Actor, id: string) {
     const t = await db
@@ -29,15 +35,21 @@ export function createTickets(db: DB) {
       .where(accessPredicate(actor))
       .executeTakeFirst();
     if (!t) fail(404, "工单不存在");
-    const c = t.resource_id
+    const c = t.resource_id && t.resource_kind !== "folder"
       ? await accessContext(db, actor, [t.resource_id])
       : { resources: [], grants: [] };
     const r = c.resources.find((r) => r.id === t.resource_id);
-    const live =
+    const folder = t.resource_kind === "folder" ? await db.selectFrom("file_folders").selectAll().where("id", "=", t.resource_id!).where("parent_id", "=", "shared").where("deleted_at", "is", null).executeTakeFirst() : undefined;
+    let folderRole: "owner" | "admin" | "reader" | undefined;
+    if (folder) {
+      try { folderRole = (await authorizeFileFolder(db, actor, folder.id)).role; }
+      catch (error) { if (!(error instanceof AppError) || ![403, 404].includes(error.status)) throw error; }
+    }
+    const live = folder ? true :
       !!r &&
       !r.deleted_at &&
       !c.resources.find((x) => x.id === r.library_id)?.deleted_at;
-    const rank = live ? permission(r!, actor, c.resources, c.grants) : 0;
+    const rank = t.resource_kind === "folder" ? folderRole === "owner" ? 5 : folderRole === "admin" ? 4 : folderRole === "reader" ? 1 : 0 : live ? permission(r!, actor, c.resources, c.grants) : 0;
     const manage = rank >= 4;
     const show =
       actor.id !== t.user_id ||
@@ -55,7 +67,7 @@ export function createTickets(db: DB) {
         if (t.user_id === actor.id) actions.push("accept", "reject");
         if (
           manage &&
-          (isResourceOwnerLike(r!, actor, c.resources) ||
+          ((folder ? folder.owner_id === actor.id : isResourceOwnerLike(r!, actor, c.resources)) ||
             (actor.id === t.initiator_id && t.role !== "manager"))
         )
           actions.push("cancel");
@@ -66,10 +78,10 @@ export function createTickets(db: DB) {
       )
         actions.push("remind");
     }
-    return { t, r, rank, show, actions, resources: c.resources };
+    return { t, r, folder, rank, show, actions, resources: c.resources };
   }
   async function detail(actor: Actor, id: string) {
-    const { t, r, rank, show, actions, resources } = await context(actor, id);
+    const { t, r, folder, rank, show, actions, resources } = await context(actor, id);
     const assigned = show ? await processors(db, t) : [];
     const events = await db
       .selectFrom("ticket_events")
@@ -118,7 +130,7 @@ export function createTickets(db: DB) {
             : "resource_managers",
       resourceKind: t.resource_kind,
       resourceId: t.resource_id,
-      resource: r
+      resource: folder ? { id: folder.id, kind: "folder", title: rank > 0 ? folder.name : "关联文件夹", url: `#/shared-files/${folder.id}` } : r
         ? {
             id: r.id,
             kind: r.kind,
@@ -159,7 +171,7 @@ export function createTickets(db: DB) {
         status?: string | string[];
         onlyMine?: boolean;
         resourceId?: string;
-        resourceKind?: "document" | "library";
+        resourceKind?: "document" | "library" | "folder";
         offset?: number;
       } = {},
     ) {
@@ -181,8 +193,9 @@ export function createTickets(db: DB) {
         q = q.where(state, "=", "pending").where(
           sql<boolean>`exists(select 1 from users u where u.id=${actor.id} and u.status='active') and (
                 (tickets.kind='invitation' and tickets.user_id=${actor.id}
-                  and exists(select 1 from resources r where r.id=tickets.resource_id and r.deleted_at is null
-                    and not exists(select 1 from resources l where l.id=r.library_id and l.deleted_at is not null)))
+                  and ((tickets.resource_kind='folder' and exists(select 1 from file_folders f where f.id=tickets.resource_id and f.deleted_at is null and f.parent_id='shared'))
+                    or (tickets.resource_kind<>'folder' and exists(select 1 from resources r where r.id=tickets.resource_id and r.deleted_at is null
+                    and not exists(select 1 from resources l where l.id=r.library_id and l.deleted_at is not null)))))
                 or (tickets.kind='access' and tickets.user_id<>${actor.id}
                   and ${accessibleQuery(sql.ref("tickets.resource_id"), actor, 4)}
                   and (tickets.role<>'manager' or exists(select 1 from resources r where r.id=tickets.resource_id and r.owner_id=${actor.id})))
@@ -227,7 +240,9 @@ export function createTickets(db: DB) {
             await processors(tx, t),
             "ticket.reminded",
           );
-        } else if (t.kind === "access")
+        } else if (t.resource_kind === "folder" && t.kind === "invitation")
+          await createFolderSharing(tx).act(actor, t.source_key, action as "accept" | "reject" | "cancel", message);
+        else if (t.kind === "access")
           await createAccessRequests(tx).decide(
             actor,
             t.source_key,

@@ -47,6 +47,7 @@ export interface Schema extends KnowledgeBookTables {
   schema_baseline: {
     id: string;
     created_at: string;
+    structure_json?: string;
   };
   file_operation_receipts: {
     plugin_id: string;
@@ -178,7 +179,7 @@ export interface Schema extends KnowledgeBookTables {
     operation_json?: string;
     id: string;
     kind: "access" | "invitation";
-    resource_kind: "document" | "library";
+    resource_kind: "document" | "library" | "folder";
     source_key: string;
     hidden_for_user_id: string | null;
     resource_id: string | null;
@@ -598,6 +599,21 @@ export interface Schema extends KnowledgeBookTables {
     role: "admin" | "reader";
     enabled: number;
     created_by: string;
+    created_at: string;
+    updated_at: string;
+    max_members: number | null;
+    expires_at: string | null;
+    revision: number;
+  };
+  file_folder_link_members: { folder_id: string; token_hash: string; user_id: string; created_at: string };
+  file_folder_invitations: {
+    id: string;
+    folder_id: string;
+    user_id: string;
+    role: "admin" | "reader";
+    state: "pending" | "accepted" | "rejected" | "cancelled";
+    invited_by: string;
+    message: string;
     created_at: string;
     updated_at: string;
   };

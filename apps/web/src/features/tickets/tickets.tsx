@@ -11,7 +11,7 @@ import { useI18n } from "@web/shared/i18n.js";
 import type { MessageKey } from "@doca/i18n";
 import "@web/features/tickets/tickets.css";
 type Person = { id: string; display_name: string; public_id?: string };
-type Operation = { type?: string; role?: string; includeDescendants?: boolean };
+type Operation = { type?: string; role?: string; includeDescendants?: boolean; grantMode?: "direct" | "invite" };
 type Ticket = {
   operation: Operation;
   approvalRoles: string[];
@@ -23,7 +23,7 @@ type Ticket = {
   createdAt: string;
   updatedAt: string;
   expiresAt: string | null;
-  resourceKind: "document" | "library";
+  resourceKind: "document" | "library" | "folder";
   resourceId: string;
   processorRule: "recipient" | "resource_owner" | "resource_managers";
   resource: { id: string; kind: string; title: string; url: string } | null;
@@ -246,6 +246,7 @@ export function Tickets({
     }
   }
   const terminal = ticket && ticket.status !== "pending";
+  const steps = ticket?.operation.grantMode === "direct" ? [tr("ticket.submitted"), tr("ticket.directGrant"), tr("ticket.grantedRole")] : ticket?.steps;
   return (
     <section
       className={
@@ -284,7 +285,7 @@ export function Tickets({
               </div>
               <p className="ticket-number">{tr("ticket.number", { id: ticket.id })}</p>
               <ol className="ticket-steps">
-                {ticket.steps.map((s, i) => (
+                {steps!.map((s, i) => (
                   <li
                     key={s}
                     className={
@@ -364,7 +365,7 @@ export function Tickets({
                   <>
                     <dt>{tr("ticket.resourceKind")}</dt>
                     <dd>
-                      {ticket.resourceKind === "library" ? tr("shell.kind.library") : tr("shell.type.rich")}
+                      {ticket.resourceKind === "folder" ? tr("fileManager.folderName") : ticket.resourceKind === "library" ? tr("shell.kind.library") : tr("shell.type.rich")}
                     </dd>
                     <dt>{tr("ticket.resourceId")}</dt>
                     <dd>{ticket.resourceId}</dd>
@@ -489,6 +490,7 @@ export function Tickets({
               <option value="">{tr("ticket.allResources")}</option>
               <option value="document">{tr("shell.type.rich")}</option>
               <option value="library">{tr("shell.kind.library")}</option>
+              <option value="folder">{tr("fileManager.folderName")}</option>
             </Select>
             <Select
               aria-label={tr("ticket.filterType")}
@@ -554,7 +556,7 @@ export function Tickets({
                     {t.status === "pending"
                       ? t.steps[1]
                       : t.status === "completed"
-                        ? t.steps[2]
+                        ? t.operation.grantMode === "direct" ? tr("ticket.grantedRole") : t.steps[2]
                         : tr("ticket.ended")}
                   </span>
                   <time
