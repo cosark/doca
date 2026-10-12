@@ -19,6 +19,39 @@ Do not delete or reset existing data to bypass this requirement. Report existing
 compatibility code discovered during an audit; do not remove or migrate it without
 an agreed plan. This repository-wide rule also applies to follow-up work and agents.
 
+## Database structure evolution is the project standard
+
+Before changing core tables, columns, indexes, constraints, schema initialization,
+or persisted database formats, read and follow `docs/database-schema-evolution.md`
+(Chinese: `docs/database-schema-evolution.zh-CN.md`). This is the agreed upgrade
+mechanism for future work, not a one-release workaround. Concrete compatibility
+decisions, including historical field defaults and data conversion, still require
+the prior agreement described above.
+
+- Maintain only the latest target DDL in `createCurrentStructure` and its helpers;
+  fresh creation and startup reconciliation must use that same target. Do not
+  introduce ordinary per-release SQL migration chains or application-version
+  branches to reconstruct old schemas.
+- Declare approved new tables/columns in `schemaEvolution`. Automatically apply
+  only the additions supported by the reconciler, with explicitly agreed values
+  for existing rows. Preserve stored data, permissions and configured values.
+- Type/default/nullability/constraint changes, unique-index validation, renames,
+  removals, unknown tables and semantic conversions need an approved preservation,
+  validation and recovery plan. Startup must stop before persistent changes when
+  any difference requires review; never delete/reset data or bypass the review.
+- Keep schema inspection, accepted changes, reinspection and latest-footprint
+  recording transactional under the schema lock. A lost previously installed
+  field/table is possible data loss, not a new addition to recreate silently.
+- Treat `schema_baseline.id` as a compatibility generation. Ordinary additions
+  do not bump it; major incompatible changes and existing semantic upgrade gates
+  require explicit agreement. Do not claim arbitrary-version upgrades outside
+  the supported generation and reviewed structural differences.
+- Validate affected old schemas with retained rows on isolated SQLite and
+  PostgreSQL 17/18, including defaults, repeated/concurrent startup and rejection
+  without partial writes. Release verification must also upgrade data created by
+  an actual released old version. Update the upgrade contract and release notes
+  when the agreed behavior or verification scope changes.
+
 For Doca plugin loading, SDK exports, business-module extraction, AI usage policies,
 or permission-directory contribution work, read `docs/plugin-sdk-contract.md`
 and `docs/plugin-development.md` first. The implementation-status table distinguishes

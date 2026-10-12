@@ -27,7 +27,7 @@ Doca 是面向个人和小团队的文档与知识工作台。本套文档覆盖
 
 ## 开发与扩展
 
-[开发环境](development.zh-CN.md) · [项目架构](architecture.zh-CN.md) · [编辑器集成](editor-integration.zh-CN.md) · [实时协同](collaboration.zh-CN.md) · [国际化](i18n.zh-CN.md) · [插件开发](plugin-development.zh-CN.md) · [插件部署](plugin-deployment.zh-CN.md)
+[开发环境](development.zh-CN.md) · [数据库升级规范](database-schema-evolution.zh-CN.md) · [项目架构](architecture.zh-CN.md) · [编辑器集成](editor-integration.zh-CN.md) · [实时协同](collaboration.zh-CN.md) · [国际化](i18n.zh-CN.md) · [插件开发](plugin-development.zh-CN.md) · [插件部署](plugin-deployment.zh-CN.md)
 
 ## 技术参考与项目记录
 

@@ -67,7 +67,7 @@ The command checks that the account is an enabled administrator, updates the pas
 | DOCA_WEB_PORT | 39130 | Dev web port |
 | DOCA_DATABASE | sqlite | sqlite or postgres |
 | DOCA_SQLITE_PATH | ./data/v1/doca.db | The current database file |
-| DOCA_DATABASE_URL | none | PostgreSQL URL for a dedicated new database |
+| DOCA_DATABASE_URL | none | PostgreSQL URL for the configured database |
 | NODE_ENV | unset | production requires an HTTPS origin and disables dev |
 | DOCA_ASSET_BASE | empty | HTTPS prefix for built assets. Empty serves `/assets` locally |
 
@@ -111,12 +111,18 @@ This is a runnable development baseline, not a finished production acceptance. A
 
 ## Data protection
 
-- The database is created from the current baseline. The default path is `data/v1/doca.db`.
+- Empty databases are created from the current target; supported existing databases receive reviewed additions at startup. The default SQLite path is `data/v1/doca.db`.
 - Static files are only `apps/web/dist`. `.archive`, `data`, and `.env` are not public.
-- Startup creates the current schema. If that fails, the server does not listen. Back up and test restore before production.
+- Startup reconciles the installed structure with the current target. If review or validation fails, the server does not listen and the upgrade transaction is rolled back. Back up and test restore before production.
 - An offline SQLite backup stops every writer, then copies the whole directory. An online backup uses the backup API. Copying the main file and skipping the WAL is not a backup.
 - PostgreSQL uses its own backup and restore. Disaster recovery is the operator's job.
 - SIGINT and SIGTERM close HTTP, Vite, and the database. Production uses a process manager to restart.
+
+## Database changes
+
+Read and follow the [database upgrade contract](database-schema-evolution.md) before modifying core structure or persisted formats. This is the ongoing project standard: fresh creation and upgrades use the latest DDL, `schemaEvolution` declares agreed additions, and ordinary additions keep the compatibility generation. Historical field values and semantic/destructive changes require a concrete agreed preservation, validation and recovery plan under [AGENTS.md](../AGENTS.md).
+
+Database changes require isolated SQLite and PostgreSQL 17/18 old-schema regression, including retained rows, defaults, repeated/concurrent startup and review without partial writes. Release acceptance also upgrades a database created by the affected actual released old version. The PostgreSQL CI matrix is `.github/workflows/database-upgrade.yml`; it complements the default suite. Update the contract and upgrade notes with any agreed change in behavior or support.
 
 ## Checks
 
