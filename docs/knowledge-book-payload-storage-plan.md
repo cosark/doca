@@ -6,7 +6,7 @@ Status: The complete upgrade plan was explicitly approved on 2026-10-12. Impleme
 
 ## Scope and lossless representation
 
-The input is host 0.1.22 generation `doca-2026-10-09-history-storage-v1`, with full JSON in knowledge_book_node_runs.output, knowledge_book_runs.artifact and knowledge_book_releases.artifact. All books and retained outcomes, including trash and failures/human waits, are covered. Keep configurations, source versions, feedback, IDs, states, permissions, notifications, audit, decisions, document history, plugin data and storage configuration. Empty node output and NULL run artifact keep their existing absence meaning.
+For the existing optional lossless conversion, the input is host 0.1.22 generation `doca-2026-10-09-history-storage-v1`, with full JSON in knowledge_book_node_runs.output, knowledge_book_runs.artifact and knowledge_book_releases.artifact. All books and retained outcomes, including trash and failures/human waits, are covered. Keep configurations, source versions, feedback, IDs, states, permissions, notifications, audit, decisions, document history, plugin data and storage configuration. Empty node output and NULL run artifact keep their existing absence meaning.
 
 Externally, BookArtifact remains version 1 with the same text, IDs, anchors and provenance structure. Existing full-read APIs remain; add summary reads for polling. Existing source/model guards and the 10,000,000-JSON-character publication limit apply to the reconstructed content.
 
@@ -37,7 +37,9 @@ Only objects unreachable from live references and active upload operations may b
 
 ## Conversion gate and recovery
 
-Target generation: `doca-2026-10-12-book-payload-storage-v1`. Normal startup only accepts it, rejecting the preceding generation with explicit conversion instructions. There is no automatic conversion or runtime dual reading. Old hosts reject the new generation; update every instance and the web build together.
+Target generation: `doca-2026-10-12-book-payload-storage-v1`. On 2026-10-13 the user approved schema-only startup alignment with old SQL-generated book rows left untouched for manual handling. Starting with 0.1.24, exact `doca-2026-10-09-history-storage-v1` databases use the ordinary current-DDL reconciler and record the target generation under the same schema lock/transaction. Every business row, including runs, outputs, releases, human tasks and publication pointers, remains unchanged. There is no separate data cleanup, automatic body conversion or legacy runtime reader. New outcomes use native object references; old SQL outcomes can require manual handling. Existing 0.1.23 object data remains readable and untouched. Failed checks or writes roll back all structure/generation changes; repeated/concurrent startup is idempotent. Unknown, earlier and interrupted generations still stop. This exception does not authorize deleting unrelated unknown tables. Stop every old host and back up SQL before deploying; update all host and web builds together. No object uploads, automatic VACUUM or worker execution occur during reconciliation.
+
+The existing byte-exact offline conversion below remains optional if old outcomes must be retained in the usable native format. Run it before first startup; after schema alignment its source generation no longer applies. Its interrupted-generation gates and recovery remain unchanged.
 
 `knowledge-books:storage upgrade` defaults to a dry-run plan; only `--apply` performs changes. It accepts only the exact preceding generation. Earlier generations first use their separately approved history upgrade. Stop every host and back up SQL/object storage. Preflight all payloads, references, ACL metadata, structure differences and space; reject unknown/corrupt formats, review-required structure or still-running pipelines without changing them.
 

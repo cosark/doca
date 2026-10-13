@@ -4,6 +4,16 @@
 
 The complete plan was explicitly approved on 2026-10-12. Implementation and isolated verification completed on 2026-10-13; no user database has been converted or deployed. See the [implementation plan](knowledge-book-payload-storage-plan.md).
 
+## Automatic startup upgrade in 0.1.24
+
+Stop every old host and back up SQL, private storage and configuration. Starting 0.1.24 on released 0.1.22 generation `doca-2026-10-09-history-storage-v1` automatically compares the whole schema with current DDL. Once the plan passes review, the schema-lock transaction reconciles declared additions and records the target generation. Every business row and publication pointer remains untouched, including old SQL-generated outcomes, runs and human tasks. Existing 0.1.23 object storage data remains byte-exact. No manual book command is required, and no separate cleanup, automatic conversion or legacy runtime reader is added. Residual old book outcomes can require manual handling before their book is usable.
+
+All structure/generation changes roll back on failure. Repeated/concurrent startup retains every row. Unknown, earlier and interrupted generations stop without changing data; unrelated unknown tables still require review. Preserve all data and post-upgrade writes during any backup recovery. Update all host and web instances together.
+
+The existing maintenance commands below remain optional if old generated outcomes must be preserved in a usable native format. Execute the upgrade before first startup; schema alignment changes the source generation. The historical verification below establishes that optional conversion, not automatic adaptation of leftover SQL JSON.
+
+Automatic alignment evidence: actual released 0.1.22 fixtures on SQLite/PostgreSQL 17/18 retained every row of 114 business tables and all 20 SQL bodies; new native objects remained readable after repeated/concurrent startup. PostgreSQL 17/18 each passed 91 regression cases, including rollback and strict legacy-body rejection. See [verification](../artifacts/book-schema-startup-2026-10-13/verification.json).
+
 ## Maintenance commands
 
 Use a new host build containing these changes and the existing deployment environment. Released `smartdoca/doca:0.1.22` is the conversion source and does not contain the new command. Stop every host and back up SQL (including SQLite WAL), private objects and configuration. Preserve the original master key, store IDs and backend configuration. Update all hosts and web builds together.
