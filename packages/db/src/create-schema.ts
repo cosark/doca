@@ -331,7 +331,10 @@ async function createSystemSchema(db: Kysely<any>) {
     .execute();
 }
 
-async function validateBaseline(db: Kysely<any>) {
+async function validateBaseline(
+  db: Kysely<any>,
+  allowPreviousGeneration = false,
+) {
   const hasSchema = (await currentSchemaTables(db)).some(
     (table) => table.name === "schema_baseline",
   );
@@ -354,10 +357,12 @@ async function validateBaseline(db: Kysely<any>) {
     throw new Error(
       "Database baseline has an interrupted history rollback; finish history:rollback with a new manifest before starting the host",
     );
-  if (baselines.length === 1 && baselines[0]?.id === HISTORY_SCHEMA_BASELINE)
+  if (baselines.length === 1 && baselines[0]?.id === HISTORY_SCHEMA_BASELINE) {
+    if (allowPreviousGeneration) return true;
     throw new Error(
-      "Database requires explicit offline knowledge-books:storage upgrade --apply; no data was changed",
+      "Database requires startup knowledge-book storage upgrade; no data was changed",
     );
+  }
   if (
     baselines.length === 1 &&
     [BOOK_PAYLOAD_UPGRADE, BOOK_PAYLOAD_ROLLBACK].includes(baselines[0]!.id)
@@ -369,6 +374,7 @@ async function validateBaseline(db: Kysely<any>) {
     throw new Error(
       "Database compatibility generation is not supported; an explicitly reviewed data conversion is required; no data was changed",
     );
+  return false;
 }
 
 export async function validateSchema(db: Kysely<any>) {
@@ -430,8 +436,17 @@ export async function createSchema(db: Kysely<any>) {
       )
         await sql`update schema_baseline set created_at=created_at`.execute(tx);
       // Keep the existing semantic history upgrade/rollback gates.
-      await validateBaseline(tx);
+      const advanceGeneration = await validateBaseline(tx, true);
       await reconcileSchema(tx, createCurrentStructure, schemaEvolution);
+      if (advanceGeneration) {
+        // Approved schema-only upgrade: old SQL book outcomes remain untouched.
+        // Runtime uses the native object format; no body conversion or dual read.
+        await tx
+          .updateTable("schema_baseline")
+          .set({ id: CURRENT_SCHEMA_BASELINE })
+          .where("id", "=", HISTORY_SCHEMA_BASELINE)
+          .execute();
+      }
     } else {
       await createCurrentStructure(tx);
       await seedSystemRows(tx);

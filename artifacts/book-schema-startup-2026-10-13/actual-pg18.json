@@ -1,0 +1,13 @@
+{
+  "sourceImage": "smartdoca/doca:0.1.22",
+  "database": "postgres-18",
+  "retainedSqlBodies": 20,
+  "businessTablesPreserved": 114,
+  "businessRowsByteExact": true,
+  "automaticConversion": false,
+  "automaticCleanup": false,
+  "repeatedConcurrentStartup": true,
+  "newNativeObjectReadable": true,
+  "targetGeneration": "doca-2026-10-12-book-payload-storage-v1",
+  "businessSnapshotSha256": "67d66fbd2bf7f626e43129b5f64903bb41755ec618dba355678acb1782be7b5d"
+}

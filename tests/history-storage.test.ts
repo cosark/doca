@@ -545,7 +545,7 @@ it("requires an explicit exact-baseline upgrade and can return all retained vers
       ).payload,
     ),
   ).toEqual({ resourceId: resource.id });
-  await expect(validateSchema(db)).rejects.toThrow("knowledge-books:storage");
+  await expect(validateSchema(db)).rejects.toThrow("startup knowledge-book");
   expect(await recent(resource.id)).toHaveLength(30);
   expect(
     await db.selectFrom("schema_baseline").select("id").executeTakeFirst(),

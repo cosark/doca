@@ -65,4 +65,4 @@ PostgreSQL 获得结构锁后须读取最新目录，让并发宿主能看到前
 
 已有隔离验证覆盖 SQLite 和 PostgreSQL 17、18 的旧结构及已有数据、空的新表、可空和必填默认字段、重复与并发启动、默认值及空值约束变化、插件数据保留、已安装字段丢失拒绝。0.1.22 还使用实际 0.1.20 镜像创建 PostgreSQL 18 旧库后再升级。文件夹用例覆盖通知、工单、确认授权、实时权限、过期和并发名额校验；这些记录不替代未来改动自己的验收。
 
-知识册正文存储的代际切换已按[实施方案](knowledge-book-payload-storage-plan.zh-CN.md)明确批准：已发布的 `doca-2026-10-09-history-storage-v1` 只通过显式停机命令逐字节转换到当前代际；正常启动不迁移或双读。四张空元数据表属于最新 DDL；复合外键创建遵循最新 DDL 的依赖顺序，复查和 footprint 记录继续在 schema 锁下事务完成。验收见[验证记录](knowledge-book-storage-verification.zh-CN.md)。
+知识册结构对齐已按[实施方案](knowledge-book-payload-storage-plan.zh-CN.md)明确批准：0.1.24 对 `doca-2026-10-09-history-storage-v1` 沿用最新 DDL 和普通对比器对齐结构，同一 schema 锁事务中记录目标代际。全部业务行、旧 SQL 知识册成果及当前发布指针原样保留，不自动清理或转换，不新增旧正文运行时读取适配。残留旧成果人工处理；代际记录目标结构，不代表旧 JSON 已可读取。需要把旧成果保留为新版原生对象格式时，可在首次启动前执行既有可选无损维护。四张元数据表属于最新 DDL，复查和 footprint 记录继续事务完成。验收见[验证记录](knowledge-book-storage-verification.zh-CN.md)。

@@ -10,7 +10,7 @@ import { openTestDatabase } from "./database.js";
 import { testBookPayloadStore } from "./book-payload-store.js";
 import type { DB } from "@db/index.js";
 import { transact } from "@db/transactions.js";
-import { createSchema } from "@db/create-schema.js";
+import { createSchema, validateSchema } from "@db/create-schema.js";
 import { createUser, type Actor } from "@core/modules/identity/passwords.js";
 import {
   createKnowledgeBook,
@@ -331,7 +331,7 @@ it("preflights without writes, upgrades exact bytes, survives restart, and rolls
   await inlineNode();
   await inlineGeneration();
   const before = await bookPayloadRecords(db);
-  await expect(createSchema(db)).rejects.toThrow("explicit offline");
+  await expect(validateSchema(db)).rejects.toThrow("startup knowledge-book");
   const plan = await convertBookStorage(db, "upgrade");
   expect(plan.payloadCount).toBe(1);
   expect(await bookPayloadRecords(db)).toEqual(before);

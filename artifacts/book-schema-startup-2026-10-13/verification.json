@@ -1,0 +1,27 @@
+{
+  "approvedPolicy": "Schema-only startup alignment; retain all old SQL rows, no automatic book cleanup/conversion/runtime adapter",
+  "sourceImage": "smartdoca/doca:0.1.22",
+  "databases": [
+    "SQLite",
+    "PostgreSQL 17",
+    "PostgreSQL 18"
+  ],
+  "retainedBusinessTablesPerFixture": 114,
+  "retainedSqlBodiesPerFixture": 20,
+  "postgresRegressionTests": {
+    "17": 91,
+    "18": 91
+  },
+  "checks": [
+    "whole-schema review before persistent changes",
+    "all business rows preserved",
+    "empty added metadata tables",
+    "atomic rollback on generation-write failure",
+    "repeated and concurrent startup",
+    "existing native objects readable",
+    "strict rejection of inline JSON by native reader",
+    "unknown and interrupted generation rejection"
+  ],
+  "isolatedSyntheticData": true,
+  "productionDataModified": false
+}
