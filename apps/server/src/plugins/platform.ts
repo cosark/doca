@@ -1,4 +1,5 @@
 import { z } from "zod";
+import { monitoringServiceToken, telemetryServiceToken } from "@smartdoca/plugin-sdk/monitoring";
 import {
   templatesServiceToken,
   materialsServiceToken,
@@ -81,6 +82,8 @@ export async function providePlatform(
   runtime: ServerRuntimeService,
 ) {
   const { db, api } = runtime;
+  context.provide(monitoringServiceToken, runtime.monitoring.service);
+  context.provide(telemetryServiceToken, runtime.monitoring.telemetry);
   const services = pluginServices(db);
   const content = createContentService(db);
   context.provide(contentServiceToken, content);
@@ -410,6 +413,7 @@ export async function providePlatform(
     templates,
     materials,
     files: () => context.inject(filesServiceToken),
+    monitoring: runtime.monitoring,
   });
   context.provide(permissionsServiceToken, {
     register(source) {

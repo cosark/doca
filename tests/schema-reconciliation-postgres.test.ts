@@ -1,3 +1,4 @@
+import { currentSchemaTables } from "@db/introspection.js";
 import { expect, it } from "vitest";
 import { openTestDatabase } from "./database.js";
 import { createSchema } from "@db/create-schema.js";
@@ -136,7 +137,7 @@ it.skipIf(!process.env.DOCA_TEST_POSTGRES)(
           }),
         ]),
       });
-      const column = (await db.introspection.getTables())
+      const column = (await currentSchemaTables(db))
         .find((table) => table.name === "file_folder_share_links")!
         .columns.find((column) => column.name === "revision")!;
       expect(column.isNullable).toBe(true);

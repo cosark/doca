@@ -1,10 +1,6 @@
-import {
-  useMemo,
-  useState,
-  useEffect,
-  useRef,
-  type ReactNode,
-} from "react";
+import { api } from "@web/shared/api.js";
+import type { PayloadSummary } from "@core/modules/knowledge-books/payload-storage.js";
+import { useMemo, useState, useEffect, useRef, type ReactNode } from "react";
 import { Alert, Button, Collapse, Tag, Drawer } from "antd";
 import {
   CheckCircle2,
@@ -41,6 +37,7 @@ export type BookPipelineRun = {
   logs: BookRunLog[];
   restricted: boolean;
   artifact: Pick<BookArtifact, "pages" | "checks"> | null;
+  artifactSummary?: PayloadSummary | null;
   nodes: Array<{
     nodeId: string;
     type: string;
@@ -118,6 +115,7 @@ function StateIcon({ status }: { status: string }) {
 
 export function BookRunPipeline({
   run,
+  bookId,
   canEdit,
   cancel,
   repair,
@@ -126,6 +124,7 @@ export function BookRunPipeline({
   humanTasks,
 }: {
   run: BookPipelineRun;
+  bookId?: string;
   canEdit: boolean;
   cancel: () => void;
   repair: () => void;
@@ -135,6 +134,35 @@ export function BookRunPipeline({
 }) {
   const { t } = useI18n(),
     [selected, select] = useState<string>();
+  const [candidate, setCandidate] = useState<BookPipelineRun["artifact"]>(null),
+    [candidateError, setCandidateError] = useState(""),
+    [expanded, setExpanded] = useState(false);
+  const candidateRequest = useRef(0);
+  useEffect(() => {
+    candidateRequest.current++;
+    setCandidate(null);
+    setCandidateError("");
+  }, [run.id, run.updatedAt, run.restricted]);
+  const artifact = run.restricted ? null : (run.artifact ?? candidate);
+  async function loadCandidate() {
+    if (!expanded || run.restricted || artifact || !bookId) return;
+    const request = ++candidateRequest.current;
+    try {
+      const full = await api<BookPipelineRun>(
+        `/knowledge-books/${bookId}/runs/${run.id}/pipeline`,
+      );
+      if (request === candidateRequest.current) {
+        if (full.restricted) setCandidateError(t("books.restricted"));
+        setCandidate(full.restricted ? null : full.artifact);
+      }
+    } catch (error) {
+      if (request === candidateRequest.current)
+        setCandidateError(systemErrorMessage(String(error), t));
+    }
+  }
+  useEffect(() => {
+    void loadCandidate();
+  }, [expanded, run.id, run.updatedAt, run.restricted, candidate, bookId]);
   const host = useRef<HTMLElement>(null),
     [width, setWidth] = useState(0);
   useEffect(() => select(undefined), [run.id]);
@@ -186,16 +214,19 @@ export function BookRunPipeline({
           !fact
             ? bt("pipelineNotStarted")
             : fact.reusedFromRunId
-            ? bt("pipelineReused")
-            : fact?.status === "completed" && last?.code.startsWith("waiting")
-              ? label("completed")
-              : fact.status === "completed" && last?.code === "node_completed"
-                ? bt("pipelineOutputCounts", { pages: last.value ?? 0, claims: last.total ?? 0 })
-              : last
-                ? logLabel(last)
-                : fact
-                  ? label(fact.status)
-                  : bt("pipelineNotStarted"),
+              ? bt("pipelineReused")
+              : fact?.status === "completed" && last?.code.startsWith("waiting")
+                ? label("completed")
+                : fact.status === "completed" && last?.code === "node_completed"
+                  ? bt("pipelineOutputCounts", {
+                      pages: last.value ?? 0,
+                      claims: last.total ?? 0,
+                    })
+                  : last
+                    ? logLabel(last)
+                    : fact
+                      ? label(fact.status)
+                      : bt("pipelineNotStarted"),
         ];
       }),
     ),
@@ -246,18 +277,16 @@ export function BookRunPipeline({
             )}
           {canEdit && run.status === "failed" && (
             <>
-              <Button type="primary" loading={busy} onClick={retry}>{bt("resumeRun")}</Button>
+              <Button type="primary" loading={busy} onClick={retry}>
+                {bt("resumeRun")}
+              </Button>
               <Button onClick={repair}>{bt("assistantRepair")}</Button>
             </>
           )}
         </div>
       </header>
       {run.error && (
-        <Alert
-          type="error"
-          showIcon
-          title={systemErrorMessage(run.error, t)}
-        />
+        <Alert type="error" showIcon title={systemErrorMessage(run.error, t)} />
       )}
       {run.restricted && <Alert type="warning" title={bt("restricted")} />}
       {!!width && (
@@ -333,16 +362,23 @@ export function BookRunPipeline({
           </footer>
         </div>
       </Drawer>
-      {run.artifact && (
+      {!run.restricted && (run.artifact || run.artifactSummary) && (
         <Collapse
           className="book-run-artifact"
+          onChange={(keys) => setExpanded(keys.includes("artifact"))}
           items={[
             {
               key: "artifact",
               label: bt("pipelineArtifact"),
               children: (
                 <>
-                  {run.artifact.checks.map((check) => (
+                  {candidateError && (
+                    <Alert type="error" title={candidateError} />
+                  )}
+                  {!artifact && !candidateError && (
+                    <LoaderCircle className="book-run-spinner" size={16} />
+                  )}
+                  {artifact?.checks.map((check) => (
                     <Alert
                       key={check.criterionId}
                       type={check.passed ? "success" : "error"}
@@ -350,7 +386,7 @@ export function BookRunPipeline({
                       description={check.reason}
                     />
                   ))}
-                  {run.artifact.pages.map((page) => (
+                  {artifact?.pages.map((page) => (
                     <section key={page.id}>
                       <h3>{[...page.path, page.title].join(" / ")}</h3>
                       <MarkdownPreview

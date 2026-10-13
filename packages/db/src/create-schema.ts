@@ -1,3 +1,9 @@
+import {
+  BOOK_PAYLOAD_BASELINE,
+  BOOK_PAYLOAD_UPGRADE,
+  BOOK_PAYLOAD_ROLLBACK,
+  bookPayloadTables,
+} from "./book-payload-schema.js";
 import { currentSchemaTables } from "./introspection.js";
 import type { Kysely } from "kysely";
 import { sql } from "kysely";
@@ -315,7 +321,7 @@ async function createKnowledgeSchema(db: Kysely<any>) {
     await sql.raw(statement).execute(db);
 }
 
-export const CURRENT_SCHEMA_BASELINE = HISTORY_SCHEMA_BASELINE;
+export const CURRENT_SCHEMA_BASELINE = BOOK_PAYLOAD_BASELINE;
 
 async function createSystemSchema(db: Kysely<any>) {
   const now = new Date().toISOString();
@@ -347,6 +353,17 @@ async function validateBaseline(db: Kysely<any>) {
   if (baselines.length === 1 && baselines[0]?.id === HISTORY_ROLLBACK_BASELINE)
     throw new Error(
       "Database baseline has an interrupted history rollback; finish history:rollback with a new manifest before starting the host",
+    );
+  if (baselines.length === 1 && baselines[0]?.id === HISTORY_SCHEMA_BASELINE)
+    throw new Error(
+      "Database requires explicit offline knowledge-books:storage upgrade --apply; no data was changed",
+    );
+  if (
+    baselines.length === 1 &&
+    [BOOK_PAYLOAD_UPGRADE, BOOK_PAYLOAD_ROLLBACK].includes(baselines[0]!.id)
+  )
+    throw new Error(
+      "Interrupted knowledge book storage conversion; resume the explicit knowledge-books:storage command with its manifest before starting the host",
     );
   if (baselines.length !== 1 || baselines[0]?.id !== CURRENT_SCHEMA_BASELINE)
     throw new Error(
@@ -386,7 +403,11 @@ export async function createCurrentStructure(db: Kysely<any>) {
 // These declarations authorize additive changes within the current compatibility generation.
 // Historical values come from the latest DDL; installed footprints prevent repairing lost data as an upgrade.
 export const schemaEvolution = {
-  newTables: ["file_folder_link_members", "file_folder_invitations"],
+  newTables: [
+    "file_folder_link_members",
+    "file_folder_invitations",
+    ...bookPayloadTables,
+  ],
   newColumns: [
     "file_folder_share_links.max_members",
     "file_folder_share_links.expires_at",

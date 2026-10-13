@@ -1,0 +1,19 @@
+{
+  "fixture": "Synthetic six-chapter ~80,000-character book; current seven-node workflow; no production data",
+  "markdownCharacters": 80040,
+  "markdownUtf8Bytes": 239040,
+  "nodeOutputBytes": {
+    "sources": 246,
+    "feedback": 246,
+    "extract": 5582,
+    "synthesize": 250903,
+    "organize": 250903,
+    "acceptance": 250903,
+    "publish": 250903
+  },
+  "runArtifactBytes": 559986,
+  "releaseArtifactBytes": 559986,
+  "totalPayloadBytes": 2129658,
+  "gzipArtifactBytes": 7484,
+  "compressionCaveat": "Repeated synthetic prose makes this compression ratio unusually high; do not extrapolate it to actual books."
+}

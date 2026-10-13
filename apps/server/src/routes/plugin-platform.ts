@@ -15,6 +15,8 @@ import type {
 } from "@smartdoca/plugin-sdk/documents";
 import { fail } from "@core/shared/errors.js";
 import { stableId, type FilesServiceV1 } from "@smartdoca/plugin-sdk/files";
+import type { HostMonitoring } from "../services/monitoring.js";
+import { monitoringInputs } from "../services/monitoring-validation.js";
 
 const id = z.string().min(1).max(200);
 const document = z.object({ documentId: id }).strict();
@@ -28,6 +30,7 @@ export function registerPluginPlatformRoutes(
     documents: DocumentReadServiceV1;
     libraries: LibrariesServiceV1;
     files: () => FilesServiceV1;
+    monitoring?: HostMonitoring;
   },
 ) {
   api.post<{ Params: { pluginId: string; operation: string } }>(
@@ -53,6 +56,29 @@ export function registerPluginPlatformRoutes(
       };
       reply.header("Cache-Control", "no-store");
       try {
+        if (req.params.operation.startsWith("monitoring.")) {
+          const operation = req.params.operation.slice("monitoring.".length);
+          if (
+            !Object.prototype.hasOwnProperty.call(
+              monitoringInputs,
+              operation,
+            ) ||
+            !services.monitoring
+          )
+            fail(404, "Monitoring operation unavailable");
+          await services.monitoring.authorizeBrowser(
+            req.params.pluginId,
+            context,
+          );
+          const name = operation as keyof typeof monitoringInputs;
+          const input = monitoringInputs[name].parse(req.body);
+          // Only the fixed public monitoring method set is dispatchable.
+          const method = services.monitoring.service[name] as (
+            input: unknown,
+            options: { signal: AbortSignal },
+          ) => Promise<unknown>;
+          return await method(input, { signal: context.signal });
+        }
         switch (req.params.operation) {
           case "users.me":
             z.object({}).strict().parse(req.body);

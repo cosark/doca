@@ -1,3 +1,7 @@
+import {
+  bookPayloadReference,
+  copyBookPayloadReference,
+} from "./payload-storage.js";
 import { readBookSource, type BookSourceRuntime } from "./sources.js";
 import type { DB } from "@db/index.js";
 import type { Actor } from "../identity/passwords.js";
@@ -18,9 +22,16 @@ export function nodeReuseAuditId(runId: string, nodeId: string) {
 export async function readNodeReuse(db: DB, runId: string, nodeIds: string[]) {
   const reuse = new Map<string, string>();
   if (!nodeIds.length) return reuse;
-  const records = await db.selectFrom("audit_events").select(["id", "action"])
-    .where("id", "in", nodeIds.map(nodeId => nodeReuseAuditId(runId, nodeId))).execute();
-  const byId = new Map(records.map(record => [record.id, record]));
+  const records = await db
+    .selectFrom("audit_events")
+    .select(["id", "action"])
+    .where(
+      "id",
+      "in",
+      nodeIds.map((nodeId) => nodeReuseAuditId(runId, nodeId)),
+    )
+    .execute();
+  const byId = new Map(records.map((record) => [record.id, record]));
   for (const nodeId of nodeIds) {
     const record = byId.get(nodeReuseAuditId(runId, nodeId));
     if (record) {
@@ -81,9 +92,14 @@ export async function prepareRunReuse(
     .where("run_id", "=", runId)
     .where("status", "=", "completed")
     .execute();
-  const expected = nodes.flatMap(
-    (node) => JSON.parse(node.output).evidence,
-  ) as import("./protocol.js").Evidence[];
+  const expected = (
+    await Promise.all(
+      nodes.map(
+        async (node) =>
+          (await bookPayloadReference(db, node.output)).summary.inventory,
+      ),
+    )
+  ).flat();
   for (const source of snapshot.sources) {
     const configuration = bookSourceInputSchema.parse(
       JSON.parse(source.configuration),
@@ -188,7 +204,7 @@ export async function retryBookRun(
   const reusable = [];
   for (const node of completed) {
     if (blocked.has(node.node_id)) continue;
-    const output = JSON.parse(node.output);
+    const output = await bookPayloadReference(db, node.output);
     let matches = true;
     for (const evidence of output.evidence)
       if (
@@ -201,7 +217,16 @@ export async function retryBookRun(
   for (const node of reusable) {
     await db
       .insertInto("knowledge_book_node_runs")
-      .values({ ...node, run_id: queued.id })
+      .values({
+        ...node,
+        run_id: queued.id,
+        output: await copyBookPayloadReference(db, node.output, {
+          bookId,
+          ownerKind: "node",
+          ownerId: queued.id,
+          nodeId: node.node_id,
+        }),
+      })
       .execute();
     await db
       .insertInto("audit_events")

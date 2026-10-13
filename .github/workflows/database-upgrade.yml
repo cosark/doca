@@ -6,6 +6,9 @@ on:
       - "packages/db/**"
       - "tests/schema-reconciliation*.test.ts"
       - "tests/database.ts"
+      - "tests/knowledge-book*.test.ts"
+      - "packages/core/src/modules/knowledge-books/**"
+      - "apps/server/src/services/knowledge-book-storage-maintenance.ts"
       - "tests/folder-sharing.test.ts"
       - "tests/files.test.ts"
       - "package.json"
@@ -17,6 +20,9 @@ on:
       - "packages/db/**"
       - "tests/schema-reconciliation*.test.ts"
       - "tests/database.ts"
+      - "tests/knowledge-book*.test.ts"
+      - "packages/core/src/modules/knowledge-books/**"
+      - "apps/server/src/services/knowledge-book-storage-maintenance.ts"
       - "tests/folder-sharing.test.ts"
       - "tests/files.test.ts"
       - "package.json"
@@ -60,4 +66,4 @@ jobs:
       - name: Verify isolated upgrades and folder sharing
         env:
           DOCA_TEST_POSTGRES: postgres://postgres:isolated-test@127.0.0.1:5432/doca_test
-        run: pnpm exec vitest run tests/schema-reconciliation-postgres.test.ts tests/folder-sharing.test.ts tests/files.test.ts --maxWorkers=2
+        run: pnpm exec vitest run tests/schema-reconciliation-postgres.test.ts tests/folder-sharing.test.ts tests/files.test.ts tests/knowledge-books.test.ts tests/knowledge-book-payload-storage.test.ts --maxWorkers=2

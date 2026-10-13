@@ -1,3 +1,5 @@
+import { canReadBookPayload } from "./reads.js";
+import { readBookPayload } from "./payload-storage.js";
 import { appendBookRunLog } from "./run-logs.js";
 import {
   recordFeedbackOrigin,
@@ -264,8 +266,10 @@ export async function saveBookFeedback(
   method: BookFeedbackMethod = "manual",
 ) {
   const detail = bookFeedbackInputSchema.parse(input.detail);
+  let anchoredArtifact: BookArtifact | null = null,
+    anchorMarker: string | null = null;
   await bookAccess(db, actor, bookId, 2);
-  if (detail.releaseId && input.status !== "withdrawn") {
+  if (detail.releaseId) {
     const release = await db
       .selectFrom("knowledge_book_releases")
       .select("artifact")
@@ -273,8 +277,19 @@ export async function saveBookFeedback(
       .where("id", "=", detail.releaseId)
       .executeTakeFirst();
     if (!release) fail(404, "Knowledge book release not found");
-    const artifact = JSON.parse(release.artifact) as BookArtifact;
-    for (const evidence of artifact.evidence)
+    if (
+      input.status !== "withdrawn" &&
+      !(await canReadBookPayload(db, actor, bookId, release.artifact))
+    )
+      fail(403, "Original source access is required for anchored feedback");
+    anchorMarker = release.artifact;
+    const artifact = (anchoredArtifact = await readBookPayload<BookArtifact>(
+      db,
+      release.artifact,
+    ));
+    for (const evidence of input.status === "withdrawn"
+      ? []
+      : artifact.evidence)
       if (!(await canReadBookEvidence(db, actor, evidence)))
         fail(403, "Original source access is required for anchored feedback");
   }
@@ -301,7 +316,9 @@ export async function saveBookFeedback(
         .where("id", "=", detail.releaseId)
         .executeTakeFirst();
       if (!release) fail(404, "Knowledge book release not found");
-      const artifact = JSON.parse(release.artifact) as BookArtifact;
+      if (release.artifact !== anchorMarker || !anchoredArtifact)
+        fail(409, "Feedback release changed during validation");
+      const artifact = anchoredArtifact;
       const page = artifact.pages.find((p) => p.id === detail.pageId);
       if (detail.pageId && !page)
         fail(400, "Feedback page is not in the selected release");
@@ -427,7 +444,12 @@ export async function queueBookRun(
         updated_at: now,
       })
       .execute();
-    await appendBookRunLog(tx, { id: runId, book_id: id, actor_id: actor.id }, null, { code: "run_queued" });
+    await appendBookRunLog(
+      tx,
+      { id: runId, book_id: id, actor_id: actor.id },
+      null,
+      { code: "run_queued" },
+    );
     await audit(tx, actor, id, "knowledge_book.run_queued");
     return { id: runId, status: "queued" as const };
   });

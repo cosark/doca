@@ -11,5 +11,8 @@ const codes: Record<number, string> = {
 };
 /** New book errors carry presentation codes; model-facing messages stay precise. */
 export function bookFail(status: number, message: string): never {
-  return fail(status, message, { code: codes[status] ?? "book_failed" });
+  return fail(status, message, {
+    code: codes[status] ?? "book_failed",
+    data: { detail: message },
+  });
 }

@@ -19,6 +19,8 @@ DOCA_PLUGINS_DIR=/data/plugins
 docker compose restart doca
 ```
 
+这里的 `doca` 是 `compose.yaml` 中 `services` 下的服务名，容器名可能不同。若修改了服务名，请将命令中的 `doca` 替换为实际服务名。
+
 多实例需逐个重启；其他部署使用对应进程管理器。页面不执行重启。滚动重启期间若插件 API 新旧版本不兼容，应摘除流量或使用会话亲和，不承诺跨版本零停机。
 
 ## 已实现存储修订（2026-10-03，SDK 源码 0.1.8）

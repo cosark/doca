@@ -5,10 +5,11 @@ import {
 import { useI18n } from "@web/shared/i18n.js";
 import { assetUrl } from "@web/shared/api.js";
 import { platformAssetId } from "@web/shared/utils/asset-path.js";
+import { memo, useCallback } from "react";
 import "@smartdoca/markdown/style.css";
 import "katex/dist/katex.min.css";
 import "@web/features/documents/markdown.css";
-export default function Preview({
+function Preview({
   value,
   trash = false,
   audit = false,
@@ -20,19 +21,26 @@ export default function Preview({
   interaction?: MarkdownPreviewInteraction;
 }) {
   const { locale } = useI18n();
+  // The package rebuilds its Markdown renderers when this callback changes.
+  // Reader outline updates must not remount Mermaid and clear its SVG.
+  const resolveImageUrl = useCallback(
+    (path: string) => {
+      const id = platformAssetId(path);
+      return id
+        ? assetUrl(id) + (audit ? "?audit=1" : trash ? "?trashPreview=1" : "")
+        : "";
+    },
+    [audit, trash],
+  );
   return (
     <div className="doca-markdown markdown-preview-only">
       <MarkdownPreview
         locale={locale}
         value={value}
         interaction={interaction}
-        resolveImageUrl={(path) =>
-          platformAssetId(path)
-            ? assetUrl(platformAssetId(path)!) +
-              (audit ? "?audit=1" : trash ? "?trashPreview=1" : "")
-            : ""
-        }
+        resolveImageUrl={resolveImageUrl}
       />
     </div>
   );
 }
+export default memo(Preview);

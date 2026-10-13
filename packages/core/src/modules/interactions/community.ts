@@ -1,4 +1,5 @@
 import { pluginNotificationVisible } from "./plugin-notifications.js";
+import { bookNotificationTypes, bookNotificationPath } from "../knowledge-books/notifications.js";
 import { managementVisible } from "../access/presentation.js";
 import { sql } from "kysely";
 import { randomUUID } from "node:crypto";
@@ -253,6 +254,10 @@ export async function notificationPage(db: DB, actor: Actor, offset: number) {
   const base = db
     .selectFrom("notifications")
     .where("notifications.user_id", "=", actor.id)
+    .where(eb => eb.or([
+      eb("notifications.type", "not in", [...bookNotificationTypes]),
+      accessibleQuery(sql.ref("notifications.resource_id"), actor, 3),
+    ]))
     .where(
       sql<boolean>`(notifications.ticket_id is not null or notifications.type <> 'access.requested' or exists(select 1 from access_requests q join resources r on r.id=q.resource_id where q.resource_id=notifications.resource_id and q.status='pending' and notifications.dedupe_key = q.id || ':' || ${actor.id} and (q.role <> 'manager' or r.owner_id=${actor.id})))`,
     ).where(sql<boolean>`(${canRead}
@@ -354,6 +359,9 @@ export async function notificationPage(db: DB, actor: Actor, offset: number) {
       n.type.startsWith("resource.");
     projected.push({
       ...n,
+      ...(bookNotificationTypes.includes(n.type as typeof bookNotificationTypes[number]) && n.resource_id
+        ? { href: bookNotificationPath(n.resource_id, n.dedupe_key) }
+        : {}),
       grantedPermission,
       ...(!show && (sensitive || n.ticket_id)
         ? { actor_id: null, actorName: null }

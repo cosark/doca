@@ -1,4 +1,10 @@
 import { decodeSystemError } from "@doca/i18n";
+import { publishBookTaskNotifications } from "@core/modules/knowledge-books/notifications.js";
+import { notificationPage } from "@core/modules/interactions/community.js";
+import { reconcileKnowledgeBookRuns } from "@server/services/ai/knowledge-book-maintenance.js";
+import { pluginServices } from "@core/shared/plugin-services.js";
+import { registerKnowledgeBookContinuation, bookContinuationInput } from "@server/services/ai/knowledge-book-continuation.js";
+import { newContinuationState, registerContinuationWait } from "@server/services/ai/continuations.js";
 import { afterEach, beforeEach, expect, it } from "vitest";
 import { randomUUID } from "node:crypto";
 import { openTestDatabase } from "./database.js";
@@ -429,6 +435,8 @@ it("requires an explicit publication task when automatic publication is disabled
     runId: result.id,
   });
   await executeBookRun(db, result.id, runtime());
+  const published = await readBookRun(db,owner,bookId,result.id);
+  expect(published.status,published.error).toBe("published");
   expect(
     (await readKnowledgeBook(db, owner, bookId)).publishedRelease!.revision,
   ).toBe(1);
@@ -1421,5 +1429,160 @@ it("recovers a worker interruption after resuming without duplicating its repair
     await recoverBookRuns(db, "2026-10-10T00:00:00.000Z");
     expect((await readBookRun(db, owner, bookId, failed.id)).status).toBe("failed");
     expect((await listBookHumanTasks(db, owner, { bookId, runId: failed.id, kind: "repair", status: "pending" })).items).toHaveLength(1);
+  }
+});
+
+it("delivers pending failures to the initiator and managers once across concurrent scans and hides revoked access", async () => {
+  await manual();
+  await share("manager");
+  const broken = runtime((stage, _input, output) => {
+    if (stage === "synthesize") throw new Error("Isolated model failure");
+    return output;
+  });
+  const failed = await run(broken);
+  const scans = await Promise.all([publishBookTaskNotifications(db), publishBookTaskNotifications(db)]);
+  expect(scans.reduce((sum, result) => sum + result.delivered, 0)).toBe(2);
+  expect(await publishBookTaskNotifications(db)).toEqual({ delivered: 0 });
+  const task = (await listBookHumanTasks(db, owner, { bookId, status: "pending" })).items[0]!;
+  expect((await notificationPage(db, collaborator, 0)).items).toContainEqual(expect.objectContaining({
+    type: "knowledge_book.failed", href: `#/knowledge-books/${bookId}?task=${task.id}`,
+  }));
+  await share("reader");
+  // Permission-change notifications are independent of the knowledge-book alert.
+  await db.updateTable("notifications").set({ read_at: new Date().toISOString() })
+    .where("user_id", "=", collaborator.id).where("type", "!=", "knowledge_book.failed").execute();
+  const revoked = await notificationPage(db, collaborator, 0);
+  expect(revoked.items.some(item => item.type === "knowledge_book.failed")).toBe(false);
+  expect(revoked.unread).toBe(0);
+  await executeBookCommand(db, owner, bookId, { operation: "run.resume", runId: failed.id });
+  await executeBookRun(db, failed.id, broken);
+  expect(await publishBookTaskNotifications(db)).toEqual({ delivered: 1 });
+  expect(await db.selectFrom("notifications").select("id").where("type", "=", "knowledge_book.failed").execute()).toHaveLength(3);
+});
+
+it("delivers publication and review tasks after restart, without notifying readers or replaying resolved tasks", async () => {
+  await manual();
+  await share("reader");
+  const configuration = (await readKnowledgeBook(db, owner, bookId)).configuration!;
+  configuration.autoPublish = false;
+  await saveBookConfiguration(db, owner, bookId, 2, configuration);
+  const waiting = await run();
+  expect(waiting.status).toBe("awaiting_publication");
+  await reconcileKnowledgeBookRuns(db);
+  expect((await notificationPage(db, owner, 0)).items).toContainEqual(expect.objectContaining({ type: "knowledge_book.publication" }));
+  expect((await notificationPage(db, collaborator, 0)).items.some(item => item.type.startsWith("knowledge_book."))).toBe(false);
+  const task = (await listBookHumanTasks(db, owner, { bookId, status: "pending" })).items[0]!;
+  await resolveBookHumanTask(db, owner, task.id, { expectedRevision: task.revision, decision: "approve", note: "Publish" });
+  await executeBookRun(db, waiting.id, runtime());
+  expect(await publishBookTaskNotifications(db)).toEqual({ delivered: 0 });
+  const latest = (await readKnowledgeBook(db, owner, bookId));
+  const review = structuredClone(latest.configuration!);
+  review.workflow.nodes.push({ id: "human", type: "human_review", label: "Review", position: { x: 0, y: 0 }, parameters: { instructions: "Review evidence", sourceIds: [], criterionIds: [], sourceWeight: 1, feedbackWeight: 1 } });
+  review.workflow.edges = review.workflow.edges.filter(edge => edge.target !== "publish");
+  review.workflow.edges.push({ source: "acceptance", target: "human" }, { source: "human", target: "publish" });
+  await saveBookConfiguration(db, owner, bookId, latest.revision, review);
+  await run();
+  await reconcileKnowledgeBookRuns(db);
+  expect((await notificationPage(db, owner, 0)).items).toContainEqual(expect.objectContaining({ type: "knowledge_book.review" }));
+});
+
+it("notifies the recorded editor initiator after a manager resumes the same failed run", async () => {
+  await manual();
+  await share("editor");
+  const broken = runtime((stage, _input, output) => {
+    if (stage === "synthesize") throw new Error("Isolated request failure");
+    return output;
+  });
+  const first = await queueBookRun(db, collaborator, bookId);
+  await executeBookRun(db, first.id, broken);
+  await executeBookCommand(db, owner, bookId, { operation: "run.resume", runId: first.id });
+  await executeBookRun(db, first.id, broken);
+  expect((await db.selectFrom("knowledge_book_runs").select("actor_id").where("id", "=", first.id).executeTakeFirstOrThrow()).actor_id).toBe(owner.id);
+  expect(await publishBookTaskNotifications(db)).toEqual({ delivered: 2 });
+  expect((await notificationPage(db, collaborator, 0)).items).toContainEqual(expect.objectContaining({ type: "knowledge_book.failed" }));
+});
+
+it("retains the precise request limit diagnostic for assistant and human inspection", async () => {
+  const { bookFail } = await import("@core/modules/knowledge-books/errors.js");
+  await manual();
+  const failed = await run(runtime((stage, _input, output) => {
+    if (stage === "synthesize") bookFail(413, "This request exceeds the model input context; the book itself is not full.");
+    return output;
+  }));
+  const error = decodeSystemError(failed.error);
+  expect(error).toMatchObject({ code: "book_size_limit", data: { detail: "This request exceeds the model input context; the book itself is not full." } });
+  const detail = await readBookRun(db, owner, bookId, failed.id);
+  expect(detail.nodes.find(node => node.nodeId === "synthesize")!.error).toBe(failed.error);
+});
+
+it("fences a late model result after heartbeat recovery and checkpoint resume", async () => {
+  await manual();
+  const first = await queueBookRun(db, owner, bookId);
+  let release!: () => void, entered!: () => void;
+  const gate = new Promise<void>(resolve => { release = resolve; });
+  const started = new Promise<void>(resolve => { entered = resolve; });
+  const oldWorker = executeBookRun(db, first.id, runtime(async (stage, _input, output) => {
+    // Simulate a transport returning after its worker has already lost the lease.
+    if (stage === "extract") { entered(); await gate; }
+    return output;
+  }));
+  await started;
+  try {
+    await db.updateTable("knowledge_book_runs").set({ heartbeat_at: "2020-01-01T00:00:00.000Z" }).where("id", "=", first.id).execute();
+    await reconcileKnowledgeBookRuns(db);
+    expect((await readBookRun(db, owner, bookId, first.id)).status).toBe("failed");
+    await executeBookCommand(db, owner, bookId, { operation: "run.resume", runId: first.id });
+    await executeBookRun(db, first.id, runtime());
+    const before = await db.selectFrom("knowledge_book_node_runs").selectAll().where("run_id", "=", first.id).orderBy("node_id").execute();
+    expect((await readBookRun(db, owner, bookId, first.id)).status).toBe("published");
+    release();
+    await oldWorker;
+    const after = await db.selectFrom("knowledge_book_node_runs").selectAll().where("run_id", "=", first.id).orderBy("node_id").execute();
+    expect(after).toEqual(before);
+    expect(after.every(node => node.status === "completed")).toBe(true);
+    expect((await listBookHumanTasks(db, owner, { bookId, status: "pending" })).items).toHaveLength(0);
+    expect(await db.selectFrom("knowledge_book_releases").select("id").where("book_id", "=", bookId).execute()).toHaveLength(1);
+  } finally {
+    release();
+    await oldWorker;
+  }
+});
+
+it("recovers an expired worker, wakes the same assistant job and sends a repair notification while another run is blocked", async () => {
+  await manual();
+  const lost = await queueBookRun(db, owner, bookId);
+  const state = newContinuationState();
+  const unregister = registerKnowledgeBookContinuation(db);
+  await registerContinuationWait(db, owner, state, bookContinuationInput(bookId, lost.id), new AbortController().signal);
+  const now = new Date().toISOString(), sessionId = randomUUID(), jobId = randomUUID();
+  await db.insertInto("ai_sessions").values({ id: sessionId, user_id: owner.id, title: "Knowledge wait", model_id: "test", resource_ids: "[]", archived: 0, revision: 1, created_at: now, updated_at: now }).execute();
+  await db.insertInto("ai_jobs").values({ id: jobId, session_id: sessionId, user_id: owner.id, model_id: "test", status: "awaiting_approval", result: JSON.stringify({ checkpoint: { continuations: state, stage: "execute" }, progress: { phase: "waiting_dependency", events: [] } }), input: "{}", digest: jobId, error: "", lease: null, lease_until: null, attempts: 0, cancelled: 0, created_at: now, updated_at: now }).execute();
+  await db.updateTable("knowledge_book_runs").set({ status: "running", heartbeat_at: "2020-01-01T00:00:00.000Z", lease_id: randomUUID() }).where("id", "=", lost.id).execute();
+  const busy = await queueBookRun(db, owner, bookId);
+  let release!: () => void, entered!: () => void;
+  const gate = new Promise<void>(resolve => { release = resolve; });
+  const started = new Promise<void>(resolve => { entered = resolve; });
+  const processing = executeBookRun(db, busy.id, runtime(async (stage, _input, output) => {
+    if (stage === "extract") { entered(); await gate; }
+    return output;
+  }));
+  await started;
+  try {
+    await reconcileKnowledgeBookRuns(db);
+    expect((await readBookRun(db, owner, bookId, lost.id)).status).toBe("failed");
+    expect((await readBookRun(db, owner, bookId, busy.id)).status).toBe("running");
+    const job = await db.selectFrom("ai_jobs").selectAll().where("id", "=", jobId).executeTakeFirstOrThrow();
+    expect(job.status).toBe("queued");
+    const result = JSON.parse(job.result).checkpoint.continuations.ready[0].snapshot.result;
+    expect(result).toMatchObject({ bookId, runId: lost.id, status: "failed" });
+    expect(result.humanTasks).toHaveLength(1);
+    expect((await notificationPage(db, owner, 0)).items).toContainEqual(expect.objectContaining({ type: "knowledge_book.failed" }));
+    await reconcileKnowledgeBookRuns(db);
+    expect((await db.selectFrom("ai_jobs").select("result").where("id", "=", jobId).executeTakeFirstOrThrow()).result).toBe(job.result);
+  } finally {
+    release();
+    await processing;
+    unregister();
+    pluginServices(db).continuations.delete("doca.ai.knowledge-book");
   }
 });

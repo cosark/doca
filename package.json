@@ -1,6 +1,6 @@
 {
   "name": "doca",
-  "version": "0.1.22",
+  "version": "0.1.23",
   "license": "MIT",
   "private": true,
   "type": "module",
@@ -24,7 +24,8 @@
     "deploy:pack": "node scripts/pack-deployment.mjs",
     "docs:check": "node scripts/docs-site.mjs check",
     "docs:build": "node scripts/docs-site.mjs build",
-    "docs:dev": "pnpm docs:build && vite .cache/docs-site --host 127.0.0.1 --port 39140"
+    "docs:dev": "pnpm docs:build && vite .cache/docs-site --host 127.0.0.1 --port 39140",
+    "knowledge-books:storage": "tsx apps/server/src/bootstrap/knowledge-book-storage.ts"
   },
   "dependencies": {
     "@ai-sdk/anthropic": "^4.0.53",
@@ -56,7 +57,7 @@
     "@open-file-viewer/core": "0.1.47",
     "@open-file-viewer/react": "0.1.47",
     "@sinclair/typebox": "^0.34.52",
-    "@smartdoca/canvas": "0.4.2",
+    "@smartdoca/canvas": "0.4.3",
     "@smartdoca/files-capability": "workspace:*",
     "@smartdoca/knowledge-capability": "workspace:*",
     "@smartdoca/markdown": "0.4.3",
@@ -64,7 +65,7 @@
     "@smartdoca/plugin-sdk": "workspace:*",
     "@smartdoca/search-host": "workspace:*",
     "@smartdoca/sheet": "0.2.0-rc.19",
-    "@smartdoca/slate": "0.4.13",
+    "@smartdoca/slate": "0.4.14",
     "@smartdoca/slides": "0.3.0-alpha.2",
     "antd": "^6.6.3",
     "better-sqlite3": "^13.0.3",

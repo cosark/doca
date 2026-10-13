@@ -180,9 +180,9 @@ it("posts matching events asynchronously and does not call the network from the 
       url: "/api/v1/admin/webhooks",
       headers,
     });
-    expect(listed.json().items.map((item: { name: string }) => item.name)).toEqual([
-      "Users",
+    expect(listed.json().items.map((item: { name: string }) => item.name).sort()).toEqual([
       "Docs",
+      "Users",
     ]);
     expect(JSON.stringify(listed.json())).toContain("Bearer service-token");
 

@@ -1,0 +1,23 @@
+{
+  "result": {
+    "stable": {
+      "mutations": 0,
+      "originalCount": 1,
+      "detached": 0,
+      "sameSvg": true
+    },
+    "control": {
+      "mutations": 50,
+      "originalCount": 1,
+      "detached": 1,
+      "sameSvg": false
+    },
+    "reader": {
+      "mutations": 0,
+      "originalCount": 5,
+      "detached": 0,
+      "sameSvg": true
+    }
+  },
+  "errors": []
+}

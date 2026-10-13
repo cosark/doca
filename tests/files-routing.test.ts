@@ -15,7 +15,7 @@ import { pluginRouteScope } from "@web/app/plugin-route-scope.js";
 
 it("opens shared-folder links through redemption before matching a folder ID", () => {
   const registry = createBuiltinWebPluginRegistry();
-  const context = { sharedFolderName: "Shared", onFileNavigationChange: () => {} };
+  const context = { PageHeader: () => null, sharedFolderName: "Shared", onFileNavigationChange: () => {} };
   const join = registry.resolveRoute("/shared-files/join?token=example-token")!;
   expect(join.contribution.id).toBe("doca.files.route.shared-join");
   expect(pluginRouteScope(join.contribution.id)).toBe("shared-files");

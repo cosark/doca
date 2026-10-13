@@ -1,7 +1,14 @@
 import type { DB } from "@db/index.js";
 import type { Actor } from "../identity/passwords.js";
 import type { BookArtifact } from "./protocol.js";
-import { readKnowledgeBook, readBookRun, readBookRelease } from "./reads.js";
+import {
+  readKnowledgeBook,
+  readBookRun,
+  readBookRelease,
+  readKnowledgeBookSummary,
+  readBookRunSummary,
+  readBookReleaseSummary,
+} from "./reads.js";
 import { bookFail as fail } from "./errors.js";
 
 /** Small manifests let a personal assistant inspect a large book page by page. */
@@ -21,7 +28,7 @@ export function bookArtifactManifest(artifact: BookArtifact | null) {
   };
 }
 export async function readBookForAssistant(db: DB, actor: Actor, id: string) {
-  const book = await readKnowledgeBook(db, actor, id);
+  const book = await readKnowledgeBookSummary(db, actor, id);
   return {
     ...book,
     sources: book.sources.map((source) => ({
@@ -45,7 +52,7 @@ export async function readBookForAssistant(db: DB, actor: Actor, id: string) {
     publishedRelease: book.publishedRelease
       ? {
           ...book.publishedRelease,
-          artifact: bookArtifactManifest(book.publishedRelease.artifact),
+          artifact: book.publishedRelease.artifact,
         }
       : null,
   };
@@ -56,29 +63,7 @@ export async function readRunForAssistant(
   bookId: string,
   runId: string,
 ) {
-  const run = await readBookRun(db, actor, bookId, runId);
-  return {
-    ...run,
-    artifact: bookArtifactManifest(run.artifact),
-    nodes: run.nodes.map((node) => ({
-      ...node,
-      output: node.output
-        ? {
-            pages: node.output.pages?.map(
-              (page: BookArtifact["pages"][number]) => ({
-                id: page.id,
-                title: page.title,
-                path: page.path,
-                paragraphCount: page.paragraphs.length,
-              }),
-            ),
-            checks: node.output.checks,
-            claimCount: node.output.claims?.length,
-            evidenceCount: node.output.evidence?.length,
-          }
-        : null,
-    })),
-  };
+  return readBookRunSummary(db, actor, bookId, runId);
 }
 export async function readReleaseForAssistant(
   db: DB,
@@ -86,8 +71,7 @@ export async function readReleaseForAssistant(
   bookId: string,
   releaseId: string,
 ) {
-  const release = await readBookRelease(db, actor, bookId, releaseId);
-  return { ...release, artifact: bookArtifactManifest(release.artifact) };
+  return readBookReleaseSummary(db, actor, bookId, releaseId);
 }
 export async function readBookPageForAssistant(
   db: DB,
@@ -161,7 +145,7 @@ export async function readBookSourceForAssistant(
   offset = 0,
   bindingId?: string,
 ) {
-  const book = await readKnowledgeBook(db, actor, bookId),
+  const book = await readKnowledgeBookSummary(db, actor, bookId),
     source = book.sources.find((source) => source.id === sourceId);
   if (!source) fail(404, "Knowledge book source not found");
   if (!source.readable || !source.configuration)

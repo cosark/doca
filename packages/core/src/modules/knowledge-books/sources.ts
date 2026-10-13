@@ -1,3 +1,7 @@
+import {
+  bookPayloadReference,
+  type AccessEvidence,
+} from "./payload-storage.js";
 import { randomUUID } from "node:crypto";
 import type { DB, Schema } from "@db/index.js";
 import type { Actor } from "../identity/passwords.js";
@@ -334,7 +338,7 @@ export async function readBookSource(
 export async function canReadBookEvidence(
   db: DB,
   actor: Actor | null,
-  evidence: Evidence,
+  evidence: AccessEvidence,
 ) {
   const source = evidence.reference;
   try {
@@ -461,7 +465,7 @@ export async function canReadBookFeedback(
     } catch {
       return false;
     }
-    const artifact = JSON.parse(release.artifact) as BookArtifact;
+    const artifact = await bookPayloadReference(db, release.artifact);
     for (const evidence of artifact.evidence) {
       if (evidence.reference.kind === "feedback") {
         const ref = evidence.reference,

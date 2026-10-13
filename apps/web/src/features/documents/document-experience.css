@@ -485,7 +485,11 @@
   justify-content: flex-start;
 }
 .document-more-menu {
+  --plugin-store-icon-size: 16px;
   min-width: 188px;
+}
+.document-more-menu .plugin-slot-display-both > button {
+  gap: 7px;
 }
 .document-live-hidden {
   display: none;

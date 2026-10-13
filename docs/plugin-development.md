@@ -1,6 +1,6 @@
 # Plugin development
 
-Updated 2026-10-03 for source host 0.1.10 and SDK source 0.1.9 (npm publication and production deployment not verified). This is the primary development guide, including current content, native and installation contracts. Linked documents provide full protocols and historical acceptance records. Any compatibility adapter, old-format conversion or database migration requires prior agreement with the project owner.
+Updated 2026-10-12 for source host 0.1.23 and SDK source 0.1.11 (SDK 0.1.11 npm publication verified; production deployment not verified). This is the primary development guide, including current content, native and installation contracts. Linked documents provide full protocols and historical acceptance records. Any compatibility adapter, old-format conversion or database migration requires prior agreement with the project owner.
 
 [中文](plugin-development.zh-CN.md)
 
@@ -125,6 +125,10 @@ Doca does not include membership, prices, points, or business quotas. Model inpu
 
 Plugins own business models, authorization, job logic and outbox semantics; all durable state uses public host-managed services. Plugins never choose a local/remote backend, connect to a private database, read storage credentials or persist to system directories. Managed SQL and private objects are exported in SDK 0.1.7, credentials in SDK source 0.1.9; `data.v1`/`data.v2` and temporary workspaces are not exported. Missing capabilities cannot be replaced with a self-managed store.
 
+## Monitoring and telemetry
+
+SDK source 0.1.11 adds `monitoringServiceToken` and `telemetryServiceToken` from `@smartdoca/plugin-sdk/monitoring`, plus administrator-only `host.platform.monitoring`. Declare required injections and `sdkRange: "^0.1.11"`. Site counts, HTTP metrics, online users, logs, audit, jobs, AI usage and health use public host services; plugins store long-term history through managed storage. See [exact methods, limits and version/data decisions](plugin-monitoring.md). No host database migration or old-host adapter is added.
+
 ## Host-managed persistence
 
 `doca.storage` must be exactly `"host"`, including stateless plugins. It declares compliance with the managed-storage contract; it is not a database name or backend selector. Static inspection checks it before resolving/importing server code. ZIP, npm/store installation, offline directory import, shared-archive restoration and package tooling use this check. No missing-field default or legacy adapter is provided. A declaration is a trusted plugin author's commitment, not a Node.js sandbox or a code audit.
@@ -151,7 +155,7 @@ Disable, process shutdown and `dispose` release registrations, timers and connec
 
 The optional web build default-exports `async host => bundle`. `host` provides React, apiBase, useEnvironment, navigate, toast, confirm, request, FilePicker, platform, and ui. React comes from the host so there is one renderer. Other dependencies are bundled. The host does not resolve bare npm imports. The bundle follows `WebPluginBundle` exported by `@smartdoca/plugin-sdk/web`. `manifest.pluginId` and version match the server. Pages, navigation, admin, and settings contributions are supported.
 
-The host serves the declared directory at `/api/v1/plugin-assets/{id}/{version}/` and loads registrations before startup. Load errors are isolated and logged. Server package files are not exposed. Contribution render has an error boundary. Optional commands/views/placements support current Web home, document, library and file positions. Selection, insertion, theme and native positions remain future work; see [exact methods and slots](plugin-extensions.md).
+The host serves the declared directory at `/api/v1/plugin-assets/{id}/{version}/`. Cold startup loads registrations before mounting; an already cached document mounts immediately while discovery uses the shared live bootstrap request in the background. Navigation and route observers refresh when registrations arrive without rebuilding the document. Only the server's current versioned assets are loaded; startup metadata is not a cached plugin bundle or an authorization adapter. Load errors are isolated and logged. Server package files are not exposed. Contribution render has an error boundary. Optional commands/views/placements support current Web home, document, library and file positions. Selection, insertion, theme and native positions remain future work; see [exact methods and slots](plugin-extensions.md).
 
 ## Build and verify
 
@@ -216,7 +220,7 @@ Use the same Web bundle on Web and in the scoped mobile WebView. `PluginWebHost`
 - Android save returns completed/canceled. iOS save and system sharing may report presented, which does not prove a user completed the action. Account switching or page disposal cancels outstanding requests.
 - Mail account binding belongs on Web. Native OAuth is outside this delivery.
 
-The current SDK source package version is 0.1.10; this does not confirm npm publication. Host tests and builds do not replace independent mail-package integration or iOS/Android device acceptance; those remain pending. See [native protocol](plugin-native.md).
+The current SDK source package version is 0.1.11; this does not confirm npm publication. Host tests and builds do not replace independent mail-package integration or iOS/Android device acceptance; those remain pending. See [native protocol](plugin-native.md).
 
 ## Distribution and navigation
 
@@ -240,3 +244,7 @@ The optional Web bundle `elements` registry and `@smartdoca/plugin-sdk/editor-el
 
 
 Material collections are implemented in SDK source 0.1.9: materials.v2 / version 2 providers, separate material/collection result groups, paging, tags and indexed retrieval. Collection metadata never embeds members. The agreed revision has no materials.v1 adapter and no existing-file/document migration. Collection management belongs to providers using public host-managed persistence. See the [resource protocol](creation-resources.md).
+
+## SDK publication — 2026-10-13
+
+`@smartdoca/plugin-sdk@0.1.11` is published on npm. The registry dependency consumer imports all 17 public entrypoints and verifies monitoring/telemetry tokens and the exact SDK version. This does not establish a production monitoring plugin or native-device acceptance.

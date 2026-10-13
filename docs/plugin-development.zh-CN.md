@@ -1,6 +1,6 @@
 # Doca 插件开发规范
 
-更新：2026-10-10；源码宿主 0.1.15，SDK 源码 0.1.10（npm 发布及生产部署未验收）。本文是插件开发的主入口，包含当前内容、App 和安装约定；链接文档补充完整类型、协议和历史验收记录。任何新增或修改兼容策略、旧格式转换或数据库迁移，必须先与项目负责人对齐方案。
+更新：2026-10-12；源码宿主 0.1.22，SDK 源码 0.1.11（npm 发布及生产部署未验收）。本文是插件开发的主入口，包含当前内容、App 和安装约定；链接文档补充完整类型、协议和历史验收记录。任何新增或修改兼容策略、旧格式转换或数据库迁移，必须先与项目负责人对齐方案。
 
 [English](plugin-development.md)
 
@@ -154,7 +154,7 @@ Doca 不内置会员、货币价格、积分或业务额度。模型管理中的
 
 可选 Web 产物默认导出 `async host => bundle`，host 提供 React、apiBase、useEnvironment、navigate、toast、confirm、request 和 FilePicker。React 从 host 注入，避免重复 renderer；其他依赖须打入浏览器产物，不要求宿主解析 npm 裸路径。bundle 遵循 `@smartdoca/plugin-sdk/web` 导出的 WebPluginBundle，manifest.pluginId/version 与服务端一致，支持页面、导航、管理和设置贡献。
 
-宿主从 `/api/v1/plugin-assets/{id}/{version}/` 提供声明目录，启动前加载注册。插件加载错误隔离并记录，禁止暴露服务端包文件。贡献 render 已加入错误边界；通用目录树插槽尚待补齐。
+宿主从 `/api/v1/plugin-assets/{id}/{version}/` 提供声明目录。首次启动在挂载前加载注册；已有页面缓存的文档立即挂载，插件发现在后台复用同一次实时启动请求。导航和路由订阅在注册到达后刷新，不重建文档。只加载服务端当前声明的版本化资源，页面元数据不是缓存的插件包或授权适配器。插件加载错误隔离并记录，禁止暴露服务端包文件。贡献 render 已加入错误边界；通用目录树插槽尚待补齐。
 
 ## 构建与验证
 
@@ -219,7 +219,7 @@ Web 与受限移动 WebView 复用插件 Web 产物。`@smartdoca/plugin-sdk/web
 - Android 保存可返回 completed/canceled；iOS 保存和系统分享的 presented 仅表示展示系统面板，不代表操作完成。切换账号或页面销毁会取消进行中的请求。
 - 邮箱绑定作为 Web 能力，当前不实现原生 OAuth。
 
-当前 SDK 源码包版本是 0.1.9，不表示已完成 npm 发布。宿主测试和构建不能替代独立邮箱包联调、iOS/Android 真机验收，这两项仍待完成；详细契约见[原生能力](plugin-native.md)。
+当前 SDK 源码包版本是 0.1.11，不表示已完成 npm 发布。宿主测试和构建不能替代独立邮箱包联调、iOS/Android 真机验收，这两项仍待完成；详细契约见[原生能力](plugin-native.md)。
 
 ## 分发与导航
 
@@ -246,3 +246,11 @@ SDK 0.1.5 新增可选的创作资源提供者／消费者、公共客户端和�
 
 
 SDK 源码 0.1.10 已导出通用 `ai.continuations.v1`，插件通过公开入口登记等待并在提交后台结果后唤醒助手；只处理显式新等待，不迁移历史任务。参见[接入协议](plugin-ai-continuations.zh-CN.md)。源码实现不代表 npm 发布或生产部署。
+
+## 监控与遥测（SDK 0.1.11）
+
+`@smartdoca/plugin-sdk/monitoring` 导出 monitoringServiceToken、telemetryServiceToken，Web 通过管理员专用的 `host.platform.monitoring` 读取。声明 required 服务和 `sdkRange: "^0.1.11"`，使用公共服务采集全站/在线统计、HTTP 指标、日志、审计、任务、AI 用量和健康。长期历史通过托管存储保存。具体接口、限制和已确认的数据/版本处理见[监控契约](plugin-monitoring.zh-CN.md)。不增加主数据库迁移或旧宿主适配。
+
+## SDK 发布 — 2026-10-13
+
+`@smartdoca/plugin-sdk@0.1.11` 已发布至 npm。公共注册表依赖消费者检查全部 17 个入口、监控与遥测 token 以及准确 SDK 版本；这不代表生产监控插件或移动设备验收完成。

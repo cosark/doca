@@ -1,0 +1,50 @@
+{
+  "completedAt": "2026-10-13",
+  "approvedPlan": "docs/knowledge-book-payload-storage-plan.zh-CN.md",
+  "deployed": false,
+  "productionDataConverted": false,
+  "verification": {
+    "sqliteFullRelevantSuite": {
+      "files": 7,
+      "passed": 126
+    },
+    "finalSQLiteBooksAndPayloads": {
+      "files": 2,
+      "passed": 60
+    },
+    "postgres17FullRelevantSuite": {
+      "files": 4,
+      "passed": 68
+    },
+    "postgres18FullRelevantSuite": {
+      "files": 4,
+      "passed": 68
+    },
+    "finalPostgres17PayloadSuite": {
+      "files": 1,
+      "passed": 11
+    },
+    "finalPostgres18PayloadSuite": {
+      "files": 1,
+      "passed": 11
+    },
+    "typecheck": "passed",
+    "webBuild": "passed",
+    "docs": "passed",
+    "diffCheck": "passed",
+    "actualReleasedImage": "smartdoca/doca:0.1.22",
+    "oldImageId": "sha256:a5316eb01bf25b0d89801139de85d34a35528be376699c4981ab8a09fd14f04c",
+    "byteExactReleasedFixtureRoundTrips": {
+      "sqlite": 20,
+      "postgres17": 20,
+      "postgres18": 20
+    },
+    "browserLazyCandidate": "lazy-candidate.json",
+    "browserMermaid": "../knowledge-book-reliability-2026-10-12/preview-result.json"
+  },
+  "limits": [
+    "Measurements use synthetic repeated prose, not production storage savings",
+    "Metadata byte figures serialize JSON and exclude physical pages/indexes/WAL",
+    "Production S3 credentials and user documents were not used"
+  ]
+}

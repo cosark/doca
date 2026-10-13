@@ -22,7 +22,10 @@ export function PluginStoreIcon({
   return (
     <span
       className="plugin-store-icon"
-      style={{ width: size, height: size }}
+      style={{
+        width: `var(--plugin-store-icon-size, ${size}px)`,
+        height: `var(--plugin-store-icon-size, ${size}px)`,
+      }}
       aria-hidden="true"
     >
       {!loaded && <Package size={size} />}

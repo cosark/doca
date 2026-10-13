@@ -57,7 +57,7 @@ Connection state moves loading, syncing, ready, and on failure disconnected or e
 - Disconnect keeps the bytes and the id. Reconnect catches up from the remote, then retries unacknowledged increments.
 - Do not treat `encodeStateAsUpdate(doc, vector).length` as dirty. The same state can still return a historical delete set. A length greater than 2 is not a new write.
 - An epoch mismatch pauses the old queue. Export or a separate recovery copy is allowed. Old increments are not forced onto the new document.
-- There is no IndexedDB outbox yet. Disconnect keeps only this page's memory. Closing the page can lose unacknowledged content. Do not claim offline-safe save.
+- Current host adapters persist original checkpoints and pending message IDs through `offline-replica.ts`. Offline editing requires an available authorized replica and successful browser storage; it does not provide a fully offline application shell. The cache-first refresh boundary is recorded in the 2026-10-12 increment below.
 
 Both hosts use `apps/web/src/features/documents/update-outbox.ts`. The queue does not depend on the document type. It keeps the real local transaction increment. A sync-response does not trigger an unconditional upload.
 
@@ -106,7 +106,7 @@ Host 0.1.10 integrates rich text, Markdown, spreadsheets, canvas, and slides wit
 
 The platform implements epoch, protocol checks, commit receipts, and history recovery metadata. Without Redis, broadcast and presence are one process. With Redis, document updates, server refresh, permission invalidation, notifications, and presence cross instances. The database commit is still the ACK boundary and the source of document truth. After Redis reconnects, the server sends the authoritative state again to active rooms on this instance. Pub/Sub is not a durable log, and a Redis failure does not silently fall back to the local bus.
 
-Still shared work for the component and the platform: a formal selection API, a persistent offline queue and a unified rollback across formats. A capability the component does not export is still a target contract.
+Still shared work for the component and the platform: a formal selection API, full offline application startup and a unified rollback across formats. The host's current persistent queue does not imply that a component exports its own offline transport. A capability the component does not export is still a target contract.
 
 ## Plugin elements increment — 2026-10-02
 
@@ -127,3 +127,21 @@ With the installed `@smartdoca/slate` 0.4.13, the host captures native flowchart
 ## Published spreadsheet package integration — 2026-10-10
 
 Host 0.1.18 locks the registry artifact `@smartdoca/sheet` 0.2.0-rc.19. The data-validation toolbar action is distinct from Insert → Dropdown list. Public declarations and Yjs/model/XLSX entrypoints are byte-identical to rc.18; the host continues using the shipped menu-extension, resource, stable-anchor and collaboration APIs. The host synchronizes the shipped `session.setReadOnly` API and refreshes the capability snapshot before painting after mode changes, without rebuilding the workbook or Y.Doc. Plugin-element insertion now uses `SPREADSHEET_MENU_PATHS.toolbarEnd` through native menu extensions. This is a UI/package integration with no codec, schema, epoch, outbox, persisted-data conversion or new compatibility behavior. Existing history readers and explicit host-baseline maintenance commands are unchanged. Package and host regressions use isolated workbooks/documents; build success alone does not establish acceptance of every spreadsheet operation.
+
+## Cached document startup — 2026-10-12
+
+The user-approved host change adds exact-version-1 display metadata in `doca.document-startup.v1` for the current signed-in account and its twelve most recently cached documents. It contains public bootstrap fields, document metadata and containing-library metadata, without credentials, comments, grants or a second content projection. It does not change or convert existing Yjs checkpoints, immutable baselines, epochs, schema/codec protocols, message IDs or durable ACKs. Old hosts have no startup metadata: one live open is required to create it. Unknown/corrupt startup formats are neither used, converted nor overwritten; rollback leaves content and pending work intact.
+
+A cached refresh mounts the shell and restores the original replica before plugin discovery, bootstrap or detail requests finish. The user explicitly chose to allow offline editing under the last known permission. Live validation and retries run in the background; transient network failure preserves the same editor. Reconnect merges remote changes and retries the original pending bytes/IDs, and only matching server ACKs remove them. Logout/account changes and explicit session/resource denial hide the relevant display metadata without deleting durable content or pending edits. Mismatched lineages still pause under the existing exact protocol checks.
+
+This requires cached metadata, successful browser storage and available static application resources; it is not full offline PWA startup. Comments, uploads and permission changes remain online actions. The host's existing default replica parameters and historical readers are unchanged, without a new old-format adapter. Isolated acceptance is recorded by `tests/document-startup-cache.test.ts` and `scripts/qa-document-startup.mts`; basic cache restore does not establish convergence of every operation in each format. See [the storage and recovery boundary](access-offline-events.md#页面缓存先展示--2026-10-12).
+
+## Published Slate and Canvas integration — 2026-10-13
+
+Host 0.1.23 locks the registry artifacts `@smartdoca/slate` 0.4.14 and `@smartdoca/canvas` 0.4.3. Slate codec/Yjs/headless/conversion bytes and public entrypoint maps are unchanged; Canvas model/IO bytes and public entrypoint maps are unchanged. The DOCX patch is bound to the new Slate artifact. Stable host sessions, resource callbacks, permissions, presence, anchors, original checkpoints, epochs and pending update IDs keep their existing ownership. The package regenerates stale diagram previews in view state without content writes.
+
+The user explicitly chose to make no old-flowchart compatibility promise. No host old-node adapter, automatic conversion, historical-field backfill or data deletion is introduced. New shapes, filled-arrow geometry, manual `routeMode`/`vertices` and endpoint anchors use the shipped native model; AI validation and guidance accept/preserve those fields. A previous editor may not render new fields correctly. Preserve prior deployments and the pre-upgrade backup; host database rollback separately follows the approved knowledge-book storage procedure. Existing historical readers and normalization helpers remain in their established paths and are not redesigned by this package upgrade.
+
+Isolated host regressions cover native-field validation, durable/duplicate ACK, remote replay without echo, undo/redo, checkpoint restore, canvas engine singleton registration and DOCX roundtrips. Browser verification and final release checks are recorded in the 0.1.23 verification attachment; model tests do not establish every new diagram gesture or every canvas operation.
+
+Canvas 0.4.3 also contains a user-approved view rule: numeric text line heights from 0.8 through 3 are displayed as font-size multipliers; other numeric values remain pixels. Loading, selection, resize and idle do not rewrite the model. Ordinary text editing preserves the original numeric field; an explicit line-height edit stores the native percentage value. No host migration, backfill or stored-data deletion is added. Browser acceptance verifies 1.5 at 32 px as 48 px, original numeric bytes after text edits, no idle writes, peer convergence and reload. Previous UI rendering is not guaranteed on rollback.

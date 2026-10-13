@@ -1,4 +1,52 @@
 export interface KnowledgeBookTables {
+  knowledge_book_payload_objects: {
+    book_id: string;
+    kind: "data" | "index" | "root";
+    sha256: string;
+    store_id: string;
+    object_key: string;
+    stored_sha256: string;
+    size: number;
+    raw_size: number;
+    state: "ready" | "garbage";
+    created_at: string;
+    updated_at: string;
+  };
+  knowledge_book_payload_edges: {
+    book_id: string;
+    parent_kind: "data" | "index" | "root";
+    parent_sha256: string;
+    child_kind: "data" | "index" | "root";
+    child_sha256: string;
+  };
+  knowledge_book_payload_references: {
+    book_id: string;
+    owner_kind: "node" | "run" | "release";
+    owner_id: string;
+    node_id: string;
+    root_kind: "root";
+    root_sha256: string;
+    raw_sha256: string;
+    raw_size: number;
+    access_manifest: string;
+    summary: string;
+    created_at: string;
+    updated_at: string;
+  };
+  knowledge_book_payload_operations: {
+    id: string;
+    book_id: string;
+    owner_kind: string;
+    owner_id: string;
+    node_id: string;
+    expected_sha256: string;
+    definition: string;
+    lease_id: string;
+    lease_until: string;
+    state: "uploading" | "committed" | "garbage" | "deleted";
+    created_at: string;
+    updated_at: string;
+  };
   knowledge_books: {
     id: string;
     revision: number;

@@ -19,6 +19,8 @@ For the supplied Compose deployment, execute in the deployment directory:
 docker compose restart doca
 ```
 
+Here, `doca` is the service name under `services` in `compose.yaml`; the container name may differ. If you renamed the service, replace `doca` in the command with your service name.
+
 Restart every instance in a multi-instance deployment; use the appropriate supervisor for other deployment types. The UI does not restart processes. During a rolling restart, drain traffic or use affinity if plugin APIs have changed. V1 does not promise zero-downtime mixed-version APIs.
 
 ## Implemented storage revision (2026-10-03, SDK source 0.1.8)

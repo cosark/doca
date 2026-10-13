@@ -1101,7 +1101,10 @@ export function AIAdmin() {
                             );
                             change({
                               imageProfile: imageProfile || undefined,
-                              model: imageProfile,
+                              model:
+                                !d.model || d.model === d.imageProfile
+                                  ? imageProfile
+                                  : d.model,
                               imageSize: profile?.defaultSize,
                             });
                           }}
@@ -1110,14 +1113,36 @@ export function AIAdmin() {
                       </label>
                       <label>
                         {t("aiAdmin.imageDeploymentId")}
-                        <Input
-                          required
+                        <AutoComplete
+                          className="ai-choice"
+                          aria-label={t("aiAdmin.imageDeploymentId")}
                           maxLength={160}
                           value={d.model}
-                          disabled={!d.imageProfile}
-                          onChange={(e) => change({ model: e.target.value })}
+                          placeholder={t("aiAdmin.modelIdPlaceholder")}
+                          options={(catalogs[d.vendorId] ?? []).map((m) => ({
+                            value: m.id,
+                            label:
+                              m.name && m.name !== m.id
+                                ? `${m.id} (${m.name})`
+                                : m.id,
+                          }))}
+                          filterOption={(input, option) =>
+                            String(option?.label ?? "")
+                              .toLowerCase()
+                              .includes(input.trim().toLowerCase())
+                          }
+                          onChange={(model) =>
+                            change({ model: model.slice(0, 160) })
+                          }
                         />
                         <small>{t("aiAdmin.imageDeploymentHelp")}</small>
+                        <button
+                          type="button"
+                          disabled={busy || !modelVendor || !modelVendor.hasKey}
+                          onClick={() => void catalog(modelVendor)}
+                        >
+                          {t("aiAdmin.readModels")}
+                        </button>
                       </label>
                       {d.imageProfile && (
                         <p className="subtle ai-field-wide">

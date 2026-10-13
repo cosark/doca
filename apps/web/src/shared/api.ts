@@ -1,5 +1,6 @@
 import { runAssetUpload } from "./upload-queue.js";
 import { apiErrorMessage } from "./system-errors.js";
+import { cacheStartupBootstrap, clearDocumentStartupCache, startupIdentityRevision } from "./document-startup-cache.js";
 
 export interface User {
   public_id?: string;
@@ -165,6 +166,7 @@ export async function api<T>(
   body?: unknown,
   signal?: AbortSignal,
 ): Promise<T> {
+  const identityRevision = startupIdentityRevision();
   const response = await fetch("/api/v1" + path, {
     method,
     signal,
@@ -175,8 +177,10 @@ export async function api<T>(
   if (!response.ok) {
     if (response.headers.get("X-Doca-Profile-Required") === "1")
       window.dispatchEvent(new Event("profile-required"));
-    if (response.status === 401)
+    if (response.status === 401) {
+      clearDocumentStartupCache();
       window.dispatchEvent(new Event("session-expired"));
+    }
     throw Object.assign(new Error(apiErrorMessage(data.message ?? "请求失败")), {
       status: response.status,
       payload: data,
@@ -185,6 +189,11 @@ export async function api<T>(
   if (path === "/bootstrap" && lastAccount !== (data.user?.id ?? null)) {
     lastAccount = data.user?.id ?? null;
   }
+  if (path === "/bootstrap") {
+    if (identityRevision !== startupIdentityRevision()) throw new DOMException("Session changed during startup", "AbortError");
+    cacheStartupBootstrap(data);
+  }
+  if (path === "/auth/logout" && method === "POST") clearDocumentStartupCache();
   return data;
 }
 export const roleRank = (role: string) =>
@@ -251,7 +260,10 @@ async function sendAssetUpload(
   ) => {
     if (profileRequired === "1")
       window.dispatchEvent(new Event("profile-required"));
-    if (status === 401) window.dispatchEvent(new Event("session-expired"));
+    if (status === 401) {
+      clearDocumentStartupCache();
+      window.dispatchEvent(new Event("session-expired"));
+    }
     if (status < 200 || status >= 300)
       throw Object.assign(new Error(apiErrorMessage(data?.message || "上传失败")), {
         status,

@@ -1,3 +1,4 @@
+import { readBookPayload } from "./payload-storage.js";
 import { randomUUID } from "node:crypto";
 import type { DB } from "@db/index.js";
 import { transact } from "@db/transactions.js";
@@ -77,7 +78,7 @@ export async function resumeBookRun(
       )
     )
       fail(409, "Completed node does not match the frozen workflow");
-    const output = JSON.parse(node.output);
+    const output = await readBookPayload<any>(db, node.output);
     if (
       !Array.isArray(output.evidence) ||
       !Array.isArray(output.claims) ||
@@ -139,7 +140,7 @@ export async function resumeBookRun(
     (node) =>
       node.status === "failed" && node.type === "acceptance" && node.output,
   )) {
-    const output = JSON.parse(node.output);
+    const output = await readBookPayload<any>(db, node.output);
     if (
       !Array.isArray(output.checks) ||
       !output.checks.some((check: { passed: boolean }) => !check.passed)

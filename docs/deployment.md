@@ -2,7 +2,7 @@
 
 [中文](deployment.zh-CN.md)
 
-One server can run the published image `docker.io/smartdoca/doca:0.1.22`. A single container uses SQLite and does not need PostgreSQL or Redis. Use those only when you run more than one application replica. See [single instance and horizontal scaling](horizontal-scaling.md).
+One server can run the published image `docker.io/smartdoca/doca:0.1.23`. A single container uses SQLite and does not need PostgreSQL or Redis. Use those only when you run more than one application replica. See [single instance and horizontal scaling](horizontal-scaling.md).
 
 ## Requirements
 
@@ -26,7 +26,7 @@ Edit `.env` before the first start.
 
 File storage also requires `DOCA_FILE_STORE_ID` and `DOCA_FILE_STORES_JSON`, as provided by `docker.env.example`. Backend paths and credentials are read from the environment; the administration page is read-only. See [file storage](storage.md).
 
-0.1.22 uses database baseline `doca-2026-10-09-history-storage-v1`. Normal startup rejects incompatible earlier baselines. Current source automatically applies reviewed additive structure changes within this baseline; deletions and semantic changes require review. See [database structure evolution](database-schema-evolution.md). The exact 0.1.13 baseline `doca-2026-10-08-knowledge-books-v2` supports the explicit offline upgrade below; other baselines are rejected. Preserve databases, files, configuration and the credential master key; see the [release requirements](releases/0.1.15.md).
+Release 0.1.23 requires generation `doca-2026-10-12-book-payload-storage-v1`. Released 0.1.22 uses `doca-2026-10-09-history-storage-v1` and requires the offline knowledge-book conversion below; normal startup rejects that old generation. Reviewed additions within the target generation reconcile automatically; deletions and semantic changes require review. See [database structure evolution](database-schema-evolution.md). The exact 0.1.13 baseline `doca-2026-10-08-knowledge-books-v2` supports the explicit offline upgrade below; other baselines are rejected. Preserve databases, files, configuration and the credential master key; see the [release requirements](releases/0.1.15.md).
 
 `DOCA_ORIGIN` is the origin users type in the browser. HTTP and HTTPS are accepted, including in production. Use only the origin without a subpath, query, or fragment; a root trailing slash is normalized.
 
@@ -38,9 +38,11 @@ The Docker example already supplies the required file-store values. For a fresh 
 
 ## Start
 
+Existing 0.1.22 deployments must stop all hosts and complete the [0.1.23 knowledge-book conversion](releases/0.1.23.md#existing-deployments-must-upgrade-storage-explicitly) before starting the new host. Earlier supported generations first complete the history upgrade below, then the book conversion. Fresh empty databases start directly.
+
 ### Upgrade from 0.1.13
 
-Stop every Doca instance and back up databases (including SQLite WAL), file storage and configuration. Keep the original `DOCA_CREDENTIAL_MASTER_KEY`. Check out `v0.1.22`, pull the image and run one offline maintenance container with the existing deployment environment:
+Stop every Doca instance and back up databases (including SQLite WAL), file storage and configuration. Keep the original `DOCA_CREDENTIAL_MASTER_KEY`. Check out `v0.1.23`, pull the image and run one offline maintenance container with the existing deployment environment:
 
 ```sh
 docker compose stop
@@ -57,7 +59,7 @@ docker compose pull
 docker compose up -d
 ```
 
-`docker compose up -d` pulls `docker.io/smartdoca/doca:0.1.22`. Add `--build` only when you want an image built from this checkout.
+`docker compose up -d` pulls `docker.io/smartdoca/doca:0.1.23`. Add `--build` only when you want an image built from this checkout.
 
 Check the container:
 
@@ -68,7 +70,7 @@ curl -fsS -H 'Host: docs.example.com' http://127.0.0.1:39120/health
 
 Replace `docs.example.com` with the host in your configured origin, including its port if nonstandard. The built-in container probe already supplies this Host; wait for `docker compose ps` to show `healthy`. A bare loopback curl is rejected with 421.
 
-A healthy process returns `{"status":"ok","version":"0.1.22"}`.
+A healthy process returns `{"status":"ok","version":"0.1.23"}`.
 
 Document rendering also needs its deployment checks: this checkout adds LibreOffice and sandboxed Chromium, while optional SAM requires a separate trusted Linux runtime. See [Docker document renderers](docker-rendering.md) for component availability, the included Chromium seccomp policy and the explicit SAM mount. A healthy server alone does not verify those tools.
 
@@ -151,8 +153,8 @@ Set the static hashed-file **Cache policy** separately: Minimum TTL 0, Default/M
 A static Nginx CDN can serve a release directory as follows, with standard `mime.types` loaded by the server:
 
 ```nginx
-location /doca/0.1.22/assets/ {
-    alias /srv/doca/0.1.22/assets/;
+location /doca/0.1.23/assets/ {
+    alias /srv/doca/0.1.23/assets/;
     add_header Cache-Control "public, max-age=31536000, immutable";
     add_header Access-Control-Allow-Origin "https://doca.example.com";
 }
@@ -161,7 +163,11 @@ location /doca/0.1.22/assets/ {
 When proxying Doca `/assets/`, hide the existing origin header with `proxy_hide_header Cache-Control;` before adding its replacement. The example omits `always` so missing files do not receive a year-long 404 cache. Check the final CDN response:
 
 ```sh
-curl -I https://cdn.example.com/doca/0.1.22/assets/<actual-hashed-JS-filename>.js
+curl -I https://cdn.example.com/doca/0.1.23/assets/<actual-hashed-JS-filename>.js
 ```
 
 Verify Cache-Control, Content-Type and CORS. HTML stays on Doca with revalidation. For document images and protected files, use [storage: browser image caching and the file CDN](storage.md#browser-image-caching-and-the-file-cdn).
+
+## Knowledge-book payload conversion
+
+Release 0.1.23 requires `doca-2026-10-12-book-payload-storage-v1`. After the preceding explicit history upgrade (if applicable), stop all instances and execute the new [knowledge-book storage procedure](knowledge-book-storage-verification.md). The released 0.1.22 image cannot perform this new conversion. Update all host and web builds together. Book rollback restores all JSON, including post-upgrade writes, before any optional older history rollback. Normal startup rejects old and interrupted conversion generations.

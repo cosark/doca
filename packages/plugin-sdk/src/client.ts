@@ -10,12 +10,15 @@ import type {
 import type { DocumentReadServiceV1, LibrariesServiceV1 } from "./documents.js";
 import type { PluginUser } from "./platform.js";
 import type { FilesServiceV1 } from "./files.js";
+import type { MonitoringServiceV1 } from "./monitoring.js";
 type WithoutContext<T> = {
   readonly [K in keyof T]: T[K] extends (ctx: any, input: infer I) => infer R
     ? (input: I, options?: { signal?: AbortSignal }) => R
     : never;
 };
 export interface PluginPlatformClient {
+  /** Administrator-only transport; the server plugin must declare and inject monitoring.v1. */
+  readonly monitoring: MonitoringServiceV1;
   readonly templates: WithoutContext<
     Pick<
       TemplatesServiceV1,
@@ -83,6 +86,17 @@ export function createPluginPlatformClient(
     (input: unknown, options?: { signal?: AbortSignal }) =>
       request<any>(operation, input, options?.signal);
   return Object.freeze({
+    monitoring: Object.freeze({
+      stats: call("monitoring.stats"),
+      online: call("monitoring.online"),
+      metrics: call("monitoring.metrics"),
+      logs: call("monitoring.logs"),
+      audit: call("monitoring.audit"),
+      jobs: call("monitoring.jobs"),
+      jobErrors: call("monitoring.jobErrors"),
+      aiUsage: call("monitoring.aiUsage"),
+      health: call("monitoring.health"),
+    }),
     templates: Object.freeze({
       providers: call("templates.providers"),
       tags: call("templates.tags"),

@@ -1,3 +1,8 @@
+import {
+  bindBookPayloadStore,
+  cleanupBookPayloads,
+} from "@core/modules/knowledge-books/payload-storage.js";
+import { createHostFileStore } from "../services/host-file-store.js";
 import { z } from "zod";
 import { Type } from "@sinclair/typebox";
 import type { FastifyInstance, FastifyRequest } from "fastify";
@@ -13,12 +18,16 @@ import {
 import { executeBookCommand } from "@core/modules/knowledge-books/commands.js";
 import {
   readPublishedKnowledgeBook,
+  readPublishedKnowledgeBookSummary,
   readKnowledgeBook,
   readBookRelease,
   readBookRun,
   readBookPipeline,
+  readKnowledgeBookSummary,
+  readBookRunSummary,
+  readBookReleaseSummary,
 } from "@core/modules/knowledge-books/reads.js";
-import { recoverBookRuns } from "@core/modules/knowledge-books/recovery.js";
+import { reconcileKnowledgeBookRuns } from "../services/ai/knowledge-book-maintenance.js";
 import { executeBookRun } from "@core/modules/knowledge-books/engine.js";
 import { bookConfigurationSchema } from "@core/modules/knowledge-books/protocol.js";
 import { knowledgeBookRuntime } from "../services/ai/knowledge-book-runtime.js";
@@ -40,6 +49,9 @@ export function registerKnowledgeBooks(
   auth: (request: FastifyRequest) => Actor,
   storage?: StorageRuntime,
 ) {
+  const unbindPayloads = storage
+    ? bindBookPayloadStore(db, createHostFileStore(storage))
+    : undefined;
   const viewer = (request: FastifyRequest) => {
     try {
       return auth(request);
@@ -309,16 +321,79 @@ export function registerKnowledgeBooks(
   api.get<{ Params: { id: string; targetId: string } }>(
     "/api/v1/knowledge-books/:id/runs/:targetId/pipeline",
     { schema: { params: scoped } },
-    (request) => readBookPipeline(db, auth(request), request.params.id, request.params.targetId),
+    (request) =>
+      readBookPipeline(
+        db,
+        auth(request),
+        request.params.id,
+        request.params.targetId,
+      ),
+  );
+  api.get<{ Params: { id: string } }>(
+    "/api/v1/knowledge-books/:id/summary",
+    { schema: { params } },
+    (request) =>
+      viewer(request)
+        ? readKnowledgeBookSummary(db, viewer(request)!, request.params.id)
+        : readPublishedKnowledgeBookSummary(db, request.params.id),
+  );
+  api.get<{ Params: { id: string; targetId: string } }>(
+    "/api/v1/knowledge-books/:id/runs/:targetId/summary",
+    { schema: { params: scoped } },
+    (request) =>
+      readBookRunSummary(
+        db,
+        auth(request),
+        request.params.id,
+        request.params.targetId,
+      ),
+  );
+  api.get<{ Params: { id: string; targetId: string } }>(
+    "/api/v1/knowledge-books/:id/releases/:targetId/summary",
+    { schema: { params: scoped } },
+    (request) =>
+      readBookReleaseSummary(
+        db,
+        auth(request),
+        request.params.id,
+        request.params.targetId,
+      ),
   );
   let stopped = false,
     processing: Promise<void> | null = null,
+    maintaining: Promise<void> | null = null,
+    cleaning: Promise<void> | null = null,
     lastSchedule = 0;
+  function maintain() {
+    if (stopped || maintaining) return;
+    maintaining = reconcileKnowledgeBookRuns(db)
+      .catch((error) =>
+        api.log.error(
+          { error: String(error) },
+          "Knowledge book heartbeat reconciliation failed",
+        ),
+      )
+      .finally(() => {
+        maintaining = null;
+      });
+  }
+  function cleanup() {
+    if (stopped || cleaning || !storage) return;
+    cleaning = cleanupBookPayloads(db)
+      .then(() => {})
+      .catch((error) =>
+        api.log.error(
+          { error: String(error) },
+          "Knowledge book payload cleanup failed",
+        ),
+      )
+      .finally(() => {
+        cleaning = null;
+      });
+  }
   async function drain() {
     if (stopped || processing) return;
     processing = (async () => {
-      const cutoff = new Date(Date.now() - 5 * 60_000).toISOString();
-      await recoverBookRuns(db, cutoff);
       const next = await db
         .selectFrom("knowledge_book_runs")
         .select(["id", "actor_id", "configuration"])
@@ -400,10 +475,21 @@ export function registerKnowledgeBooks(
       });
   }
   const timer = setInterval(() => void drain(), 1000);
+  const maintenanceTimer = setInterval(maintain, 5000);
+  const cleanupTimer = setInterval(cleanup, 60_000);
   timer.unref();
+  maintenanceTimer.unref();
+  cleanupTimer.unref();
+  maintain();
+  cleanup();
   api.addHook("preClose", async () => {
     stopped = true;
     clearInterval(timer);
+    clearInterval(maintenanceTimer);
+    clearInterval(cleanupTimer);
+    if (maintaining) await maintaining;
+    if (cleaning) await cleaning;
     if (processing) await processing;
+    unbindPayloads?.();
   });
 }

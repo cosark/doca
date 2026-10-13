@@ -21,6 +21,7 @@ export async function recoverBookRuns(db: DB, cutoff: string) {
         error = systemErrorText(
           new AppError(503, "Run worker stopped; continue this pipeline", {
             code: "book_failed",
+            data: { detail: "The worker heartbeat expired after five minutes; completed node outputs are retained. Continue this pipeline from its checkpoint." },
           }),
         );
       const changed = await tx
