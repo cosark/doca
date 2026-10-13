@@ -42,30 +42,27 @@ const { t } = useI18n();
       </div>
       <div className="inline">
         <button className="upload-control" disabled={busy} onClick={() => setSourceOpen(true)}><ImagePlus size={15} /><span>{t("library.chooseCover")}</span></button>
-        <label className="upload-control" hidden>
-          <ImagePlus size={16} />
-          <span>{busy ? t("library.working") : t("library.chooseCover")}</span>
-          <input
-            ref={localInput}
-            type="file"
-            accept="image/png,image/jpeg,image/webp,image/gif"
-            disabled={busy}
-            onChange={async (e) => {
-              const file = e.target.files?.[0];
-              e.target.value = "";
-              if (!file) return;
-              setBusy(true);
-              setError("");
-              try {
-                setAssetId((await uploadFile(file, "cover", resource.id)).id);
-              } catch (err) {
-                setError((err as Error).message);
-              } finally {
-                setBusy(false);
-              }
-            }}
-          />
-        </label>
+        <input
+          hidden
+          ref={localInput}
+          type="file"
+          accept="image/png,image/jpeg,image/webp,image/gif"
+          disabled={busy}
+          onChange={async (e) => {
+            const file = e.target.files?.[0];
+            e.target.value = "";
+            if (!file) return;
+            setBusy(true);
+            setError("");
+            try {
+              setAssetId((await uploadFile(file, "cover", resource.id)).id);
+            } catch (err) {
+              setError((err as Error).message);
+            } finally {
+              setBusy(false);
+            }
+          }}
+        />
         {assetId && (
           <button disabled={busy} onClick={() => setAssetId(null)}>
             <X size={15} />

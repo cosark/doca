@@ -49,6 +49,14 @@ Mobile plugins use host-issued WebView sessions scoped to a single plugin. Publi
 
 ## Commands, views, and placements
 
+Web page route renderers receive a host-owned `PageHeader` component in their
+route context. Render `<context.PageHeader title={title} actions={actions} />`
+to place React content in the workspace topbar alongside global controls. The
+host owns the mounting targets and removes the portalled content when the page
+unmounts. Plugins must not query host DOM selectors or import host source. Use
+an inline header in the mobile plugin shell, which has no workspace topbar.
+This entry requires the current source host; there is no older-host adapter.
+
 `WebPluginBundle` includes three optional collections:
 
 - commands: reusable actions with id/pluginId/title/supportedContexts/execute.

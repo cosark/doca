@@ -1028,7 +1028,7 @@ function RichDocument({
         >
           {ready ? (
             <EditorRecoveryBoundary
-              key={id}
+              key={`editor:${id}`}
               onFailure={() => {
                 handle.current = null;
                 setBlocked(true);

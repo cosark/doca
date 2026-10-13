@@ -1,0 +1,13 @@
+{
+  "actualOldImage": "smartdoca/doca:0.1.22",
+  "database": "sqlite",
+  "byteExact": 20,
+  "originalSqlBodyBytes": 3698834,
+  "newSqlBodyBytes": 7170,
+  "sqlMetadataJsonBytes": 403190,
+  "uniqueObjects": 266,
+  "registeredStoredBytes": 94508,
+  "rootCount": 8,
+  "refs": 20,
+  "rollbackExact": true
+}

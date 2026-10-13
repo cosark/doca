@@ -9,6 +9,7 @@ import type { registerRuntimeSettings } from "../routes/runtime-settings.js";
 import type { registerSearch } from "../routes/search.js";
 import type { registerRealtime } from "../services/realtime/gateway.js";
 import type { AIContributionExecutionContext } from "../services/ai/runner.js";
+import type { HostMonitoring } from "../services/monitoring.js";
 
 export type SearchRegistration = Awaited<ReturnType<typeof registerSearch>>;
 
@@ -25,6 +26,7 @@ export interface ServerRuntimeService {
   readonly runtime: Awaited<ReturnType<typeof registerRuntimeSettings>>;
   readonly options: CreateAppOptions;
   readonly realtime: Awaited<ReturnType<typeof registerRealtime>>;
+  readonly monitoring: HostMonitoring;
   readonly consumeRateLimit: (
     key: string,
     max: number,

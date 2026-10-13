@@ -1,5 +1,7 @@
 import type { PluginStorageServices } from "../services/plugin-storage.js";
 import { fileOperationScope } from "./file-operation-scope.js";
+import { monitoringBufferFor } from "../services/monitoring.js";
+import { satisfiesPluginVersion } from "@smartdoca/plugin-sdk";
 import type {
   DocaPlugin,
   PluginLifecycleContext,
@@ -18,6 +20,7 @@ export function scopeInstalledPlugin(
   const scope = (context: PluginLifecycleContext) => {
     const previous = contexts.get(context);
     if (previous) return previous;
+    const observationServices = new Map<string, unknown>();
     const owned = (id: string, exact = false) => {
       if (
         exact
@@ -56,6 +59,59 @@ export function scopeInstalledPlugin(
       const value = optional
         ? context.injectOptional(token)
         : context.inject(token);
+      if (["monitoring.v1", "telemetry.v1"].includes(token.id)) {
+        const declared = plugin.injections?.required?.some(
+          (service) => service.id === token.id,
+        );
+        const range = plugin.manifest.sdkRange;
+        if (
+          !declared ||
+          !range ||
+          !satisfiesPluginVersion("0.1.11", range) ||
+          satisfiesPluginVersion("0.1.10", range)
+        ) {
+          if (optional) return undefined;
+          throw new Error(
+            "Monitoring and telemetry require a required injection and an SDK range starting at 0.1.11",
+          );
+        }
+        if (!value) return undefined;
+        if (observationServices.has(token.id))
+          return observationServices.get(token.id) as T;
+        const buffer = monitoringBufferFor(value as object);
+        if (!buffer) throw new Error("Monitoring host binding is unavailable");
+        let active = true;
+        context.effect(() => {
+          if (token.id === "monitoring.v1")
+            buffer.readers.set(
+              plugin.manifest.id,
+              (buffer.readers.get(plugin.manifest.id) ?? 0) + 1,
+            );
+          return () => {
+            active = false;
+            if (token.id === "monitoring.v1") {
+              const remaining =
+                (buffer.readers.get(plugin.manifest.id) ?? 1) - 1;
+              if (remaining) buffer.readers.set(plugin.manifest.id, remaining);
+              else buffer.readers.delete(plugin.manifest.id);
+            }
+          };
+        });
+        const scoped = new Proxy(value as object, {
+          get(target, property) {
+            const method = Reflect.get(target, property);
+            if (typeof method !== "function") return method;
+            return (...args: unknown[]) => {
+              if (!active || buffer.closed)
+                throw new Error("Plugin telemetry scope is disposed");
+              if (token.id === "telemetry.v1") owned(String(args[0]), true);
+              return method.apply(target, args);
+            };
+          },
+        });
+        observationServices.set(token.id, scoped);
+        return scoped as T;
+      }
       if (value && token.id === "files.v1")
         return new Proxy(value as object, {
           get(target, property) {

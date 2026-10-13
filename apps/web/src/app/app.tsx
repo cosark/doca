@@ -1,4 +1,5 @@
 import { PluginSlot } from "@web/plugins/extensions.js";
+import { PluginPageHeader } from "@web/plugins/page-header.js";
 import { extensionViews } from "@web/plugins/extension-ui.js";
 import { MobilePluginPage } from "@web/plugins/mobile-page.js";
 import { NavigationArea, MoreNavigation, LeftNavigation, navigateToDefaultHome, useNavigationLayout } from "@web/plugins/navigation.js";
@@ -45,7 +46,10 @@ import { Select } from "@web/shared/components/select.js";
 import { realtime } from "@web/features/documents/realtime.js";
 import { UserBadge } from "@web/shared/components/user-badge.js";
 import { setCurrentUserId } from "@web/shared/components/user-mention.js";
-import React, { lazy, Suspense, useEffect, useLayoutEffect, useState, useRef, useMemo } from "react";
+import React, { lazy, Suspense, useEffect, useLayoutEffect, useState, useRef, useMemo, useSyncExternalStore } from "react";
+import { loadBootstrap } from "@web/shared/bootstrap.js";
+import { loadWebPlugins } from "@web/plugins/load.js";
+import { cacheStartupDocument, clearDocumentStartupCache, documentStartupCacheKey, forgetStartupDocument, invalidateStartupIdentity, readDocumentStartup, readStartupAccount } from "@web/shared/document-startup-cache.js";
 import { BookOpen, Sparkles, Plus, Search, Clock, Users, Trash2, Settings, Bell, MoreHorizontal, ShieldCheck, ThumbsUp, LogOut, FolderOpen, ArrowLeft, Home, PanelLeft, LockKeyhole, UserRound, BookOpenCheck, Network, MessageSquare } from "lucide-react";
 import {
   api,
@@ -153,12 +157,18 @@ export function App() {
   return <WorkspaceApp/>;
 }
 function WorkspaceApp() {
-  // Installed bundles finish loading before mount, after this module is imported.
-  const pluginNavigation = useMemo(() => webPluginRegistry.navigation.list(), []);
+  const navigationRevision = useSyncExternalStore(webPluginRegistry.navigation.subscribe, webPluginRegistry.navigation.snapshot);
+  const routesRevision = useSyncExternalStore(webPluginRegistry.routes.subscribe, webPluginRegistry.routes.snapshot);
+  const pluginNavigation = useMemo(() => webPluginRegistry.navigation.list(), [navigationRevision]);
   const pluginNavigationByScope = useMemo(
     () => new Map(pluginNavigation.map((item) => [item.scope, item])),
     [pluginNavigation],
   );
+  const pluginNavigationRef = useRef(pluginNavigationByScope);
+  pluginNavigationRef.current = pluginNavigationByScope;
+  const [startup] = useState(() => readDocumentStartup(location.hash));
+  const [bootstrapVerified, setBootstrapVerified] = useState(false);
+  const detailAccount = useRef(startup?.bootstrap.user?.id);
   const { locale, t, reloadLocale } = useI18n();
   const navigationLayout = useNavigationLayout();
   const [navigationCollapsed, setNavigationCollapsed] = useNavigationCollapse("doca.navigation.collapsed");
@@ -167,11 +177,11 @@ function WorkspaceApp() {
   useDismissMenus();
   const [createAnchor, setCreateAnchor] = useState<DOMRect | null>(null);
   const [templateFormat, setTemplateFormat] = useState<Resource["format"] | null>(null);
-  const [bootstrap, setBootstrap] = useState<Bootstrap | null>(null),
+  const [bootstrap, setBootstrap] = useState<Bootstrap | null>(startup?.bootstrap ?? null),
     [fatal, setFatal] = useState(""),
     [navigationOpen, setNavigationOpen] = useState(false),
     [me, setMe] = useState<Me | null>(null),
-    [libraryInfo, setLibraryInfo] = useState<Resource | null>(null),
+    [libraryInfo, setLibraryInfo] = useState<Resource | null>(startup?.library ?? null),
     [heldLibraryId, setHeldLibraryId] = useState<string | null>(null),
     [hash, setHash] = useState(location.hash),
     [refresh, setRefresh] = useState(0),
@@ -188,7 +198,7 @@ function WorkspaceApp() {
         ? route
         : "home";
     }),
-    [detail, setDetail] = useState<Detail | null>(null),
+    [detail, setDetail] = useState<Detail | null>(startup?.detail ?? null),
     [error, setError] = useState(""),
     [busy, setBusy] = useState(false),
     [importProgress, setImportProgress] = useState<ImportProgress | null>(null),
@@ -203,6 +213,12 @@ function WorkspaceApp() {
       parentId: string | null;
       libraryId: string | null;
     }>({ kind: "document", parentId: null, libraryId: null });
+  const bootstrapRef = useRef(bootstrap);
+  bootstrapRef.current = bootstrap;
+  useEffect(() => {
+    if (bootstrapVerified && bootstrap?.user && detail && detailAccount.current === bootstrap.user.id)
+      cacheStartupDocument(bootstrap.user.id, detail, libraryInfo);
+  }, [bootstrapVerified, bootstrap, detail, libraryInfo]);
   useEffect(()=>{const action=(event:Event)=>{if((event as CustomEvent).detail==="doca.search")setModal("search")};window.addEventListener("doca-navigation-action",action);return()=>window.removeEventListener("doca-navigation-action",action)},[]);
   useEffect(() => {
     const token = shareTokenFromHash(hash);
@@ -326,7 +342,7 @@ function WorkspaceApp() {
   const librarySettingsPage = libraryView === "settings" && canManageLibrary;
   const librarySystemPage = libraryView === "system" && canManageLibrary;
 
-  const currentDetail = detail?.resource.id === resourceId ? detail : null;
+  const currentDetail = detail?.resource.id === resourceId && detailAccount.current === bootstrap?.user?.id ? detail : null;
   const bookContextId = /^#\/knowledge-books\/([0-9a-f-]{36})(?:\?|$)/i.exec(hash)?.[1];
   const [bookContext, setBookContext] = useState<{ userId: string; resource: Resource }>();
   useEffect(() => {
@@ -400,7 +416,17 @@ function WorkspaceApp() {
     return () => clearTimeout(timer);
   }, [detail?.resource.id, detail?.resource.title]);
   async function refreshMe() {
+    const account = bootstrapRef.current?.user?.id;
     const m = await api<Me>("/me");
+    if (bootstrapRef.current?.user?.id !== account) return;
+    if (m.user.id !== account) {
+      clearDocumentStartupCache();
+      setMe(null);
+      setDetail(null);
+      setLibraryInfo(null);
+      setBootstrap(await loadBootstrap(true));
+      return;
+    }
     setMe(m);
     setBootstrap((b) => (b ? { ...b, user: m.user } : b));
   }
@@ -505,7 +531,7 @@ function WorkspaceApp() {
       })
       .catch(() => {});
     return () => c.abort();
-  }, [containingLibraryId, refresh]);
+  }, [containingLibraryId, refresh, bootstrap?.user?.id]);
   const reload = async () => {
     setRefresh((n) => n + 1);
   };
@@ -524,12 +550,56 @@ function WorkspaceApp() {
     return () => window.removeEventListener("keydown", shortcut);
   }, [signedIn]);
   useEffect(() => {
-    const load = () =>
-      void api<Bootstrap>("/bootstrap")
+    let active = true, loadingBootstrap = false, generation = 0;
+    let retry: ReturnType<typeof setTimeout> | undefined;
+    const load = (refresh = true) => {
+      if (loadingBootstrap || !active) return;
+      clearTimeout(retry);
+      loadingBootstrap = true;
+      const requestGeneration = generation;
+      void loadBootstrap(refresh)
         .then((b) => {
+          if (!active || requestGeneration !== generation) return;
+          if (bootstrapRef.current?.user?.id !== b.user?.id) {
+            setDetail(null);
+            setLibraryInfo(null);
+          }
           setBootstrap(b);
+          setBootstrapVerified(true);
+          setFatal("");
+          void loadWebPlugins(b).catch(e => console.error("Plugin discovery failed", e));
         })
-        .catch((e) => setFatal(e.message));
+        .catch((e) => {
+          if (!active || requestGeneration !== generation) return;
+          if (!bootstrapRef.current) setFatal(e.message);
+          retry = setTimeout(() => load(), 3000);
+        })
+        .finally(() => {
+          loadingBootstrap = false;
+          if (active && requestGeneration !== generation) retry = setTimeout(() => load(), 3000);
+        });
+    };
+    const discardSession = () => {
+      generation++;
+      setBootstrapVerified(false);
+      setDetail(null);
+      setLibraryInfo(null);
+      setBootstrap(b => b ? { ...b, user: null } : null);
+      load();
+    };
+    const expired = () => {
+      clearDocumentStartupCache();
+      discardSession();
+    };
+    const reloadBootstrap = () => load();
+    const online = () => { load(); setRefresh(n => n + 1); };
+    const storage = (event: StorageEvent) => {
+      if (event.key !== documentStartupCacheKey) return;
+      if (!event.newValue || readStartupAccount() !== bootstrapRef.current?.user?.id) {
+        invalidateStartupIdentity();
+        discardSession();
+      }
+    };
     const changed = () => {
       setHash(location.hash);
       setNavigationOpen(false);
@@ -548,33 +618,58 @@ function WorkspaceApp() {
         location.hash = "/libraries";
         setScope("libraries");
       } else if (titleKeys[route]) setScope(route);
-      else if (pluginNavigationByScope.has(route)) setScope(route);
+      else if (pluginNavigationRef.current.has(route)) setScope(route);
       else
       setError("");
     };
-    load();
+    load(false);
     window.addEventListener("hashchange", changed);
-    window.addEventListener("session-expired", load);
-    window.addEventListener("profile-required", load);
+    window.addEventListener("session-expired", expired);
+    window.addEventListener("profile-required", reloadBootstrap);
+    window.addEventListener("online", online);
+    window.addEventListener("storage", storage);
     return () => {
+      active = false;
+      clearTimeout(retry);
       window.removeEventListener("hashchange", changed);
-      window.removeEventListener("session-expired", load);
-      window.removeEventListener("profile-required", load);
+      window.removeEventListener("session-expired", expired);
+      window.removeEventListener("profile-required", reloadBootstrap);
+      window.removeEventListener("online", online);
+      window.removeEventListener("storage", storage);
     };
   }, []);
   useEffect(() => {
+    const path = hash.replace(/^#/, "").split("?")[0] || "/home";
+    const route = webPluginRegistry.resolveRoute(path);
+    if (route) setScope(pluginRouteScope(route.contribution.id));
+  }, [hash, routesRevision]);
+  useEffect(() => {
     if (!resourceId) setDetail(null);
     if (!resourceId) return;
+    if (!bootstrap) return;
     const controller = new AbortController();
-    if (detail?.resource.id !== resourceId) setLoading(true);
+    const requestAccount = bootstrap.user?.id;
+    const stored = readDocumentStartup(hash);
+    const cached = stored?.bootstrap.user?.id === requestAccount ? stored : null;
+    if (detail?.resource.id !== resourceId && cached) {
+      detailAccount.current = requestAccount;
+      setDetail(cached.detail);
+      setLibraryInfo(cached.library);
+    }
+    if (detail?.resource.id !== resourceId && !cached) setLoading(true);
+    let retry: ReturnType<typeof setTimeout> | undefined;
     void api<Detail>(
       `/resources/${resourceId}`,
       "GET",
       undefined,
-      controller.signal,
+      AbortSignal.any([controller.signal, AbortSignal.timeout(10000)]),
     )
       .then(async (d) => {
         if (d.resource.knowledgeBook) { location.hash = `/knowledge-books/${d.resource.id}`; return; }
+        if (controller.signal.aborted) return;
+        detailAccount.current = requestAccount;
+        setDetail(d);
+        setLoading(false);
         if (targetComment && /^[a-f0-9-]{36}$/.test(targetComment)) {
           try {
             const context = await api<{ items: Detail["comments"] }>(
@@ -583,11 +678,11 @@ function WorkspaceApp() {
               undefined,
               controller.signal,
             );
-            d.comments = [
+            d = { ...d, comments: [
               ...new Map(
                 [...d.comments, ...context.items].map((c) => [c.id, c]),
               ).values(),
-            ];
+            ] };
           } catch (e) {
             if (!controller.signal.aborted)
               setError("目标评论不存在或已不可访问");
@@ -615,11 +710,15 @@ function WorkspaceApp() {
       })
       .catch((e) => {
         if (!controller.signal.aborted && e.name !== "AbortError") {
-          if ([401, 403, 404].includes(e.status)) setDetail(null);
+          if ([401, 403, 404].includes(e.status)) {
+            forgetStartupDocument(resourceId);
+            setDetail(null);
+          }
           else
             setDetail((previous) =>
               previous?.resource.id === resourceId ? previous : null,
             );
+          if (![401, 403, 404].includes(e.status)) retry = setTimeout(() => setRefresh(n => n + 1), 3000);
           setError(
             e.status && e.status >= 500 ? "服务暂时不可用，已保留当前文档" : "",
           );
@@ -628,8 +727,8 @@ function WorkspaceApp() {
       .finally(() => {
         if (!controller.signal.aborted) setLoading(false);
       });
-    return () => controller.abort();
-  }, [resourceId, refresh, bootstrap?.user?.id, targetComment]);
+    return () => { clearTimeout(retry); controller.abort(); };
+  }, [resourceId, refresh, !!bootstrap, bootstrap?.user?.id, targetComment]);
   async function act(fn: () => Promise<unknown>) {
     setBusy(true);
     setError("");
@@ -697,6 +796,7 @@ function WorkspaceApp() {
   );
   const renderedPluginRoute = pluginRoute?.contribution.render(
       {
+        PageHeader: PluginPageHeader,
         sharedFolderName,
         onFileNavigationChange: setFileTrail,
       },
@@ -1065,6 +1165,7 @@ function WorkspaceApp() {
         {user && <NavigationArea slot="web.right"/>}
         <header className={`topbar ${documentHeader ? "" : "workspace-topbar"}`}>
           <div className="document-topbar-title">
+            {pluginRoute && <div id="plugin-page-header-title" className="plugin-page-header-title" />}
             {user && !resourceId && <NavigationArea slot="web.top"/>}
             {(user || currentLibraryId) && desktopNavigation && navigationCollapsed && (
               <button
@@ -1177,6 +1278,7 @@ function WorkspaceApp() {
             </div>}
           </div>
           <div className="inline document-topbar-actions">
+            {pluginRoute && <div id="plugin-page-header-actions" className="plugin-page-header-actions" />}
             {!resourceId && scope === "knowledge-books" && <div id="knowledge-books-header-actions" />}
 
             {!resourceId && scope === "shared-files" && sharedFolderId && <span id="files-header-actions" />}
@@ -1297,38 +1399,38 @@ function WorkspaceApp() {
           ) : ticketsPage ? (
             <Tickets ticketId={ticketId} />
           ) : resourceId ? (
-            loading ? (
+            loading && !currentDetail ? (
               <div className="empty">{t("nav.opening")}</div>
-            ) : detail ? (
+            ) : currentDetail ? (
               <>
-                {detail.resource.kind === "library" ? (
+                {currentDetail.resource.kind === "library" ? (
                   librarySettingsPage ? (
-                    <LibrarySettings detail={detail} changed={reload} />
+                    <LibrarySettings detail={currentDetail} changed={reload} />
                   ) : librarySystemPage ? (
-                    <LibrarySystemPage detail={detail} changed={reload} />
+                    <LibrarySystemPage detail={currentDetail} changed={reload} />
                   ) : (
                     <LibraryLanding
-                      resource={detail.resource}
-                      create={() => create("document", detail.resource)}
+                      resource={currentDetail.resource}
+                      create={() => create("document", currentDetail.resource)}
                     />
                   )
                 ) : (
                   <Suspense fallback={<p className="empty">{t("shell.loadingEditor")}</p>}>
                     <DocumentEditor
-                      detail={detail}
+                      detail={currentDetail}
                       targetComment={targetComment}
                       loadMoreComments={loadMoreComments}
                       user={user}
                       changed={() => setRefresh((n) => n + 1)}
-                      discussion={!["spreadsheet", "canvas", "presentation"].includes(detail.resource.format) && (
+                      discussion={!["spreadsheet", "canvas", "presentation"].includes(currentDetail.resource.format) && (
                         <Comments
-                          key={detail.resource.id}
+                          key={currentDetail.resource.id}
                           targetComment={targetComment}
                           loadMoreComments={loadMoreComments}
                           detail={{
-                            ...detail,
-                            comments: detail.comments.filter(
-                              (c) => !c.anchor && !detail.comments.some(
+                            ...currentDetail,
+                            comments: currentDetail.comments.filter(
+                              (c) => !c.anchor && !currentDetail.comments.some(
                                 (root) => root.anchor && root.id === c.parent_id,
                               ),
                             ),
@@ -1342,9 +1444,9 @@ function WorkspaceApp() {
                   </Suspense>
                 )}
 
-                {user && detail.resource.kind === "document" && <>
-                  <PluginSlot slot="document.status" scope="document" resource={detail.resource} />
-                  <PluginSlot slot="resource.details" scope="document" resource={detail.resource} />
+                {user && currentDetail.resource.kind === "document" && <>
+                  <PluginSlot slot="document.status" scope="document" resource={currentDetail.resource} />
+                  <PluginSlot slot="resource.details" scope="document" resource={currentDetail.resource} />
                 </>}
               </>
             ) : (
@@ -1859,6 +1961,9 @@ function Notifications() {
               (
                 {
                   "comment.created": t("notify.comment.created"),
+                  "knowledge_book.failed": t("notify.knowledgeBook.failed"),
+                  "knowledge_book.review": t("notify.knowledgeBook.review"),
+                  "knowledge_book.publication": t("notify.knowledgeBook.publication"),
                   "comment.mentioned": t("notify.comment.mentioned"),
                   "document.mentioned": t("notify.document.mentioned"),
                   "favorite.added": t("notify.favorite.added"),

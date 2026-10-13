@@ -89,6 +89,16 @@ const stageInstructions = {
 
 const substantiveWriting = "Write the actual knowledge, not an outline of what to learn or instructions to consult another source. Explain definitions, architecture/components and their relationships, mechanisms step by step, preconditions, exceptions, tradeoffs and worked examples wherever the supplied evidence supports them. Use meaningful ## and ### headings shared by related paragraphs. For supported architectures and processes, include real fenced mermaid diagrams (flowchart/sequenceDiagram) with explained nodes and transitions; a paragraph labelled 'Figure' describing a missing diagram is not a diagram. Tables and code examples must explain supported facts. Do not manufacture technical details absent from evidence: state a precise gap briefly, then develop the supported material. Cover every distinct supplied knowledge claim, merging duplicates without dropping knowledge. Keep learning guidance a short introduction; the bulk of each chapter must teach the subject itself. ";
 
+/** A request budget failure can be retried with smaller inputs, never shorter knowledge. */
+class BookModelBudgetError extends AppError {
+  constructor(message: string, status = 413) {
+    super(status, message, {
+      code: status === 413 ? "book_size_limit" : "book_model_output",
+      data: { detail: message },
+    });
+  }
+}
+
 export function knowledgeBookRuntime(
   db: DB,
   userId: string,
@@ -246,10 +256,7 @@ export function knowledgeBookRuntime(
       promptPayloadBytes(prompt, undefined) >
       configured.model.maxInput * MODEL_INPUT_BYTE_FACTOR
     )
-      fail(
-        413,
-        "Workflow node exceeds the model context; split the node or narrow its source scope",
-      );
+      throw new BookModelBudgetError("This model request exceeds the configured input context; split its claims/pages or narrow its source scope. This is not a total book size limit.");
     const model = await meteredModel(
       db,
       userId,
@@ -290,7 +297,7 @@ export function knowledgeBookRuntime(
             finishReason = part.finishReason.unified;
           else if (part.type === "error") throw part.error;
           if (rawText.length > 500000)
-            fail(413, "Workflow node output exceeds limits; split the node");
+            throw new BookModelBudgetError("This model response exceeds 500,000 characters; split the request. This is not a total book size limit.");
           if (rawText.length && Date.now() - lastOutputLog >= 5000) {
             await report?.({ code: "model_output", value: rawText.length });
             lastOutputLog = Date.now();
@@ -305,8 +312,10 @@ export function knowledgeBookRuntime(
       await report?.({ code: "model_output", value: rawText.length });
       if (!finishReason)
         fail(502, "Workflow stream ended without a completion receipt");
+      if (finishReason === "length")
+        throw new BookModelBudgetError("This model response reached its output token limit; split the request and retain detailed content.", 502);
       if (finishReason !== "stop")
-        fail(502, "Workflow output exceeded the model limit; split this node");
+        fail(502, `Workflow model stopped with finish reason: ${finishReason}`);
       const text = rawText
         .trim()
         .replace(/^```(?:json)?\s*/, "")
@@ -400,6 +409,7 @@ export function knowledgeBookRuntime(
             ? error.issues.map((issue) => ({
                 code: issue.code,
                 path: issue.path,
+                message: issue.message,
               }))
             : error instanceof Error
               ? error.message.slice(0, 1000)
@@ -414,7 +424,7 @@ export function knowledgeBookRuntime(
           }),
         );
         if (attempt === 2)
-          fail(502, "Workflow node did not produce valid structured output");
+          fail(502, "Workflow node did not produce valid structured output: " + (typeof diagnostic === "string" ? diagnostic : JSON.stringify(diagnostic)).slice(0, 2000));
         await report?.({ code: "model_retry", value: attempt + 1, total: 3 });
         prompt.push(
           { role: "assistant", content: [{ type: "text", text }] },
@@ -434,7 +444,7 @@ export function knowledgeBookRuntime(
           promptPayloadBytes(prompt, undefined) >
           configured.model.maxInput * MODEL_INPUT_BYTE_FACTOR
         )
-          fail(413, "Format correction exceeds model context; split the node");
+          throw new BookModelBudgetError("Format correction exceeds this model request's input context; split the request.");
       }
     }
     fail(502, "Knowledge book node failed");
@@ -569,19 +579,44 @@ export function knowledgeBookRuntime(
           }
           flush();
         }
-        if (groups.length > 1) {
+        if (groups.length) {
           const generated: any[] = [];
           for (let index = 0; index < groups.length; index++) {
             signal.throwIfAborted();
             await report?.({ code: "batch_started", value: index + 1, total: groups.length });
             const group = groups[index]!;
             const evidenceIds = new Set(group.claims.flatMap(claim => claim.evidenceIds));
-            const result = pageOutputSchema.parse(await generateModel(stage, {
-              ...input, ...group,
-              evidence: ((input.evidence ?? []) as any[]).filter(item => evidenceIds.has(item.id)),
-              directoryContext: allPages.map(page => ({ path: page.path, title: page.title })),
-              instructions: `${input.instructions}\nWrite complete detailed chapters for this batch ${index + 1}/${groups.length}. Other batches cover other supplied topics. Preserve all knowledge and diagrams in this batch; never compress it into learning guidance.`,
-            }, signal, report));
+            let result: z.infer<typeof pageOutputSchema>;
+            try {
+              result = pageOutputSchema.parse(await generateModel(stage, {
+                ...input, ...group,
+                evidence: ((input.evidence ?? []) as any[]).filter(item => evidenceIds.has(item.id)),
+                directoryContext: allPages.map(page => ({ path: page.path, title: page.title })),
+                instructions: `${input.instructions}\nWrite complete detailed chapters for this batch ${index + 1}/${groups.length}. Other batches cover other supplied topics. Apply the requested depth to these topics without repeating other batches. Preserve all knowledge and diagrams in this batch; never compress it into learning guidance.`,
+              }, signal, report));
+            } catch (error) {
+              if (!(error instanceof BookModelBudgetError)) throw error;
+              // Discard the incomplete response. Subdivide only at whole claims
+              // or paragraphs, so code fences, diagrams and citations survive.
+              const paragraphs = group.pages.flatMap(page => page.paragraphs.map((paragraph: any) => ({ page, paragraph })));
+              const count = stage === "synthesize" ? group.claims.length : paragraphs.length;
+              if (count < 2) throw error;
+              const middle = Math.ceil(count / 2);
+              const halves = stage === "synthesize"
+                ? [group.claims.slice(0, middle), group.claims.slice(middle)].map(claims => ({ claims, pages: [] }))
+                : [paragraphs.slice(0, middle), paragraphs.slice(middle)].map(items => {
+                    const pages = new Map<string, any>();
+                    for (const { page, paragraph } of items) {
+                      if (!pages.has(page.id)) pages.set(page.id, { ...page, paragraphs: [] });
+                      pages.get(page.id).paragraphs.push(paragraph);
+                    }
+                    const ids = new Set(items.flatMap(item => item.paragraph.claimIds));
+                    return { pages: [...pages.values()], claims: group.claims.filter(claim => ids.has(claim.id)) };
+                  });
+              groups.splice(index, 1, ...halves);
+              index--;
+              continue;
+            }
             generated.push(...result.pages.map(page => ({ ...page,
               id: `part_${index}_${bookHash(page.id).slice(0, 20)}`,
               paragraphs: page.paragraphs.map(paragraph => ({ ...paragraph, id: `part_${index}_${bookHash([page.id, paragraph.id]).slice(0, 24)}` })),

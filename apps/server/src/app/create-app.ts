@@ -84,6 +84,8 @@ import { registerTickets } from "../routes/tickets.js";
 import { registerRealtime } from "../services/realtime/gateway.js";
 import { createRealtimeCluster } from "../services/realtime/cluster.js";
 import { composeServerPlugins } from "../plugins/composition.js";
+import { MonitoringBuffer } from "../services/monitoring-buffer.js";
+import { createHostMonitoring } from "../services/monitoring.js";
 
 export interface CreateAppOptions {
   origin: string;
@@ -110,10 +112,12 @@ export interface CreateAppOptions {
 export async function createApp(db: DB, options: CreateAppOptions) {
   imagePageAttemptLimit();
   sessionDurations();
-  const origin = new URL(options.origin),
-    api = Fastify({
+  const origin = new URL(options.origin);
+  const monitoringBuffer = new MonitoringBuffer(options.instanceId ?? randomUUID());
+  const api = Fastify({
       logger: options.logging
         ? {
+            stream: { write(chunk: string) { monitoringBuffer.hostLog(chunk); process.stdout.write(chunk); } },
             serializers: {
               req: (req: any) => ({
                 method: req.method,
@@ -133,6 +137,28 @@ export async function createApp(db: DB, options: CreateAppOptions) {
       trustProxy: options.trustProxy?.length ? options.trustProxy : false,
       ajv: { customOptions: { removeAdditional: false } },
     });
+  const observedRequests = new WeakMap<FastifyRequest, { finish(status: number | null): void }>();
+  api.addHook("onRequest", async (request, reply) => {
+    // WebSocket messages and their connection lifetime have a separate presence source.
+    if (request.headers.upgrade?.toLowerCase() === "websocket") return;
+    const started = performance.now(); let finished = false;
+    monitoringBuffer.begin();
+    const finish = (status: number | null) => {
+      if (finished) return; finished = true;
+      request.raw.removeListener("aborted", aborted);
+      reply.raw.removeListener("close", closed);
+      const elapsed = performance.now() - started;
+      const route = request.routeOptions.url ?? "[unmatched]";
+      monitoringBuffer.request(request.method, route, status, elapsed);
+      if (status === null || status >= 400 || elapsed >= 2000) {
+        if (!monitoringBuffer.closed) monitoringBuffer.log(null, { level: status !== null && status >= 500 ? "error" : "warn", module: "http", message: status === null ? "HTTP request aborted" : "HTTP request completed", requestId: request.id, fields: { method: request.method, route, status, durationMs: elapsed } });
+      }
+    };
+    const aborted = () => finish(null), closed = () => { if (!reply.raw.writableFinished) finish(null); };
+    request.raw.once("aborted", aborted); reply.raw.once("close", closed);
+    observedRequests.set(request, { finish });
+  });
+  api.addHook("onResponse", async (request, reply) => { observedRequests.get(request)?.finish(reply.statusCode); });
   await api.register(swagger, {
     openapi: {
       info: {
@@ -153,8 +179,10 @@ export async function createApp(db: DB, options: CreateAppOptions) {
   const realtimeCluster = await createRealtimeCluster({
     redisUrl: options.redisUrl,
     prefix: options.redisPrefix,
-    instanceId: options.instanceId,
-  });
+    instanceId: monitoringBuffer.instanceId,
+  }).catch(error => { monitoringBuffer.close(); throw error; });
+  const monitoring = await createHostMonitoring(db, monitoringBuffer, realtimeCluster, { redisUrl: options.redisUrl, prefix: options.redisPrefix }).catch(async error => { monitoringBuffer.close(); await realtimeCluster.close(); throw error; });
+  api.addHook("onClose", async () => monitoring.close());
   const actors = new WeakMap<FastifyRequest, Actor | null>(),
     library = createContent(db);
   const visits = createVisitBuffer((actor, id, stamp) =>
@@ -498,6 +526,7 @@ export async function createApp(db: DB, options: CreateAppOptions) {
     runtime,
     options,
     realtime,
+    monitoring,
     consumeRateLimit: (key, max, windowMs) =>
       realtimeCluster.consumeRateLimit(key, max, windowMs),
   }).catch(async (error) => {

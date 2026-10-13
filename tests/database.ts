@@ -1,14 +1,15 @@
+import { testBookPayloadStore } from "./book-payload-store.js";
 import { Pool } from "pg";
 import { randomUUID } from "node:crypto";
-import {
-  openDatabase,
-  type DatabaseConfig,
-} from "@db/connection.js";
+import { openDatabase, type DatabaseConfig } from "@db/connection.js";
 /** Each PostgreSQL fixture owns an isolated schema; never run tests in user data. */
 export async function openTestDatabase(config: DatabaseConfig) {
   const testUrl = process.env.DOCA_TEST_POSTGRES;
-  if (!testUrl || config.driver !== "sqlite" || config.path !== ":memory:")
-    return openDatabase(config);
+  if (!testUrl || config.driver !== "sqlite" || config.path !== ":memory:") {
+    const db = await openDatabase(config);
+    testBookPayloadStore(db);
+    return db;
+  }
   const schema = "doca_test_" + randomUUID().replaceAll("-", "");
   const control = new Pool({ connectionString: testUrl, max: 1 });
   // Serialize fixture DDL so another fixture cannot drop a catalog object while
@@ -23,6 +24,7 @@ export async function openTestDatabase(config: DatabaseConfig) {
       url: url.href,
       schema,
     });
+    testBookPayloadStore(db);
     await control.query("select pg_advisory_unlock(741093215)");
     const destroy = db.destroy.bind(db);
     let closing: Promise<void> | undefined;

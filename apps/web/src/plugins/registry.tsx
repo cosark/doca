@@ -1,6 +1,7 @@
 import { FileText } from "lucide-react";
 import { BookOpen, FolderOpen, Home, Users, type LucideIcon } from "lucide-react";
 import type { ReactNode } from "react";
+import type { PluginPageHeader } from "./page-header.js";
 import type {
   FileDelivery,
   FolderDelivery,
@@ -22,6 +23,7 @@ import {
 } from "@smartdoca/web-plugin-registry";
 
 export interface AppPluginRouteContext {
+  readonly PageHeader: typeof PluginPageHeader;
   readonly sharedFolderName: string;
   readonly onFileNavigationChange: (trail: FileLocation[]) => void;
 }

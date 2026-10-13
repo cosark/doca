@@ -1,6 +1,7 @@
 import { expect, it, vi } from "vitest";
 import {
   imageModelProfiles,
+  defaultImageProfile,
   imageProfileForModel,
   imageProfilesForProvider,
   imageSizeForRatio,
@@ -177,8 +178,8 @@ it("only resolves explicitly selected models within the supported connection typ
       provider: "compatible",
       imageGeneration: true,
       imageProfile: "doubao-seedream-5-0-pro-260628",
-    }),
-  ).toBeUndefined();
+    })?.adapter,
+  ).toBe("seedream");
   expect(
     imageProfileForModel({
       provider: "compatible",
@@ -201,6 +202,44 @@ it("only resolves explicitly selected models within the supported connection typ
     imageModelProfiles.length,
   );
 });
+
+it("keeps the approved old gateway defaults unchanged after exposing explicit Seedream profiles", () => {
+  for (const item of imageModelProfiles.filter((item) => item.adapter === "seedream")) {
+    expect(imageProfilesForProvider("compatible")).toContain(item);
+    expect(defaultImageProfile("compatible", item.id)?.id).toBe("gpt-image-2");
+    expect(defaultImageProfile("doubao", item.id)?.id).toBe(item.id);
+  }
+  expect(defaultImageProfile("compatible", "opaque-existing-deployment")?.id).toBe("gpt-image-2");
+});
+
+it.each(["generate", "reference", "edit"] as const)(
+  "uses the explicitly selected Seedream adapter and actual gateway alias for %s exactly once",
+  async (operation) => {
+    const selected = imageProfileForModel({
+      provider: "compatible", imageGeneration: true,
+      imageProfile: "doubao-seedream-4-5-251128",
+    })!;
+    const fetcher = vi.fn(async (url: string | URL | Request, init?: RequestInit) => {
+      expect(url).toBe("https://gateway.example/v1/images/generations");
+      expect(typeof init?.body).toBe("string");
+      const body = JSON.parse(String(init?.body));
+      expect(body).toMatchObject({
+        model: "gateway-seedream-alias", size: "2048x2048",
+        watermark: false, response_format: "b64_json",
+        sequential_image_generation: "disabled",
+      });
+      expect(body.image).toBe(operation === "generate" ? undefined : `data:image/png;base64,${image.data.toString("base64")}`);
+      return Response.json({ data: [{ b64_json: Buffer.from("result").toString("base64") }] });
+    });
+    const output = await invokeImageProvider(input(selected.id, {
+      profile: selected, model: "gateway-seedream-alias",
+      baseUrl: "https://gateway.example/v1", operation,
+      images: operation === "generate" ? [] : [image],
+    }), { fetch: fetcher as typeof fetch });
+    expect(output.protocol).toBe("seedream-generations");
+    expect(fetcher).toHaveBeenCalledTimes(1);
+  },
+);
 
 it("distinguishes unified, generation-only, and editing-only models", () => {
   const model = (imageProfile: string) => ({

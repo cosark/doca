@@ -1,3 +1,4 @@
+import type { PayloadSummary } from "@core/modules/knowledge-books/payload-storage.js";
 import { useCallback, useEffect, useMemo, useRef, useState } from "react";
 import { createPortal } from "react-dom";
 import type { ReactNode } from "react";
@@ -375,11 +376,40 @@ function KnowledgeBookPage({ id }: { id: string }) {
   const [selectedRunId, setSelectedRunId] = useState<string>();
   const runCache = useRef(new Map<string, BookPipelineRun>());
   const runRequest = useRef(0);
+  const releaseRef = useRef(release);
+  releaseRef.current = release;
+  const fetchPipeline = async (runId: string): Promise<BookPipelineRun> => {
+    const value = await api<
+      Omit<BookPipelineRun, "artifact"> & { artifact: PayloadSummary | null }
+    >(`/knowledge-books/${id}/runs/${runId}/summary`);
+    return { ...value, artifact: null, artifactSummary: value.artifact };
+  };
   const load = useCallback(
     async (reset = true) => {
       let value: Book;
       try {
-        value = await api<Book>(`/knowledge-books/${id}`);
+        const summary = await api<
+          Omit<Book, "publishedRelease"> & {
+            publishedRelease:
+              | (Omit<Release, "artifact"> & {
+                  artifact: PayloadSummary | null;
+                })
+              | null;
+          }
+        >(`/knowledge-books/${id}/summary`);
+        const current = releaseRef.current;
+        const published = summary.publishedRelease;
+        let full: Release | null = published
+          ? { ...published, artifact: null }
+          : null;
+        if (published && !published.restricted)
+          full =
+            current?.id === published.id && !current.restricted
+              ? current
+              : await api<Release>(
+                  `/knowledge-books/${id}/releases/${published.id}`,
+                );
+        value = { ...summary, publishedRelease: full };
       } catch (error) {
         if (
           [401, 403, 404].includes((error as { status?: number }).status ?? 0)
@@ -397,9 +427,17 @@ function KnowledgeBookPage({ id }: { id: string }) {
         value.releases.some((item) => item.id === release.id)
       ) {
         try {
-          selectedRelease = await api<Release>(
-            `/knowledge-books/${id}/releases/${release.id}`,
+          const previous = await api<{ id: string; restricted: boolean }>(
+            `/knowledge-books/${id}/releases/${release.id}/summary`,
           );
+          selectedRelease = previous.restricted
+            ? { ...release, artifact: null, restricted: true }
+            : releaseRef.current?.id === previous.id &&
+                !releaseRef.current.restricted
+              ? releaseRef.current
+              : await api<Release>(
+                  `/knowledge-books/${id}/releases/${release.id}`,
+                );
         } catch (error) {
           setRelease(null);
           throw error;
@@ -440,14 +478,14 @@ function KnowledgeBookPage({ id }: { id: string }) {
     const refreshRun = () => {
       if (refreshing || document.visibilityState === "hidden") return;
       refreshing = true;
-      void api<NonNullable<typeof run>>(`/knowledge-books/${id}/runs/${run.id}/pipeline`)
+      void fetchPipeline(run.id)
         .then(value => {
           if (!active || request !== runRequest.current || value.id !== selectedRunId) return;
           runCache.current.set(value.id, value);
           setRun(current => current?.id === value.id && JSON.stringify(current) === JSON.stringify(value) ? current : value);
           setBook(current => current ? { ...current, runs: current.runs.map(item => item.id === value.id ? { ...item, status: value.status, updated_at: value.updatedAt, started_at: value.startedAt, trigger: value.trigger } : item) } : current);
         })
-        .catch(e => { if (active) setError(failure(e)); })
+        .catch(e => { if (active) {setError(failure(e));if([401,403,404].includes(e?.status)){runCache.current.delete(run.id);setRun(null);}} })
         .finally(() => { refreshing = false; });
     };
     const timer = setInterval(refreshRun, 3000);
@@ -459,7 +497,7 @@ function KnowledgeBookPage({ id }: { id: string }) {
     setRun(runCache.current.get(runId) ?? null);
     setActiveTab("runs");
     try {
-      const value = await api<BookPipelineRun>(`/knowledge-books/${id}/runs/${runId}/pipeline`);
+      const value = await fetchPipeline(runId);
       if (request !== runRequest.current) return;
       runCache.current.delete(runId);
       runCache.current.set(runId, value);
@@ -1212,6 +1250,7 @@ function KnowledgeBookPage({ id }: { id: string }) {
                 retry={() => void command<{ id: string }>({ operation: "run.resume", runId: run.id }).then(result => { runCache.current.delete(run.id); return openRun(result.id); }).catch(() => {})}
                 cancel={() => void command({ operation: "run.cancel", runId: run.id }).then(() => openRun(run.id)).catch(() => {})}
                 repair={() => { ai?.addDocument(book.detail.resource); ai?.setComposerDraft(bt("pipelineRepairPrompt", { bookId: id, runId: run.id })); ai?.setOpen(true); }}
+                bookId={id}
                 humanTasks={nodeId => <BookHumanTasks bookId={id} runId={run.id} nodeId={nodeId} changed={async nextRunId => { await load(false); await openRun(nextRunId ?? run.id); }} />}
               /> : selectedRunId ? <div className="book-run-loading" role="status"><Spin /><span>{t("common.loading")}</span></div> : <Empty description={bt("pipelineNoRuns")} />}
               </div>

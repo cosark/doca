@@ -1685,7 +1685,7 @@ it("independently rejects an actual saved image whose identity or blend fails in
   expect(review.evidence).toContain("头部比例过大");
 });
 
-it("requires a supported profile and rejects a native profile on an OpenAI-compatible connection", async () => {
+it("requires a supported profile and rejects a native profile on an OpenAI connection", async () => {
   const { revision, ...config } = await aiConfig(db);
   await expect(saveAIConfig(db, { ...config, models: config.models.map(m => ({ ...m, imageProfile: undefined })) }, revision)).rejects.toThrow("支持清单");
   await expect(saveAIConfig(db, { ...config, models: config.models.map(m => ({ ...m, imageProfile: "doubao-seedream-5-0-pro-260628" })) }, revision)).rejects.toThrow("支持清单");
@@ -1701,6 +1701,27 @@ it("requires a supported profile and rejects a native profile on an OpenAI-compa
     return imageResponse();
   }) as typeof fetch });
   expect(calls).toBe(1);
+});
+
+it("saves and reloads an explicit gateway Seedream profile without replacing the actual deployment ID", async () => {
+  const { revision, ...config } = await aiConfig(db);
+  await saveAIConfig(db, {
+    ...config,
+    vendors: config.vendors.map(v => ({ ...v, provider: "compatible" as const })),
+    models: config.models.map(m => ({
+      ...m, model: "gateway-seedream-actual-alias",
+      imageProfile: "doubao-seedream-4-5-251128", imageSize: "2048x2048",
+    })),
+  }, revision);
+  const { revision: nextRevision, ...reloaded } = await aiConfig(db);
+  expect(reloaded.models[0]).toMatchObject({
+    provider: "compatible", model: "gateway-seedream-actual-alias",
+    imageProfile: "doubao-seedream-4-5-251128", imageSize: "2048x2048",
+  });
+  await expect(saveAIConfig(db, {
+    ...reloaded, models: reloaded.models.map(m => ({ ...m, imageProfile: undefined })),
+  }, nextRevision)).rejects.toThrow("支持清单");
+  expect((await aiConfig(db)).models[0]?.model).toBe("gateway-seedream-actual-alias");
 });
 
 it.each([0, 2, undefined, -1, 0.5, "2", Number.MAX_SAFE_INTEGER + 1])(

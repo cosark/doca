@@ -1,3 +1,5 @@
+import { canReadBookPayload } from "./reads.js";
+import { readBookPayload } from "./payload-storage.js";
 import { prepareRunReuse, retryBookRun } from "./retry.js";
 import { isFrozenBookResume, resumeBookRun } from "./resume.js";
 import { randomUUID } from "node:crypto";
@@ -84,8 +86,14 @@ export async function listBookHumanTasks(
       .where("run_id", "=", row.run_id)
       .where("node_id", "=", row.node_id)
       .executeTakeFirst();
-    let readable = true;
-    const output = node?.output ? JSON.parse(node.output) : null;
+    let readable =
+      !node?.output ||
+      (await canReadBookPayload(db, actor, row.book_id, node.output));
+    const output =
+      node?.output &&
+      (await canReadBookPayload(db, actor, row.book_id, node.output))
+        ? await readBookPayload<any>(db, node.output)
+        : null;
     for (const evidence of (output?.evidence ?? []) as Evidence[])
       if (!(await canReadBookEvidence(db, actor, evidence))) readable = false;
     const configuration = bookConfigurationSchema.parse(
@@ -94,6 +102,7 @@ export async function listBookHumanTasks(
       definition = configuration.workflow.nodes.find(
         (node) => node.id === row.node_id,
       )!;
+    await bookAccess(db, actor, row.book_id, 3);
     items.push({
       ...row,
       nodeLabel: definition.label,
@@ -102,7 +111,8 @@ export async function listBookHumanTasks(
       instructions: definition.parameters.instructions,
       resolution: row.resolution ? JSON.parse(row.resolution) : null,
       stale:
-        (book.revision !== run.configuration_revision && !await isFrozenBookResume(db, row.run_id)) ||
+        (book.revision !== run.configuration_revision &&
+          !(await isFrozenBookResume(db, row.run_id))) ||
         inputSnapshot.hash !== run.input_hash,
       readable,
       output: readable ? output : null,
@@ -133,8 +143,13 @@ export async function resolveBookHumanTask(
   if (!task) fail(404, "Human intervention task not found");
   await bookAccess(db, actor, task.book_id, 3);
   if (input.decision === "resume") {
-    if (task.kind !== "repair") fail(409, "Only a repair task can resume a failed pipeline");
-    return resumeBookRun(db, actor, task.book_id, task.run_id, runtime, { id, expectedRevision: input.expectedRevision, note: input.note });
+    if (task.kind !== "repair")
+      fail(409, "Only a repair task can resume a failed pipeline");
+    return resumeBookRun(db, actor, task.book_id, task.run_id, runtime, {
+      id,
+      expectedRevision: input.expectedRevision,
+      note: input.note,
+    });
   }
   const node = await db
     .selectFrom("knowledge_book_node_runs")
@@ -142,8 +157,14 @@ export async function resolveBookHumanTask(
     .where("run_id", "=", task.run_id)
     .where("node_id", "=", task.node_id)
     .executeTakeFirst();
+  if (
+    input.decision === "approve" &&
+    node?.output &&
+    !(await canReadBookPayload(db, actor, task.book_id, node.output))
+  )
+    fail(403, "Original evidence access is required to resolve this task");
   for (const evidence of (input.decision === "approve" && node?.output
-    ? (JSON.parse(node.output).evidence ?? [])
+    ? ((await readBookPayload<any>(db, node.output)).evidence ?? [])
     : []) as Evidence[])
     if (!(await canReadBookEvidence(db, actor, evidence)))
       fail(403, "Original evidence access is required to resolve this task");
@@ -170,7 +191,8 @@ export async function resolveBookHumanTask(
       .executeTakeFirstOrThrow();
     if (input.decision === "approve") {
       if (
-        (book.revision !== run.configuration_revision && !await isFrozenBookResume(tx, run.id)) ||
+        (book.revision !== run.configuration_revision &&
+          !(await isFrozenBookResume(tx, run.id))) ||
         (await bookInputSnapshot(tx, task.book_id)).hash !== run.input_hash
       )
         fail(
@@ -231,9 +253,19 @@ export async function resolveBookHumanTask(
       actorId: actor.id,
       createdAt: bookNow(),
     });
-    if (current.resolution) await securityAudit(tx, actor.id, actor.id, "knowledge_book.task_resolution_retained", {
-      bookId: task.book_id, runId: task.run_id, taskId: task.id, resolution: current.resolution,
-    });
+    if (current.resolution)
+      await securityAudit(
+        tx,
+        actor.id,
+        actor.id,
+        "knowledge_book.task_resolution_retained",
+        {
+          bookId: task.book_id,
+          runId: task.run_id,
+          taskId: task.id,
+          resolution: current.resolution,
+        },
+      );
     const changed = await tx
       .updateTable("knowledge_book_human_tasks")
       .set({

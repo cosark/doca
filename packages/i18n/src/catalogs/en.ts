@@ -389,13 +389,13 @@ export const en = {
   "ai.error.image_content_rejected":
     "The provider rejected the image request during content review. Existing images are preserved.",
   "ai.progress.tool.imageEdit": "Edit image",
-  "aiAdmin.imageProfile": "Supported image model",
-  "aiAdmin.imageProfileChoose": "Choose a supported model",
+  "aiAdmin.imageProfile": "Image adapter profile",
+  "aiAdmin.imageProfileChoose": "Choose the profile matching your model",
   "aiAdmin.imageProfileHelp":
-    "The selected model determines its adapter and capabilities.",
+    "This catalog lists implemented adapters and capabilities. It does not indicate which models your provider or gateway has deployed.",
   "aiAdmin.imageDeploymentId": "Model or deployment ID",
   "aiAdmin.imageDeploymentHelp":
-    "Use the selected model ID, or the deployment ID or gateway alias that serves this model.",
+    "Read the provider model list to select a model, or enter a deployment ID or gateway alias. It must match the selected adapter profile.",
   "aiAdmin.imageSupportedOperations": "Supported operations: {operations}",
   "aiAdmin.imageToolOverrides": "Choose separate models for each image tool",
   "aiAdmin.imageUseDefault": "Use the default image model",
@@ -798,9 +798,9 @@ export const en = {
   "plugins.refresh": "Refresh",
   "plugins.restart": "This instance requires a restart",
   "plugins.restartHelp":
-    "For Docker Compose, run this command in the deployment directory:",
+    "For deployments using the supplied compose.yaml, run this command in the deployment directory. doca is the Compose service name; the container name may differ:",
   "plugins.restartOther":
-    "Restart every instance. For other deployments, use your process manager.",
+    "If you renamed the Compose service, replace doca in the command with your service name. Restart every instance. For other deployments, use your process manager.",
   "plugins.working": "Processing plugin, please wait…",
   "plugins.installed": "Installed",
   "plugins.store": "Official store",
@@ -3002,6 +3002,9 @@ export const en = {
   "shell.unnamed": "Untitled",
   "shell.ticket": "Ticket",
   "notify.comment.created": "commented",
+  "notify.knowledgeBook.failed": "Knowledge book pipeline failed; continue from its checkpoint",
+  "notify.knowledgeBook.review": "Knowledge book is waiting for your review",
+  "notify.knowledgeBook.publication": "Knowledge book is waiting for publication approval",
   "notify.comment.mentioned": "mentioned you in a comment",
   "notify.document.mentioned": "mentioned you in a document",
   "notify.favorite.added": "added this to favorites",

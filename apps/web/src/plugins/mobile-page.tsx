@@ -1,4 +1,5 @@
 import { useEffect, useState } from "react";
+import { PluginPageHeader } from "./page-header.js";
 import { webPluginRegistry } from "./registry.js";
 import { useI18n } from "@web/shared/i18n.js";
 /** Minimal shell: no host sidebar, account requests, document list or global realtime connection. */
@@ -40,7 +41,7 @@ export function MobilePluginPage() {
   return (
     <main className="mobile-plugin-page">
       {route.contribution.render(
-        { sharedFolderName: "", onFileNavigationChange: () => {} },
+        { PageHeader: PluginPageHeader, sharedFolderName: "", onFileNavigationChange: () => {} },
         route.match,
       )}
     </main>

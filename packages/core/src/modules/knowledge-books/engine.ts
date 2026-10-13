@@ -1,3 +1,10 @@
+import {
+  prepareBookPayload,
+  installBookPayload,
+  abandonBookPayload,
+  readBookPayload,
+  lockBookPayload,
+} from "./payload-storage.js";
 import { readRetryOrigin, readNodeReuse } from "./retry.js";
 import { isFrozenBookResume } from "./resume.js";
 import { readFeedbackOrigin } from "./feedback-origin.js";
@@ -310,7 +317,8 @@ async function assertCurrent(
     { book } = await bookAccess(db, actor, run.book_id, 3);
   if (
     (book.revision !== run.configuration_revision ||
-    book.configuration !== run.configuration) && !await isFrozenBookResume(db, run.id)
+      book.configuration !== run.configuration) &&
+    !(await isFrozenBookResume(db, run.id))
   )
     fail(409, "Workflow configuration changed; run again");
   if ((await bookInputSnapshot(db, run.book_id)).hash !== run.input_hash)
@@ -326,66 +334,117 @@ async function publishRun(
 ) {
   await assertCurrent(db, run, lease);
   await validateBookEvidence(db, run.book_id, artifact.evidence, runtime);
-  return transact(db, async (tx) => {
-    const { actor, book } = await assertCurrent(tx, run, lease);
-    const last = await tx
-      .selectFrom("knowledge_book_releases")
-      .select("revision")
-      .where("book_id", "=", run.book_id)
-      .orderBy("revision", "desc")
-      .executeTakeFirst();
-    const id = randomUUID(),
-      revision = (last?.revision ?? 0) + 1,
-      now = bookNow();
-    const updated = await tx
-      .updateTable("knowledge_books")
-      .set({ published_release_id: id, updated_at: now })
-      .where("id", "=", run.book_id)
-      .where("revision", "=", book.revision)
-      .where(
-        "published_release_id",
-        book.published_release_id === null ? "is" : "=",
-        book.published_release_id,
-      )
-      .executeTakeFirst();
-    if (!Number(updated.numUpdatedRows))
-      fail(409, "Another run published a release; run again");
-    await tx
-      .insertInto("knowledge_book_releases")
-      .values({
-        id,
-        book_id: run.book_id,
-        run_id: run.id,
-        revision,
-        artifact: JSON.stringify(artifact),
-        created_at: now,
-      })
-      .execute();
-    await tx
-      .updateTable("knowledge_book_runs")
-      .set({
-        status: "published",
-        artifact: JSON.stringify(artifact),
-        lease_id: null,
-        updated_at: now,
-      })
-      .where("id", "=", run.id)
-      .where("status", "=", "running")
-      .where("lease_id", "=", lease)
-      .execute();
-    await tx
-      .insertInto("audit_events")
-      .values({
-        id: randomUUID(),
-        actor_id: actor.id,
-        resource_id: run.book_id,
-        action: "knowledge_book.published",
-        created_at: now,
-      })
-      .execute();
-    await appendBookRunLog(tx, run, null, { code: "run_published", value: artifact.pages.length });
-    return { id, revision };
-  });
+  const id = randomUUID();
+  const prepared = await prepareBookPayload(
+    db,
+    { bookId: run.book_id, ownerKind: "run", ownerId: run.id, nodeId: "" },
+    JSON.stringify(artifact),
+  );
+  const publisher = bookConfigurationSchema
+    .parse(JSON.parse(run.configuration))
+    .workflow.nodes.find((n) => n.type === "publish")!;
+  const nodePrepared = await prepareBookPayload(
+    db,
+    {
+      bookId: run.book_id,
+      ownerKind: "node",
+      ownerId: run.id,
+      nodeId: publisher.id,
+    },
+    JSON.stringify({
+      evidence: artifact.evidence,
+      claims: artifact.claims,
+      pages: artifact.pages,
+      checks: artifact.checks,
+    }),
+  );
+  try {
+    return await transact(db, async (tx) => {
+      await lockBookPayload(tx, run.book_id);
+      const { actor, book } = await assertCurrent(tx, run, lease);
+      const nodeMarker = await installBookPayload(tx, nodePrepared);
+      await tx
+        .updateTable("knowledge_book_node_runs")
+        .set({
+          output: nodeMarker,
+          status: "completed",
+          completed_at: bookNow(),
+        })
+        .where("run_id", "=", run.id)
+        .where("node_id", "=", publisher.id)
+        .execute();
+      const runMarker = await installBookPayload(tx, prepared);
+      const releaseMarker = await installBookPayload(tx, prepared, {
+        bookId: run.book_id,
+        ownerKind: "release",
+        ownerId: id,
+        nodeId: "",
+      });
+      const last = await tx
+        .selectFrom("knowledge_book_releases")
+        .select("revision")
+        .where("book_id", "=", run.book_id)
+        .orderBy("revision", "desc")
+        .executeTakeFirst();
+      const revision = (last?.revision ?? 0) + 1,
+        now = bookNow();
+      const updated = await tx
+        .updateTable("knowledge_books")
+        .set({ published_release_id: id, updated_at: now })
+        .where("id", "=", run.book_id)
+        .where("revision", "=", book.revision)
+        .where(
+          "published_release_id",
+          book.published_release_id === null ? "is" : "=",
+          book.published_release_id,
+        )
+        .executeTakeFirst();
+      if (!Number(updated.numUpdatedRows))
+        fail(409, "Another run published a release; run again");
+      await tx
+        .insertInto("knowledge_book_releases")
+        .values({
+          id,
+          book_id: run.book_id,
+          run_id: run.id,
+          revision,
+          artifact: releaseMarker,
+          created_at: now,
+        })
+        .execute();
+      await tx
+        .updateTable("knowledge_book_runs")
+        .set({
+          status: "published",
+          artifact: runMarker,
+          lease_id: null,
+          updated_at: now,
+        })
+        .where("id", "=", run.id)
+        .where("status", "=", "running")
+        .where("lease_id", "=", lease)
+        .execute();
+      await tx
+        .insertInto("audit_events")
+        .values({
+          id: randomUUID(),
+          actor_id: actor.id,
+          resource_id: run.book_id,
+          action: "knowledge_book.published",
+          created_at: now,
+        })
+        .execute();
+      await appendBookRunLog(tx, run, null, {
+        code: "run_published",
+        value: artifact.pages.length,
+      });
+      return { id, revision };
+    });
+  } catch (error) {
+    await abandonBookPayload(db, prepared.operationId);
+    await abandonBookPayload(db, nodePrepared.operationId);
+    throw error;
+  }
 }
 /** The only writer of book releases. Every published artifact comes from validated node outputs. */
 export async function executeBookRun(db: DB, id: string, runtime: BookRuntime) {
@@ -418,6 +477,7 @@ export async function executeBookRun(db: DB, id: string, runtime: BookRuntime) {
     .executeTakeFirst();
   if (!Number(claimed.numUpdatedRows)) return;
   run = { ...run, status: "running", lease_id: lease };
+  const ownsLease = sql<boolean>`exists(select 1 from knowledge_book_runs worker where worker.id = ${id} and worker.status = 'running' and worker.lease_id = ${lease})`;
   const coordinator = new AbortController();
   const signal = AbortSignal.any([
     coordinator.signal,
@@ -453,7 +513,12 @@ export async function executeBookRun(db: DB, id: string, runtime: BookRuntime) {
         (node) => node.type === "publish",
       )!;
       activeNode = publisher.id;
-      const artifact = JSON.parse(run.artifact) as BookArtifact;
+      const artifact = await readBookPayload<BookArtifact>(db, run.artifact, {
+        bookId: run.book_id,
+        ownerKind: "run",
+        ownerId: id,
+        nodeId: "",
+      });
       const task = await db
         .selectFrom("knowledge_book_human_tasks")
         .select(["id", "resolution"])
@@ -466,7 +531,8 @@ export async function executeBookRun(db: DB, id: string, runtime: BookRuntime) {
         artifact.provenance.nodes.push({
           id: `human:${task.id}`,
           kind: "decision",
-          label: resolution.note,
+          label:
+            resolution.decision === "publish" ? "publish" : resolution.note,
           detail: resolution,
         });
         artifact.provenance.edges.push(
@@ -492,15 +558,16 @@ export async function executeBookRun(db: DB, id: string, runtime: BookRuntime) {
       return;
     }
     const priorRunId = await readRetryOrigin(db, id);
-    const rejectedReviews = priorRunId || resumeNodes
-      ? await db
-          .selectFrom("knowledge_book_node_runs")
-          .select(["node_id", "output"])
-          .where("run_id", "=", priorRunId ?? id)
-          .where("type", "=", "acceptance")
-          .where("status", "=", "failed")
-          .execute()
-      : [];
+    const rejectedReviews =
+      priorRunId || resumeNodes
+        ? await db
+            .selectFrom("knowledge_book_node_runs")
+            .select(["node_id", "output"])
+            .where("run_id", "=", priorRunId ?? id)
+            .where("type", "=", "acceptance")
+            .where("status", "=", "failed")
+            .execute()
+        : [];
     const snapshot = await bookInputSnapshot(db, run.book_id),
       outputs = new Map<string, NodeOutput>(),
       pending = new Set(configuration.workflow.nodes.map((node) => node.id));
@@ -512,9 +579,50 @@ export async function executeBookRun(db: DB, id: string, runtime: BookRuntime) {
         .where("run_id", "=", id)
         .where("status", "=", "completed")
         .execute()) {
-        outputs.set(node.node_id, JSON.parse(node.output));
+        outputs.set(
+          node.node_id,
+          await readBookPayload<NodeOutput>(db, node.output, {
+            bookId: run.book_id,
+            ownerKind: "node",
+            ownerId: id,
+            nodeId: node.node_id,
+          }),
+        );
         pending.delete(node.node_id);
       }
+    async function persistNode(
+      nodeId: string,
+      output: NodeOutput,
+      values: Partial<Schema["knowledge_book_node_runs"]>,
+      transition?: (tx: DB) => Promise<void>,
+    ) {
+      await assertCurrent(db, run, lease);
+      const prepared = await prepareBookPayload(
+        db,
+        { bookId: run.book_id, ownerKind: "node", ownerId: id, nodeId },
+        JSON.stringify(compactOutput(output)),
+      );
+      try {
+        return await transact(db, async (tx) => {
+          await lockBookPayload(tx, run.book_id);
+          await assertCurrent(tx, run, lease);
+          const marker = await installBookPayload(tx, prepared);
+          const result = await tx
+            .updateTable("knowledge_book_node_runs")
+            .set({ ...values, output: marker })
+            .where("run_id", "=", id)
+            .where("node_id", "=", nodeId)
+            .executeTakeFirst();
+          if (!Number(result.numUpdatedRows))
+            fail(409, "Run node no longer exists");
+          await transition?.(tx);
+          return result;
+        });
+      } catch (error) {
+        await abandonBookPayload(db, prepared.operationId);
+        throw error;
+      }
+    }
     async function feedbackText(row: Schema["knowledge_book_feedback"]) {
       const detail = bookFeedbackInputSchema.parse(JSON.parse(row.detail));
       const origin = await readFeedbackOrigin(db, row.id, row.revision);
@@ -536,7 +644,7 @@ export async function executeBookRun(db: DB, id: string, runtime: BookRuntime) {
         .where("id", "=", detail.releaseId)
         .where("book_id", "=", run!.book_id)
         .executeTakeFirstOrThrow();
-      const artifact = JSON.parse(prior.artifact) as BookArtifact,
+      const artifact = await readBookPayload<BookArtifact>(db, prior.artifact),
         page = artifact.pages.find((page) => page.id === detail.pageId);
       const paragraphs = detail.paragraphId
         ? page?.paragraphs.filter((p) => p.id === detail.paragraphId)
@@ -602,7 +710,7 @@ export async function executeBookRun(db: DB, id: string, runtime: BookRuntime) {
       node: BookConfiguration["workflow"]["nodes"][number],
     ) {
       const nodeIndex = configuration.workflow.nodes.indexOf(node);
-      const report: BookRunReporter = async event => {
+      const report: BookRunReporter = async (event) => {
         signal.throwIfAborted();
         await assertCurrent(db, run, lease);
         await appendBookRunLog(db, run, nodeIndex, event);
@@ -636,9 +744,20 @@ export async function executeBookRun(db: DB, id: string, runtime: BookRuntime) {
             started_at: bookNow(),
             completed_at: null,
           })
-          .onConflict(conflict => conflict.columns(["run_id", "node_id"]).doUpdateSet({
-            status: "running", error: "", started_at: bookNow(), completed_at: null,
-          }).where("knowledge_book_node_runs.status", "in", ["failed", "cancelled"]))
+          .onConflict((conflict) =>
+            conflict
+              .columns(["run_id", "node_id"])
+              .doUpdateSet({
+                status: "running",
+                error: "",
+                started_at: bookNow(),
+                completed_at: null,
+              })
+              .where("knowledge_book_node_runs.status", "in", [
+                "failed",
+                "cancelled",
+              ]),
+          )
           .execute();
         await report({ code: "node_started" });
         if (node.type === "sources") {
@@ -656,12 +775,20 @@ export async function executeBookRun(db: DB, id: string, runtime: BookRuntime) {
           output.evidence = [];
           for (const source of selected) {
             const ordinal = selected.indexOf(source) + 1;
-            await report({ code: "source_loading", value: ordinal, total: selected.length });
+            await report({
+              code: "source_loading",
+              value: ordinal,
+              total: selected.length,
+            });
             if (!sourceCache.has(source.id))
               sourceCache.set(source.id, readBookSource(db, source, runtime));
             const evidence = await sourceCache.get(source.id)!;
             output.evidence.push(...evidence);
-            await report({ code: "source_loaded", value: evidence.length, total: ordinal });
+            await report({
+              code: "source_loaded",
+              value: evidence.length,
+              total: ordinal,
+            });
           }
         } else if (node.type === "feedback") {
           output.evidence = [];
@@ -687,47 +814,48 @@ export async function executeBookRun(db: DB, id: string, runtime: BookRuntime) {
             });
           }
         } else if (node.type === "human_review") {
-          await db
-            .insertInto("knowledge_book_human_tasks")
-            .values({
-              id: randomUUID(),
-              book_id: run.book_id,
-              run_id: id,
-              node_id: node.id,
-              kind: "review",
-              title: node.label || "",
-              status: "pending",
-              revision: 1,
-              input_hash: run.input_hash,
-              resolution: "",
-              created_at: bookNow(),
-              updated_at: bookNow(),
-            })
-            .onConflict(conflict => conflict.columns(["run_id", "node_id", "kind"]).doUpdateSet({
-              status: "pending", revision: sql`knowledge_book_human_tasks.revision + 1`, updated_at: bookNow(),
-            }))
-            .execute();
-          await db
-            .updateTable("knowledge_book_node_runs")
-            .set({
-              status: "awaiting_input",
-              output: JSON.stringify(compactOutput(output)),
-              completed_at: bookNow(),
-            })
-            .where("run_id", "=", id)
-            .where("node_id", "=", node.id)
-            .execute();
-          await db
-            .updateTable("knowledge_book_runs")
-            .set({
-              status: "awaiting_input",
-              lease_id: null,
-              updated_at: bookNow(),
-            })
-            .where("id", "=", id)
-            .where("status", "=", "running")
-            .where("lease_id", "=", lease)
-            .execute();
+          await persistNode(
+            node.id,
+            output,
+            { status: "awaiting_input", completed_at: bookNow() },
+            async (tx) => {
+              await tx
+                .insertInto("knowledge_book_human_tasks")
+                .values({
+                  id: randomUUID(),
+                  book_id: run.book_id,
+                  run_id: id,
+                  node_id: node.id,
+                  kind: "review",
+                  title: node.label || "",
+                  status: "pending",
+                  revision: 1,
+                  input_hash: run.input_hash,
+                  resolution: "",
+                  created_at: bookNow(),
+                  updated_at: bookNow(),
+                })
+                .onConflict((conflict) =>
+                  conflict.columns(["run_id", "node_id", "kind"]).doUpdateSet({
+                    status: "pending",
+                    revision: sql`knowledge_book_human_tasks.revision + 1`,
+                    updated_at: bookNow(),
+                  }),
+                )
+                .execute();
+              await tx
+                .updateTable("knowledge_book_runs")
+                .set({
+                  status: "awaiting_input",
+                  lease_id: null,
+                  updated_at: bookNow(),
+                })
+                .where("id", "=", id)
+                .where("status", "=", "running")
+                .where("lease_id", "=", lease)
+                .execute();
+            },
+          );
           await appendBookRunLog(db, run, nodeIndex, { code: "waiting_input" });
           return;
         } else if (node.type === "publish") {
@@ -782,7 +910,8 @@ export async function executeBookRun(db: DB, id: string, runtime: BookRuntime) {
             artifact.provenance.nodes.push({
               id: `human:${decision.id}`,
               kind: "decision",
-              label: resolution.note,
+              label:
+                resolution.decision === "publish" ? "publish" : resolution.note,
               detail: resolution,
             });
             artifact.provenance.edges.push(
@@ -806,50 +935,69 @@ export async function executeBookRun(db: DB, id: string, runtime: BookRuntime) {
           if (configuration.autoPublish)
             await publishRun(db, run, lease, artifact, runtime);
           else {
-            await assertCurrent(db, run, lease);
-            await db
-              .insertInto("knowledge_book_human_tasks")
-              .values({
-                id: randomUUID(),
-                book_id: run.book_id,
-                run_id: id,
-                node_id: node.id,
-                kind: "publication",
-                title: node.label || "",
-                status: "pending",
-                revision: 1,
-                input_hash: run.input_hash,
-                resolution: "",
-                created_at: bookNow(),
-                updated_at: bookNow(),
-              })
-              .onConflict(conflict => conflict.columns(["run_id", "node_id", "kind"]).doUpdateSet({
-                status: "pending", revision: sql`knowledge_book_human_tasks.revision + 1`, updated_at: bookNow(),
-              }))
-              .execute();
-            await db
-              .updateTable("knowledge_book_runs")
-              .set({
-                status: "awaiting_publication",
-                artifact: JSON.stringify(artifact),
-                lease_id: null,
-                updated_at: bookNow(),
-              })
-              .where("id", "=", id)
-              .where("status", "=", "running")
-              .where("lease_id", "=", lease)
-              .execute();
-            await appendBookRunLog(db, run, nodeIndex, { code: "waiting_publication" });
-            await db
-              .updateTable("knowledge_book_node_runs")
-              .set({
-                status: "awaiting_publication",
-                output: JSON.stringify(compactOutput(output)),
-                completed_at: bookNow(),
-              })
-              .where("run_id", "=", id)
-              .where("node_id", "=", node.id)
-              .execute();
+            const preparedArtifact = await prepareBookPayload(
+              db,
+              {
+                bookId: run.book_id,
+                ownerKind: "run",
+                ownerId: id,
+                nodeId: "",
+              },
+              JSON.stringify(artifact),
+            );
+            try {
+              await persistNode(
+                node.id,
+                output,
+                { status: "awaiting_publication", completed_at: bookNow() },
+                async (tx) => {
+                  await tx
+                    .insertInto("knowledge_book_human_tasks")
+                    .values({
+                      id: randomUUID(),
+                      book_id: run.book_id,
+                      run_id: id,
+                      node_id: node.id,
+                      kind: "publication",
+                      title: node.label || "",
+                      status: "pending",
+                      revision: 1,
+                      input_hash: run.input_hash,
+                      resolution: "",
+                      created_at: bookNow(),
+                      updated_at: bookNow(),
+                    })
+                    .onConflict((conflict) =>
+                      conflict
+                        .columns(["run_id", "node_id", "kind"])
+                        .doUpdateSet({
+                          status: "pending",
+                          revision: sql`knowledge_book_human_tasks.revision + 1`,
+                          updated_at: bookNow(),
+                        }),
+                    )
+                    .execute();
+                  await tx
+                    .updateTable("knowledge_book_runs")
+                    .set({
+                      status: "awaiting_publication",
+                      artifact: await installBookPayload(tx, preparedArtifact),
+                      lease_id: null,
+                      updated_at: bookNow(),
+                    })
+                    .where("id", "=", id)
+                    .where("status", "=", "running")
+                    .where("lease_id", "=", lease)
+                    .execute();
+                  await appendBookRunLog(tx, run, nodeIndex, {
+                    code: "waiting_publication",
+                  });
+                },
+              );
+            } catch (error) {
+              await abandonBookPayload(db, preparedArtifact.operationId);
+              throw error;
+            }
             return;
           }
         } else {
@@ -946,21 +1094,29 @@ export async function executeBookRun(db: DB, id: string, runtime: BookRuntime) {
               goal: configuration.goal,
               instructions: node.parameters.instructions,
               sourceInstructions: inheritedInstructions,
-              priorReviews: rejectedReviews
-                .filter((review) => {
-                  const parents = new Set([review.node_id]);
-                  for (
-                    let pass = 0;
-                    pass < configuration.workflow.nodes.length;
-                    pass++
-                  )
-                    for (const edge of configuration.workflow.edges)
-                      if (parents.has(edge.target)) parents.add(edge.source);
-                  return parents.has(node.id);
-                })
-                .flatMap((review) =>
-                  review.output ? (JSON.parse(review.output).checks ?? []) : [],
-                ),
+              priorReviews: (
+                await Promise.all(
+                  rejectedReviews
+                    .filter((review) => {
+                      const parents = new Set([review.node_id]);
+                      for (
+                        let pass = 0;
+                        pass < configuration.workflow.nodes.length;
+                        pass++
+                      )
+                        for (const edge of configuration.workflow.edges)
+                          if (parents.has(edge.target))
+                            parents.add(edge.source);
+                      return parents.has(node.id);
+                    })
+                    .map(async (review) =>
+                      review.output
+                        ? (await readBookPayload<NodeOutput>(db, review.output))
+                            .checks
+                        : [],
+                    ),
+                )
+              ).flat(),
               evidence: enabled,
               claims: permittedClaims,
               pages: permittedPages,
@@ -970,6 +1126,7 @@ export async function executeBookRun(db: DB, id: string, runtime: BookRuntime) {
             signal,
             report,
           );
+          await assertCurrent(db, run, lease);
           if (node.type === "extract") {
             const parsed = claimOutputSchema.parse(result);
             checkClaims(parsed.claims, enabled);
@@ -1016,27 +1173,28 @@ export async function executeBookRun(db: DB, id: string, runtime: BookRuntime) {
                   )?.passed,
               )
             ) {
-              await db
-                .updateTable("knowledge_book_node_runs")
-                .set({ output: JSON.stringify(compactOutput(output)) })
-                .where("run_id", "=", id)
-                .where("node_id", "=", node.id)
-                .execute();
+              await persistNode(node.id, output, {});
               fail(422, "Required acceptance criteria failed");
             }
           }
         }
-        await db
-          .updateTable("knowledge_book_node_runs")
-          .set({
-            status: "completed",
-            output: JSON.stringify(compactOutput(output)),
-            completed_at: bookNow(),
-          })
-          .where("run_id", "=", id)
-          .where("node_id", "=", node.id)
-          .execute();
-        await appendBookRunLog(db, run, nodeIndex, { code: "node_completed", value: output.pages.length, total: output.claims.length });
+        const completed =
+          node.type === "publish"
+            ? { numUpdatedRows: 1n }
+            : await persistNode(node.id, output, {
+                status: "completed",
+                completed_at: bookNow(),
+              });
+        if (!Number(completed.numUpdatedRows))
+          fail(
+            409,
+            "Run was cancelled or its lease changed before node completion",
+          );
+        await appendBookRunLog(db, run, nodeIndex, {
+          code: "node_completed",
+          value: output.pages.length,
+          total: output.claims.length,
+        });
         outputs.set(node.id, output);
         pending.delete(node.id);
       } catch (error) {
@@ -1046,7 +1204,7 @@ export async function executeBookRun(db: DB, id: string, runtime: BookRuntime) {
           new Error(original.message, { cause: original }),
           { bookNodeId: node.id, bookCause: original },
         );
-        await db
+        const changed = await db
           .updateTable("knowledge_book_node_runs")
           .set({
             status: coordinator.signal.aborted ? "cancelled" : "failed",
@@ -1058,10 +1216,12 @@ export async function executeBookRun(db: DB, id: string, runtime: BookRuntime) {
           })
           .where("run_id", "=", id)
           .where("node_id", "=", node.id)
-          .execute();
-        await appendBookRunLog(db, run, nodeIndex, {
-          code: coordinator.signal.aborted ? "node_cancelled" : "node_failed",
-        });
+          .where(ownsLease)
+          .executeTakeFirst();
+        if (Number(changed.numUpdatedRows))
+          await appendBookRunLog(db, run, nodeIndex, {
+            code: coordinator.signal.aborted ? "node_cancelled" : "node_failed",
+          });
         throw tagged;
       }
     }
@@ -1134,6 +1294,7 @@ export async function executeBookRun(db: DB, id: string, runtime: BookRuntime) {
         .set({ status: "failed", error: message, completed_at: bookNow() })
         .where("run_id", "=", id)
         .where("node_id", "=", activeNode)
+        .where(ownsLease)
         .where("status", "in", [
           "running",
           "awaiting_input",
@@ -1171,11 +1332,16 @@ export async function executeBookRun(db: DB, id: string, runtime: BookRuntime) {
           created_at: bookNow(),
           updated_at: bookNow(),
         })
-        .onConflict(conflict => conflict.columns(["run_id", "node_id", "kind"]).doUpdateSet({
-          status: "pending", revision: sql`knowledge_book_human_tasks.revision + 1`, updated_at: bookNow(),
-        }))
+        .onConflict((conflict) =>
+          conflict.columns(["run_id", "node_id", "kind"]).doUpdateSet({
+            status: "pending",
+            revision: sql`knowledge_book_human_tasks.revision + 1`,
+            updated_at: bookNow(),
+          }),
+        )
         .execute();
-    if (Number(failed.numUpdatedRows)) await appendBookRunLog(db, run, null, { code: "run_failed" });
+    if (Number(failed.numUpdatedRows))
+      await appendBookRunLog(db, run, null, { code: "run_failed" });
   } finally {
     clearInterval(heartbeat);
   }

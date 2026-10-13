@@ -235,6 +235,11 @@
         "插件 SDK 契约"
       ],
       [
+        "plugin-monitoring",
+        "Monitoring and telemetry",
+        "监控与遥测"
+      ],
+      [
         "plugin-horizontal-scaling",
         "Plugin storage contract",
         "插件存储契约"
@@ -256,6 +261,11 @@
     "en": "Releases",
     "zh": "发行记录",
     "pages": [
+      [
+        "releases/0.1.23",
+        "0.1.23",
+        "0.1.23"
+      ],
       [
         "releases/0.1.22",
         "0.1.22",

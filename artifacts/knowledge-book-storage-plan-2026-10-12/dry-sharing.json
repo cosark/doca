@@ -1,0 +1,14 @@
+{
+  "fixture": "Synthetic success, failed-node and publication-wait payloads created by actual 0.1.22 image",
+  "originalPayloads": 20,
+  "originalSqlPayloadBytes": 3698834,
+  "gzipEachPayloadWithoutSharingBytes": 68051,
+  "longStringReferences": 840,
+  "uniqueLongStrings": 60,
+  "uniqueManifests": 8,
+  "sharedObjectUncompressedBytes": 496384,
+  "sharedObjectGzipBytes": 49286,
+  "roundtrips": 20,
+  "byteExact": true,
+  "limits": "Metadata tables, SQL pages, WAL and backups are not included. Synthetic repeated prose has an unusually high gzip ratio; this is not a production saving estimate. No persisted formats were changed."
+}

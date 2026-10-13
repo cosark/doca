@@ -33,7 +33,7 @@ Only actual local content transactions enter `update-outbox.ts`. Initialization,
 
 The server validates and persists content and derived projections in a transaction, then acknowledges and broadcasts. Receipts deduplicate by resource, epoch, and message ID; the same ID with different bytes is rejected. Checkpoints preserve CRDT identity; independent history records retain their own format, lineage, and assets. See [history and restore](document-experience.md#history-and-restore).
 
-Disconnection retains the current page's memory. Reconnect pulls authoritative state and retries unacknowledged edits. There is no persistent IndexedDB outbox; refresh or page close can lose unacknowledged content, so persistent offline editing is not promised.
+The current host adapters persist original Yjs checkpoints/baselines and unacknowledged messages in IndexedDB before sending. Reconnect pulls authoritative state and retries the original IDs and bytes; only matching durable ACKs remove them. Since the user-approved 2026-10-12 startup change, an already cached signed-in document restores its page metadata and existing replica before backend discovery/validation, and permits offline editing using the last known permission. Temporary network failure keeps the editor mounted; explicit session or resource denial hides cached metadata without deleting pending work. This requires available browser storage and static application resources, and does not provide a complete offline PWA. See [the exact cache and preservation boundary](access-offline-events.md#页面缓存先展示--2026-10-12).
 
 ## Presence and comments
 

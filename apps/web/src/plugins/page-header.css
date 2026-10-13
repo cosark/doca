@@ -1,0 +1,17 @@
+.plugin-page-header-title:empty,
+.plugin-page-header-actions:empty { display: none; }
+.plugin-page-header-title { min-width: 0; }
+.plugin-page-header-actions { display: flex; align-items: center; min-width: 0; }
+.topbar:has(.plugin-page-header-title:not(:empty)) { position: relative; border-bottom: 1px solid var(--line, #e8eaed); }
+.topbar:has(.plugin-page-header-title:not(:empty)) > .document-topbar-title { flex: 1 1 auto; min-width: 0; }
+.topbar:has(.plugin-page-header-title:not(:empty)) > .document-topbar-actions { flex: none; }
+@media (max-width: 760px) {
+  .app-shell > .workspace > .topbar:has(.plugin-page-header-title:not(:empty)) { height: auto; min-height: 56px; flex-wrap: wrap; padding-block: 10px; }
+  .topbar:has(.plugin-page-header-title:not(:empty)) > .document-topbar-title { flex: 1 1 100%; }
+  .topbar:has(.plugin-page-header-title:not(:empty)) > .document-topbar-actions { width: 100%; min-width: 0; justify-content: space-between; }
+  .topbar:has(.plugin-page-header-title:not(:empty)) .plugin-page-header-actions { flex: 1; }
+}
+@media (max-width: 520px) {
+  .topbar:has(.plugin-page-header-title:not(:empty)) > .document-topbar-actions { flex-wrap: wrap; }
+  .topbar:has(.plugin-page-header-title:not(:empty)) .plugin-page-header-actions { flex: 1 1 100%; }
+}

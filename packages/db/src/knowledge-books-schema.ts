@@ -1,3 +1,4 @@
+import { createBookPayloadSchema } from "./book-payload-schema.js";
 import { sql, type Kysely } from "kysely";
 
 export const knowledgeBookStatements = [
@@ -19,4 +20,5 @@ export const knowledgeBookStatements = [
 export async function createKnowledgeBookSchema(db: Kysely<any>) {
   for (const statement of knowledgeBookStatements)
     await sql.raw(statement).execute(db);
+  await createBookPayloadSchema(db);
 }

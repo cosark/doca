@@ -32,7 +32,7 @@ const seedream = (
   coordinates = false,
 ): ImageModelProfile => ({
   id,
-  providers: ["doubao"],
+  providers: ["doubao", "compatible"],
   adapter: "seedream",
   operations: allOperations,
   maxReferences: 8,
@@ -213,7 +213,12 @@ export function defaultImageProfile(
   // New Wan inputs require an explicit profile; the approved old-default reader
   // must not infer this newly implemented protocol from a model name.
   if (["wan2.7-image-pro", "flux2-klein-9b-8bit", "qwen-image-edit-2511-8bit", "mflux-flux2-klein-9b-q8-v1", "mflux-qwen-image-edit-2511-q8-v1"].includes(model ?? "")) return undefined;
-  const profiles = imageProfilesForProvider(provider);
+  // Keep the approved old-config reader unchanged when the explicit gateway
+  // catalog gains Seedream. An old gateway model without a profile still gets
+  // its original GPT Images default, never an inferred Seedream protocol.
+  const profiles = imageProfilesForProvider(provider).filter(
+    (profile) => provider !== "compatible" || profile.adapter !== "seedream",
+  );
   const exact = profiles.find((profile) => profile.id === model);
   if (exact) return exact;
   const id =

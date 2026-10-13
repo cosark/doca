@@ -56,6 +56,15 @@ import { documentReadServiceToken, librariesServiceToken } from '@smartdoca/plug
 import { createPluginPlatformClient, createPluginAssistantClient, validateAssistantOpenInput, type PluginAssistantOpenInput, type PluginAssistantOpenResult, type NavigationSlot, type ExtensionSlot, type WebPluginBundle, type PluginWebHost, type PluginTemplatePickerProps, type PluginMaterialPickerProps } from '@smartdoca/plugin-sdk/web';
 import { aiContinuationsServiceToken, type AIContinuationsServiceV1, type PluginAIToolContext, type AIContinuationSnapshot } from '@smartdoca/plugin-sdk/ai';
 if (aiContinuationsServiceToken.id !== 'ai.continuations.v1') throw Error('public continuation token');
+import { monitoringServiceToken, telemetryServiceToken, type MonitoringServiceV1, type TelemetryServiceV1 } from '@smartdoca/plugin-sdk/monitoring';
+if (monitoringServiceToken.id !== 'monitoring.v1' || telemetryServiceToken.id !== 'telemetry.v1') throw Error('public monitoring tokens');
+const verifyMonitoringTypes = async (monitoring: MonitoringServiceV1, telemetry: TelemetryServiceV1) => {
+  await monitoring.stats({}); await monitoring.online({limit:20}); await monitoring.metrics({scope:'cluster',windowSeconds:60});
+  const logs = await monitoring.logs({}); await monitoring.logs({cursor:logs.cursor}); await monitoring.audit({source:'security'});
+  await monitoring.jobs({}); await monitoring.jobErrors({source:'projection'}); await monitoring.aiUsage({}); await monitoring.health({});
+  telemetry.log('example.consumer',{level:'info',module:'example.consumer',message:'Ready',fields:{count:1}});
+  telemetry.record('example.consumer',{name:'example.consumer.requests',kind:'counter',value:1,labels:{kind:'sync'}});
+}; void verifyMonitoringTypes;
 const verifyContinuationTypes = async (service: AIContinuationsServiceV1, context: PluginAIToolContext) => { const snapshot: AIContinuationSnapshot = {version:1,state:'completed',revision:'2',summary:'Saved',result:{id:'result'}}; const cleanup = service.registerSource({id:'example.consumer.jobs',pluginId:'example.consumer',async read(){return snapshot;}}); const receipt = await service.wait('example.consumer',context,{sourceId:'example.consumer.jobs',operationId:'stable-job'}); const json: import('@smartdoca/plugin-contracts').JsonValue = receipt; void json; await service.wake('example.consumer',{sourceId:'example.consumer.jobs',operationId:'stable-job'}); cleanup(); };
 void verifyContinuationTypes;
 import { usersServiceToken, type DirectorySource } from '@smartdoca/plugin-sdk/platform';
@@ -72,6 +81,8 @@ const requests: {operation:string;input:unknown}[]=[];
 const client = createPluginPlatformClient(async <T,>(operation: string,input:unknown) => {calls.push(operation);requests.push({operation,input});return {} as T});
 await client.documents.readSnapshot({documentId:'doc'}); await client.users.me();
 if (calls.join(',') !== 'documents.readSnapshot,users.me') throw Error('public transport');
+await client.monitoring.stats({}); await client.monitoring.metrics({scope:'instance'});
+if(!calls.includes('monitoring.stats') || !calls.includes('monitoring.metrics')) throw Error('public monitoring transport');
 if(templatesServiceToken.id !== 'templates.v1' || materialsServiceToken.id !== 'materials.v2') throw Error('resource tokens');
 await client.templates.search({contract:{id:'doca.document.rich_text',version:1},providerIds:['example.templates']}); await client.materials.tags({providerIds:[]});
 await client.templates.retrieve({query:'季度经营汇报模板',providerIds:['example.templates'],mode:'auto',topK:8});

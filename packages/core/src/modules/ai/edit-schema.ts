@@ -412,7 +412,8 @@ const presentationWireFields = {
 
 // Publish the native shape without moving execution checks ahead of the existing
 // normalization boundary. validateEditOperations remains the authoritative check.
-const { $schema: _nativeBlockSchema, ...nativeBlockParameters } = block.toJSONSchema();
+const { $schema: _nativeBlockSchema, ...nativeBlockParameters } =
+  block.toJSONSchema();
 const nativeBlockWire = z.any().meta(nativeBlockParameters);
 const richTextWireFields = {
   type: wireOperation.shape.type.describe(
@@ -421,21 +422,37 @@ const richTextWireFields = {
   blockId: wireOperation.shape.blockId.describe(
     "已有文字或块的 ID，仅 text、link、formatText、setBlock、moveBlock、deleteBlock 使用。insertBlock 新节点的 ID 放在 block.id，不能传本字段。",
   ),
-  block: nativeBlockWire.optional().describe(
-    'insertBlock 的原生节点对象，例如 {id:"新唯一ID",type:"paragraph",title:"h2",children:[{text:"章节标题"}]}，不能传 JSON 字符串。',
-  ),
+  block: nativeBlockWire
+    .optional()
+    .describe(
+      'insertBlock 的原生节点对象，例如 {id:"新唯一ID",type:"paragraph",title:"h2",children:[{text:"章节标题"}]}，不能传 JSON 字符串。',
+    ),
   parentId: optionalId.describe("结构命令的已读取父容器 ID，可省略"),
-  afterId: optionalId.describe("结构命令插入在此块后；可用本批前面新插入的 block.id"),
+  afterId: optionalId.describe(
+    "结构命令插入在此块后；可用本批前面新插入的 block.id",
+  ),
   rows: count.optional().describe("insertTable 行数，顶层正整数"),
   columns: count.optional().describe("insertTable 列数，顶层正整数"),
-  tableId: optionalId.describe("已有表格命令的表 ID，必须从 document_read 获取；insertTable 不允许此字段"),
-  cellId: optionalId.describe("setCellContent 的真实单元格 ID，取 outline 的 cells[].id"),
-  children: z.array(nativeBlockWire).optional().describe('setCellContent 的原生块数组，每个块必填新唯一 id、type、children。例如 [{id:"新唯一ID",type:"paragraph",children:[{text:"内容"}]}]。不要把 required 等 JSON Schema 字段放进节点；insertBlock 的 children 应放在 block 内。'),
+  tableId: optionalId.describe(
+    "已有表格命令的表 ID，必须从 document_read 获取；insertTable 不允许此字段",
+  ),
+  cellId: optionalId.describe(
+    "setCellContent 的真实单元格 ID，取 outline 的 cells[].id",
+  ),
+  children: z
+    .array(nativeBlockWire)
+    .optional()
+    .describe(
+      'setCellContent 的原生块数组，每个块必填新唯一 id、type、children。例如 [{id:"新唯一ID",type:"paragraph",children:[{text:"内容"}]}]。不要把 required 等 JSON Schema 字段放进节点；insertBlock 的 children 应放在 block 内。',
+    ),
   index: index.optional(),
   deleteCount: index.optional(),
   length: count.optional(),
   url: z.string().optional(),
-  properties: z.any().optional().describe("setBlock 的属性对象，不能更换 id 或 children"),
+  properties: z
+    .any()
+    .optional()
+    .describe("setBlock 的属性对象，不能更换 id 或 children"),
   style: z.any().optional(),
   unset: z.array(z.string()).optional(),
   count: count.optional(),
@@ -461,7 +478,7 @@ export function editToolSchema(format: DocumentFormat) {
         ? wireOperation.extend(presentationWireFields)
         : format === "rich_text"
           ? wireOperation.extend(richTextWireFields)
-        : wireOperation;
+          : wireOperation;
   // Keep union checks out of the wire schema: Mastra reports those as a bare
   // "Invalid input". Named fields still have to be listed, otherwise providers
   // drop sheetId/cells or slideId and the model only retries with type.
@@ -472,9 +489,13 @@ export function editToolSchema(format: DocumentFormat) {
       epochId: id,
       sheetId: z.string().min(1).max(200).optional(),
       cells: (format === "spreadsheet" ? wireCells : z.any()).optional(),
-      operations: z.array(operation).min(1).max(80).describe(
-        '直接传 JSON 对象数组，例如 [{type:"append",text:"正文"}]，不能将数组序列化成带引号的字符串。80 限制的是操作数量，不是字符数；类型错误时应修正数组形状，不能靠缩短正文解决。',
-      ),
+      operations: z
+        .array(operation)
+        .min(1)
+        .max(80)
+        .describe(
+          '直接传 JSON 对象数组，例如 [{type:"append",text:"正文"}]，不能将数组序列化成带引号的字符串。80 限制的是操作数量，不是字符数；类型错误时应修正数组形状，不能靠缩短正文解决。',
+        ),
     })
     .passthrough();
 }
@@ -558,9 +579,10 @@ export function validateRichNode(
     ...(fields[node.type] ?? []),
   ]);
   const unknownProperties = Object.keys(node).filter((k) => !allowed.has(k));
-  const diagramStyleHint = node.type === "flowchart"
-    ? "；配色写在 nodes 中：fillColor=填充、color=边框、textColor=文字，连线颜色写在 edges[].color，不在图块顶层写 style/color/backgroundColor"
-    : "";
+  const diagramStyleHint =
+    node.type === "flowchart"
+      ? "；配色写在 nodes 中：fillColor=填充、color=边框、textColor=文字，连线颜色写在 edges[].color，不在图块顶层写 style/color/backgroundColor"
+      : "";
   assert(
     !unknownProperties.length,
     `${node.type} 包含未知属性 ${unknownProperties.join("、")}，请遵循原生元素格式${diagramStyleHint}`,
@@ -597,7 +619,7 @@ export function validateRichNode(
       "流程图必须提供 nodes 和 edges",
     );
     const shapes = new Set(
-      "process decision terminator database document multiple-documents data subprocess manual-input preparation delay display storage connector off-page-connector merge card paper-tape actor use-case class object interface component package state activity lifeline boundary control entity group note text mind-topic".split(
+      "circle ellipse triangle hexagon pentagon octagon star cross cloud server browser swimlane rectangle block-arrow process decision terminator database document multiple-documents data subprocess manual-input preparation delay display storage connector off-page-connector merge card paper-tape actor use-case class object interface component package state activity lifeline boundary control entity group note text mind-topic".split(
         " ",
       ),
     );
@@ -617,16 +639,70 @@ export function validateRichNode(
         n.shape === undefined || shapes.has(n.shape),
         `未知流程图节点形状 ${n.shape}`,
       );
+      assert(
+        n.arrowDirection === undefined ||
+          ["right", "down", "left", "up"].includes(n.arrowDirection),
+        "未知实心箭头方向",
+      );
+      assert(
+        n.arrowRoute === undefined ||
+          ["straight", "elbow", "step"].includes(n.arrowRoute),
+        "未知实心箭头路径",
+      );
+      for (const field of ["arrowThickness", "arrowHeadSize"])
+        assert(
+          n[field] === undefined ||
+            (typeof n[field] === "number" &&
+              Number.isFinite(n[field]) &&
+              n[field] > 0),
+          `${field} 必须为正数像素值`,
+        );
+      assert(
+        n.arrowBend === undefined ||
+          (typeof n.arrowBend === "number" &&
+            Number.isFinite(n.arrowBend) &&
+            n.arrowBend >= 0 &&
+            n.arrowBend <= 100),
+        "arrowBend 必须为 0 到 100 的百分比",
+      );
       nodeIds.add(n.id);
     }
     const edgeIds = new Set<string>();
     const endpoint = (target: unknown, point: unknown) => {
       if (typeof target !== "string") return false;
       if (target) return nodeIds.has(target);
-      if (!point || typeof point !== "object" || Array.isArray(point)) return false;
+      if (!point || typeof point !== "object" || Array.isArray(point))
+        return false;
       const position = point as { x?: unknown; y?: unknown };
-      return typeof position.x === "number" && Number.isFinite(position.x) &&
-        typeof position.y === "number" && Number.isFinite(position.y);
+      return (
+        typeof position.x === "number" &&
+        Number.isFinite(position.x) &&
+        typeof position.y === "number" &&
+        Number.isFinite(position.y)
+      );
+    };
+    const anchor = (value: any) => {
+      if (value === undefined) return true;
+      const name = typeof value === "string" ? value : value?.name;
+      if (typeof name !== "string" || !name.trim() || name.length > 64)
+        return false;
+      if (typeof value === "string") return true;
+      if (!value || typeof value !== "object" || Array.isArray(value))
+        return false;
+      if (Object.keys(value).some((key) => key !== "name" && key !== "args"))
+        return false;
+      return (
+        value.args === undefined ||
+        (value.args &&
+          typeof value.args === "object" &&
+          !Array.isArray(value.args) &&
+          Object.values(value.args).every(
+            (arg) =>
+              typeof arg === "string" ||
+              typeof arg === "boolean" ||
+              (typeof arg === "number" && Number.isFinite(arg)),
+          ))
+      );
     };
     for (const e of node.edges) {
       assert(
@@ -646,6 +722,20 @@ export function validateRichNode(
       assert(
         e.arrow === undefined || ["none", "end", "both"].includes(e.arrow),
         "未知流程图箭头类型",
+      );
+      assert(
+        e.routeMode === undefined || e.routeMode === "manual",
+        "未知流程图路径模式",
+      );
+      assert(
+        anchor(e.sourceAnchor) && anchor(e.targetAnchor),
+        "连线锚点必须使用名称与可序列化参数",
+      );
+      assert(
+        e.vertices === undefined ||
+          (Array.isArray(e.vertices) &&
+            e.vertices.every((point: any) => endpoint("", point))),
+        "连线路径控制点必须为数值坐标",
       );
       edgeIds.add(e.id);
     }

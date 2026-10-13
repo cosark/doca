@@ -65,7 +65,7 @@ const input = (items: any[]) => ({
   criteria: [],
   maxDocumentDepth: 4,
 });
-function response(text: string, finish = true) {
+function response(text: string, finish = true, finishReason = "stop") {
   return {
     stream: new ReadableStream({
       start(controller) {
@@ -73,7 +73,7 @@ function response(text: string, finish = true) {
         if (finish)
           controller.enqueue({
             type: "finish",
-            finishReason: { unified: "stop" },
+            finishReason: { unified: finishReason },
           });
         controller.close();
       },
@@ -548,4 +548,46 @@ it("organizes a large single page in bounded batches without changing its input 
   expect(fixture.stream).toHaveBeenCalledTimes(3);
   expect(result.pages[0].paragraphs).toHaveLength(85);
   expect(pages).toEqual(before);
+});
+
+it("subdivides truncated detailed synthesis even below forty claims and retains over 100,000 characters", async () => {
+  const claims = Array.from({ length: 19 }, (_, index) => ({ id: `fact${index}`, statement: `Mechanism ${index}`, evidenceIds: ["source"], evidenceQuotes: [{ evidenceId: "source", quote: "TCP" }], reason: "Source", confidence: 1 }));
+  fixture.stream.mockImplementation(async options => {
+    const data = JSON.parse(options.prompt[1].content[0].text);
+    if (data.claims.length > 2) return response('{"pages":[', true, "length");
+    return response(JSON.stringify({ pages: [{ id: "chapter", title: "TCP", path: [], paragraphs: data.claims.map((claim: any, index: number) => ({
+      id: `p${index}`, markdown: `## ${claim.statement}\n\n` + "Supported detailed mechanisms. ".repeat(220), claimIds: [claim.id], reason: "Source",
+    })) }] }));
+  });
+  const result: any = await knowledgeBookRuntime({} as DB, "user", "run", "model").generate("synthesize", { ...input([evidence("source", "TCP")]), claims }, new AbortController().signal);
+  const paragraphs = result.pages.flatMap((page: any) => page.paragraphs);
+  expect(paragraphs).toHaveLength(19);
+  expect(paragraphs.reduce((sum: number, paragraph: any) => sum + paragraph.markdown.length, 0)).toBeGreaterThan(100000);
+  expect(new Set(paragraphs.flatMap((paragraph: any) => paragraph.claimIds))).toEqual(new Set(claims.map(claim => claim.id)));
+  expect(new Set(paragraphs.map((paragraph: any) => paragraph.id)).size).toBe(19);
+  expect(fixture.stream.mock.calls.length).toBeLessThan(38);
+});
+
+it("subdivides truncated organization at whole paragraphs without breaking Mermaid or mutating candidates", async () => {
+  const claims = Array.from({ length: 4 }, (_, index) => ({ id: `fact${index}`, statement: `Mechanism ${index}`, evidenceIds: ["source"], evidenceQuotes: [{ evidenceId: "source", quote: "TCP" }], reason: "Source", confidence: 1 }));
+  const diagram = '```mermaid\nflowchart LR\n A[Sender] --> B[Receiver]\n```';
+  const pages = [{ id: "chapter", title: "TCP", path: [], paragraphs: claims.map((claim, index) => ({ id: `p${index}`, markdown: `## Mechanism ${index}\n\n${diagram}`, claimIds: [claim.id], reason: "Source" })) }];
+  const before = structuredClone(pages);
+  fixture.stream.mockImplementation(async options => {
+    const data = JSON.parse(options.prompt[1].content[0].text);
+    return data.pages.flatMap((page: any) => page.paragraphs).length > 1
+      ? response("{}", true, "length")
+      : response(JSON.stringify({ pages: data.pages }));
+  });
+  const result: any = await knowledgeBookRuntime({} as DB, "user", "run", "model").generate("organize", { ...input([evidence("source", "TCP")]), claims, pages }, new AbortController().signal);
+  expect(result.pages[0].paragraphs.map((paragraph: any) => paragraph.markdown)).toEqual(before[0]!.paragraphs.map(paragraph => paragraph.markdown));
+  expect(pages).toEqual(before);
+  expect(fixture.stream).toHaveBeenCalledTimes(7);
+});
+
+it("reports an indivisible request limit precisely and does not retry truncated partial JSON as complete", async () => {
+  const claim = { id: "fact", statement: "TCP", evidenceIds: ["source"], evidenceQuotes: [{ evidenceId: "source", quote: "TCP" }], reason: "Source", confidence: 1 };
+  fixture.stream.mockResolvedValue(response('{"pages":[', true, "length"));
+  await expect(knowledgeBookRuntime({} as DB, "user", "run", "model").generate("synthesize", { ...input([evidence("source", "TCP")]), claims: [claim] }, new AbortController().signal)).rejects.toThrow("output token limit");
+  expect(fixture.stream).toHaveBeenCalledTimes(1);
 });

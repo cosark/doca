@@ -1,3 +1,8 @@
+import {
+  bookPayloadReference,
+  readBookPayload,
+  type PayloadSummary,
+} from "./payload-storage.js";
 import { authorize } from "../access/queries.js";
 import { AppError } from "../../shared/errors.js";
 import { readNodeReuse } from "./retry.js";
@@ -30,12 +35,30 @@ export async function readableBookArtifact(
   await bookAccess(db, actor, bookId);
   const checked = new Set<string>();
   for (const evidence of artifact.evidence) {
-    const key = JSON.stringify([evidence.reference, evidence.sourceId, evidence.sourceVersion, evidence.contentRef]);
+    const key = JSON.stringify([
+      evidence.reference,
+      evidence.sourceId,
+      evidence.sourceVersion,
+      evidence.contentRef,
+    ]);
     if (checked.has(key)) continue;
     if (!(await canReadBookEvidence(db, actor, evidence))) return null;
     checked.add(key);
   }
   return artifact;
+}
+export async function canReadBookPayload(
+  db: DB,
+  actor: Actor | null,
+  bookId: string,
+  raw: string,
+) {
+  await bookAccess(db, actor, bookId);
+  const ref = await bookPayloadReference(db, raw);
+  if (ref.marker.bookId !== bookId) throw new Error("Payload book mismatch");
+  for (const e of ref.evidence)
+    if (!(await canReadBookEvidence(db, actor, e))) return false;
+  return true;
 }
 export async function readBookRelease(
   db: DB,
@@ -53,12 +76,22 @@ export async function readBookRelease(
   if (!row) fail(404, "Knowledge book release not found");
   if (book.published_release_id !== row.id)
     await authorize(db, actor, bookId, "read_history");
-  const artifact = await readableBookArtifact(
-    db,
-    actor,
-    bookId,
-    JSON.parse(row.artifact),
-  );
+  const artifact = (await canReadBookPayload(db, actor, bookId, row.artifact))
+    ? await readableBookArtifact(
+        db,
+        actor,
+        bookId,
+        await readBookPayload<BookArtifact>(db, row.artifact, {
+          bookId,
+          ownerKind: "release",
+          ownerId: id,
+          nodeId: "",
+        }),
+      )
+    : null;
+  const current = await bookAccess(db, actor, bookId);
+  if (current.book.published_release_id !== row.id)
+    await authorize(db, actor, bookId, "read_history");
   return {
     id: row.id,
     revision: row.revision,
@@ -68,7 +101,23 @@ export async function readBookRelease(
     restricted: !artifact,
   };
 }
-export async function readKnowledgeBook(db: DB, actor: Actor, id: string) {
+export function readKnowledgeBook(db: DB, actor: Actor, id: string) {
+  return readKnowledgeBookContent(db, actor, id, readBookRelease);
+}
+export function readKnowledgeBookSummary(db: DB, actor: Actor, id: string) {
+  return readKnowledgeBookContent(db, actor, id, readBookReleaseSummary);
+}
+async function readKnowledgeBookContent<T>(
+  db: DB,
+  actor: Actor,
+  id: string,
+  releaseReader: (
+    db: DB,
+    actor: Actor | null,
+    bookId: string,
+    id: string,
+  ) => Promise<T>,
+) {
   const { book, rank } = await bookAccess(db, actor, id);
   const detail = await createResourceReads(db, createResourceRunner(db)).detail(
     actor,
@@ -218,19 +267,61 @@ export async function readKnowledgeBook(db: DB, actor: Actor, id: string) {
     canManage: rank >= 4,
     sources,
     feedback,
-    runs: runs.map(({ trigger_key, ...run }) => ({ ...run, trigger: triggers.get(run.id) ?? null })),
+    runs: runs.map(({ trigger_key, ...run }) => ({
+      ...run,
+      trigger: triggers.get(run.id) ?? null,
+    })),
     releases,
     publishedRelease: book.published_release_id
-      ? await readBookRelease(db, actor, id, book.published_release_id)
+      ? await releaseReader(db, actor, id, book.published_release_id)
       : null,
   };
 }
-export async function readBookRun(
+export function readBookRun(
   db: DB,
   actor: Actor,
   bookId: string,
   id: string,
   view: "detail" | "pipeline" = "detail",
+) {
+  return readBookRunContent(db, actor, bookId, id, view, false, async (raw) =>
+    readableBookArtifact(
+      db,
+      actor,
+      bookId,
+      await readBookPayload<BookArtifact>(db, raw, {
+        bookId,
+        ownerKind: "run",
+        ownerId: id,
+        nodeId: "",
+      }),
+    ),
+  );
+}
+export function readBookRunSummary(
+  db: DB,
+  actor: Actor,
+  bookId: string,
+  id: string,
+) {
+  return readBookRunContent(
+    db,
+    actor,
+    bookId,
+    id,
+    "detail",
+    true,
+    async (raw) => (await bookPayloadReference(db, raw)).summary,
+  );
+}
+async function readBookRunContent<R>(
+  db: DB,
+  actor: Actor,
+  bookId: string,
+  id: string,
+  view: "detail" | "pipeline",
+  summaryOnly: boolean,
+  artifactReader: (raw: string) => Promise<R>,
 ) {
   await bookAccess(db, actor, bookId, 3);
   const row = await db
@@ -240,9 +331,10 @@ export async function readBookRun(
     .where("book_id", "=", bookId)
     .executeTakeFirst();
   if (!row) fail(404, "Knowledge book run not found");
-  const artifact = row.artifact
-    ? await readableBookArtifact(db, actor, bookId, JSON.parse(row.artifact))
-    : null;
+  const artifact =
+    row.artifact && (await canReadBookPayload(db, actor, bookId, row.artifact))
+      ? await artifactReader(row.artifact)
+      : null;
   const nodes = await db
     .selectFrom("knowledge_book_node_runs")
     .selectAll()
@@ -261,13 +353,61 @@ export async function readBookRun(
   const permissions = new Map<string, boolean>();
   for (const node of nodes) {
     if (!node.output) continue;
-    const output = JSON.parse(node.output);
-    for (const evidence of (output.evidence ?? []) as Evidence[]) {
-      const key = JSON.stringify([evidence.reference, evidence.sourceId, evidence.sourceVersion, evidence.contentRef]);
-      if (!permissions.has(key)) permissions.set(key, await canReadBookEvidence(db, actor, evidence));
+    const output = await bookPayloadReference(db, node.output, {
+      bookId,
+      ownerKind: "node",
+      ownerId: id,
+      nodeId: node.node_id,
+    });
+    for (const evidence of output.evidence) {
+      const key = JSON.stringify([
+        evidence.reference,
+        evidence.sourceId,
+        evidence.sourceVersion,
+        evidence.contentRef,
+      ]);
+      if (!permissions.has(key))
+        permissions.set(key, await canReadBookEvidence(db, actor, evidence));
       if (!permissions.get(key)) visible = false;
     }
   }
+  const projectedNodes = await Promise.all(
+    nodes.map(async (node) => ({
+      nodeId: node.node_id,
+      reusedFromRunId: reused.get(node.node_id) || null,
+      type: node.type,
+      status: node.status,
+      startedAt: node.started_at,
+      completedAt: node.completed_at,
+      error: node.error,
+      ...(view === "detail"
+        ? {
+            inputRefs: JSON.parse(node.input_refs),
+            output:
+              visible && node.output
+                ? summaryOnly
+                  ? (await bookPayloadReference(db, node.output)).summary
+                  : await readBookPayload<any>(db, node.output, {
+                      bookId,
+                      ownerKind: "node",
+                      ownerId: id,
+                      nodeId: node.node_id,
+                    })
+                : null,
+          }
+        : {}),
+    })),
+  );
+  await bookAccess(db, actor, bookId, 3);
+  if (!summaryOnly)
+    for (const node of nodes)
+      if (
+        node.output &&
+        !(await canReadBookPayload(db, actor, bookId, node.output))
+      )
+        visible = false;
+  if (!visible)
+    for (const node of projectedNodes) if ("output" in node) node.output = null;
   return {
     id: row.id,
     status: row.status,
@@ -279,39 +419,56 @@ export async function readBookRun(
     trigger: (await readBookRunTriggers(db, bookId, [row])).get(row.id) ?? null,
     updatedAt: row.updated_at,
     heartbeatAt: row.heartbeat_at,
-    logs: visible ? await readBookRunLogs(db, bookId, id, JSON.parse(row.configuration)) : [],
-    artifact,
+    logs: visible
+      ? await readBookRunLogs(db, bookId, id, JSON.parse(row.configuration))
+      : [],
+    artifact: visible ? artifact : null,
     restricted: !visible,
-    nodes: nodes.map((node) => ({
-      nodeId: node.node_id,
-      reusedFromRunId: reused.get(node.node_id) || null,
-      type: node.type,
-      status: node.status,
-      startedAt: node.started_at,
-      completedAt: node.completed_at,
-      error: node.error,
-      ...(view === "detail" ? {
-        inputRefs: JSON.parse(node.input_refs),
-        output: visible && node.output ? JSON.parse(node.output) : null,
-      } : {}),
-    })),
+    nodes: projectedNodes,
   };
 }
 
 /** Small authorized payload for the canvas; full evidence stays in detail reads. */
-export async function readBookPipeline(db: DB, actor: Actor, bookId: string, id: string) {
+export async function readBookPipeline(
+  db: DB,
+  actor: Actor,
+  bookId: string,
+  id: string,
+) {
   const run = await readBookRun(db, actor, bookId, id, "pipeline");
-  return { ...run, artifact: run.artifact ? { pages: run.artifact.pages, checks: run.artifact.checks } : null };
+  return {
+    ...run,
+    artifact: run.artifact
+      ? { pages: run.artifact.pages, checks: run.artifact.checks }
+      : null,
+  };
 }
 
-export async function readPublishedKnowledgeBook(db: DB, id: string) {
+export function readPublishedKnowledgeBook(db: DB, id: string) {
+  return readPublishedBookContent(db, id, readBookRelease);
+}
+export function readPublishedKnowledgeBookSummary(db: DB, id: string) {
+  return readPublishedBookContent(db, id, readBookReleaseSummary);
+}
+async function readPublishedBookContent<
+  T extends { id: string; revision: number },
+>(
+  db: DB,
+  id: string,
+  releaseReader: (
+    db: DB,
+    actor: Actor | null,
+    bookId: string,
+    id: string,
+  ) => Promise<T>,
+) {
   const { book } = await bookAccess(db, null, id);
   const detail = await createResourceReads(db, createResourceRunner(db)).detail(
     null,
     id,
   );
   const publishedRelease = book.published_release_id
-    ? await readBookRelease(db, null, id, book.published_release_id)
+    ? await releaseReader(db, null, id, book.published_release_id)
     : null;
   return {
     detail,
@@ -331,3 +488,35 @@ export async function readPublishedKnowledgeBook(db: DB, id: string) {
   };
 }
 import { readBookRunLogs, readBookRunTriggers } from "./run-logs.js";
+
+export async function readBookReleaseSummary(
+  db: DB,
+  actor: Actor | null,
+  bookId: string,
+  id: string,
+) {
+  const { book } = await bookAccess(db, actor, bookId);
+  const row = await db
+    .selectFrom("knowledge_book_releases")
+    .selectAll()
+    .where("id", "=", id)
+    .where("book_id", "=", bookId)
+    .executeTakeFirstOrThrow();
+  if (book.published_release_id !== row.id)
+    await authorize(db, actor, bookId, "read_history");
+  const readable = await canReadBookPayload(db, actor, bookId, row.artifact);
+  const ref = await bookPayloadReference(db, row.artifact, {
+    bookId,
+    ownerKind: "release",
+    ownerId: id,
+    nodeId: "",
+  });
+  return {
+    id: row.id,
+    revision: row.revision,
+    createdAt: row.created_at,
+    runId: row.run_id,
+    artifact: readable ? ref.summary : null,
+    restricted: !readable,
+  };
+}

@@ -1,7 +1,7 @@
 import type { DB } from "@db/index.js";
 import { pluginServices } from "@core/shared/plugin-services.js";
 import { bookAccess } from "@core/modules/knowledge-books/management.js";
-import { readRunForAssistant } from "@core/modules/knowledge-books/assistant-reads.js";
+import { readBookRunSummary } from "@core/modules/knowledge-books/reads.js";
 import type { AIContinuationSource } from "@smartdoca/plugin-sdk/ai";
 import type { Actor } from "@core/modules/identity/passwords.js";
 import { transact } from "@db/transactions.js";
@@ -92,8 +92,11 @@ export function registerKnowledgeBookContinuation(db: DB) {
         .executeTakeFirst();
       if (!actor) return null;
       await bookAccess(db, actor, bookId, 3);
-      const run = await readRunForAssistant(db, actor, bookId, runId);
+      const run = await readBookRunSummary(db, actor, bookId, runId);
       if (run.restricted) return null;
+      const tasks = await db.selectFrom("knowledge_book_human_tasks")
+        .select(["id", "node_id", "kind", "revision"])
+        .where("run_id", "=", runId).where("status", "=", "pending").execute();
       const state = [
         "queued",
         "queued_resume",
@@ -118,6 +121,10 @@ export function registerKnowledgeBookContinuation(db: DB) {
           runId,
           status: run.status,
           error: run.error,
+          humanTasks: tasks.map(task => ({
+            id: task.id, nodeId: task.node_id, kind: task.kind, revision: task.revision,
+            path: `#/knowledge-books/${bookId}?task=${task.id}&run=${runId}`,
+          })),
           nodes: run.nodes.map((node) => ({
             nodeId: node.nodeId,
             type: node.type,

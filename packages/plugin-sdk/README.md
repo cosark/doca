@@ -2,6 +2,12 @@
 
 Doca's public plugin SDK. Plugins declare service requirements and own business models and authorization. All persistence uses public host-managed services; installed packages must declare `doca.storage: "host"` and never select local/remote backends or storage paths. Managed SQL/private objects are exported in 0.1.7, managed credentials in source 0.1.8; temporary workspaces are not exported; see the [storage contract](../../docs/plugin-horizontal-scaling.md). They must not import host source paths or use private runtime bridges.
 
+## Monitoring and telemetry (0.1.11)
+
+`@smartdoca/plugin-sdk/monitoring` exports `monitoringServiceToken` (`monitoring.v1`) and `telemetryServiceToken` (`telemetry.v1`). Declare required injections and `sdkRange: "^0.1.11"`. Read site counts, realtime online users, HTTP QPS/errors/duration histograms, bounded structured logs, existing audit, queue diagnostics, AI usage and health. Plugins can write installation-bound logs and counter/gauge/histogram metrics. `host.platform.monitoring` exposes the fixed read methods to active administrators of a live monitoring plugin.
+
+Redis aggregates versioned ephemeral instance snapshots; missing/stale data and cursor eviction are explicit. Long-term records use the plugin's host-managed storage. Existing SDK methods, database formats and event flow stay unchanged. See [exact methods, access, retention and rollback](../../docs/plugin-monitoring.md) ([中文](../../docs/plugin-monitoring.zh-CN.md)). npm publication and production deployment are not implied.
+
 ## Background task continuation (0.1.10)
 
 `@smartdoca/plugin-sdk/ai` exports `aiContinuationsServiceToken` (`ai.continuations.v1`) for installed server plugins. Register an installation-owned source that reads durable, currently authorized task snapshots; call `wait(pluginId, toolContext, {sourceId, operationId})` from a registered AI tool and `wake(pluginId, {sourceId, operationId})` after committing a worker result. The host retains the original assistant task and resumes it after background completion or a human decision. Repeated notifications are deduplicated; cancellation, current identity, source ownership and permissions are checked again before resuming.

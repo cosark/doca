@@ -440,7 +440,14 @@ export async function reconcileSchema(
     throw new SchemaReviewRequired(changes);
   // Create all tables before indexes. Source table order retains FK dependencies.
   for (const kind of ["create_table", "add_column", "create_index"] as const)
-    for (const change of changes.filter((c) => c.kind === kind))
+    for (const change of changes
+      .filter((c) => c.kind === kind)
+      .sort((a, b) =>
+        kind === "create_table"
+          ? [...source.keys()].indexOf(a.table) -
+            [...source.keys()].indexOf(b.table)
+          : 0,
+      ))
       await sql.raw(change.sql!).execute(db);
   const checked = pg
     ? await postgresCatalog(db, source)

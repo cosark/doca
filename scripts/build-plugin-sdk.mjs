@@ -19,6 +19,7 @@ try {
         [
           "version",
           "platform",
+          "monitoring",
           "content",
           "documents",
           "creation-resources",

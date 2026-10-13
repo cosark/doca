@@ -19,7 +19,7 @@
 
 模型先从代码中的支持清单选择 `imageProfile`，再填写厂商实际调用标识 `model`。通常两者相同；火山部署 ID 或网关别名可以不同，但必须明确对应一个已实现的模型规格。接口和能力由厂商连接类型加所选规格确定，不根据部署 ID、别名或字符串正则猜测。没有适配器的图片规格不能新增或保存。
 
-管理界面的厂商、用途、图片规格和工具模型均使用可搜索的组件下拉框；文本、密码和数值分别使用组件库输入，编辑使用项目弹框，移除配置使用气泡确认。图片模型表单只显示按张数计费的参数。所有保存错误在界面内反馈，不使用浏览器原生确认框或校验提示。
+管理界面的厂商、用途、图片规格和工具模型均使用可搜索的组件下拉框；实际调用模型 / 部署 ID 可读取厂商 `/models` 返回的清单选择，也可手动填写。图片适配规格表示已经实现并核验的协议与能力，不代表当前厂商或网关已经部署这些型号；选择规格不会覆盖已经手填的部署 ID 或别名。文本、密码和数值分别使用组件库输入，编辑使用项目弹框，移除配置使用气泡确认。图片模型表单只显示按张数计费的参数。所有保存错误在界面内反馈，不使用浏览器原生确认框或校验提示。
 
 ## 已实现的协议
 
@@ -49,7 +49,7 @@ python scripts/local-models/mflux-image-server.py --models /absolute/models-v1.j
 
 | 厂商连接 | 模型规格 | 能力 | 请求 |
 | --- | --- | --- | --- |
-| 火山 `doubao` | Seedream 4.0、4.5、5.0 Lite/Pro/Flash 的清单版本 | 三项操作 | JSON `/images/generations`；图片为 data URL；单图输出 |
+| 火山 `doubao` / 网关 `compatible` | Seedream 4.0、4.5、5.0 Lite/Pro/Flash 的清单版本 | 三项操作 | JSON `/images/generations`；图片为 data URL；单图输出 |
 | 千问 `qwen` | Qwen Image 3.0 Pro、3.0、2.1 Pro | 三项操作 | JSON `/compatible-mode/v1/images/generations` 扩展；参考图放 `image` 字段 |
 | 千问 `qwen` | 显式 `wan2.7-image-pro` | 三项操作 | 同配置主机的 `/api/v1/services/aigc/multimodal-generation/generation`；独立同步 native adapter，消息内容依序传图片与提示词 |
 | 千问 `qwen` | Qwen Image 2.0 / 2.0 Pro 的清单版本 | 三项操作 | 原生同步 multimodal-generation 接口 |
@@ -57,7 +57,9 @@ python scripts/local-models/mflux-image-server.py --models /absolute/models-v1.j
 | 千问 `qwen` | Qwen Image Edit Max / Plus 的清单版本 | 参考图生成、图片编辑 | 原生同步接口；需要输入图片 |
 | OpenAI `openai` / `compatible` | GPT Image 1、1 Mini、1.5、2、2.5 Sunburst/Flare 的清单版本 | 三项操作 | 文生图为 JSON generations；参考图和编辑为 multipart edits；可用原生 mask |
 
-准确模型 ID、允许的操作和尺寸以支持清单为准。自建 OpenAI 兼容网关仅声明上述 Images 协议；网关是否实际部署对应模型仍须管理员核实。聊天接口兼容不表示图片编辑接口兼容。
+准确模型 ID、允许的操作和尺寸以支持清单为准。2026-10-12 用户重申“适配器有支持的真实模型列表，只要在列表的就能支持”，修正 `compatible` 连接排除已实现 Seedream 规格的问题。网关使用显式规格选择 GPT Images、Seedream 或本机 MFLUX 适配器；Seedream 使用现有 JSON 协议，不改成 GPT Images multipart，不尝试其他协议或失败重试。网关是否实际部署对应模型及协议仍须管理员核实。聊天接口兼容不表示图片编辑接口兼容。
+
+本次不改配置格式、实际部署 ID、历史图片、候选、用量或费用，不做迁移。新增的显式网关 Seedream 规格不扩大旧配置的默认推断范围：旧 `compatible` 模型缺少 profile 时，仍按原批准规则读取为 GPT Images 默认，即使调用 ID 恰好与 Seedream 清单相同。新建或保存网关 Seedream 必须明确选择规格。隔离验证覆盖配置保存与重新读取、三项操作的单次 JSON 请求、别名保持及旧默认行为。回滚旧代码后将拒绝新增的网关 Seedream 配置，保存的数据保留，恢复新版后可继续使用。
 
 Wan 2.7 Pro 必须显式选择对应 profile；只有型号、没有 profile 的配置拒绝，不从既有配置默认链路推断。首版统一单图、2K 像素上限、最多八张参考，不开放该模型官方文生图4K与组图能力。原接口主机保持配置值，仅从 `/compatible-mode/v1` 推导 native 路径；不尝试其他主机或异步路由。实际参考图在预留付费请求前完成尺寸、格式、透明通道及完整解码检查，最终传输提示词超过5000字符明确拒绝。响应须具有真实完成标记、单张PNG与有效用量；记录原始厂商回执，不补造参考图消耗。依据 [Wan 2.7 API](https://help.aliyun.com/zh/model-studio/wan-image-generation-and-editing-api-reference) 与 [Token Plan 多模态接入](https://help.aliyun.com/zh/model-studio/token-plan-multimodal-gen)；隔离协议测试已通过，真实部署路由与生成质量另行验收。
 
