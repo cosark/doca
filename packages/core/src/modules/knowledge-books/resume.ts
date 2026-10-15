@@ -146,6 +146,11 @@ export async function resumeBookRun(
       !output.checks.some((check: { passed: boolean }) => !check.passed)
     )
       continue;
+    if (!Array.isArray(output.pages))
+      fail(409, "Quality review candidate is invalid");
+    const reviewedPages = new Set(
+      output.pages.map((page: unknown) => bookHash(page)),
+    );
     const queue = [node.node_id],
       visited = new Set(queue);
     for (let index = 0; index < queue.length; index++) {
@@ -158,9 +163,23 @@ export async function resumeBookRun(
           ["synthesize", "organize"].includes(
             definitions.get(edge.source)!.type,
           )
-        )
+        ) {
+          const current = nodes.find(
+            (candidate) => candidate.node_id === edge.source,
+          );
+          // A technical retry can retain the preceding quality output after content was already repaired.
+          // Bind negative reviews to their actual v1 candidate, not the later node's failure status.
+          if (current?.status === "completed" && current.output) {
+            const candidate = await readBookPayload<any>(db, current.output);
+            if (
+              candidate.pages.some(
+                (page: unknown) => !reviewedPages.has(bookHash(page)),
+              )
+            )
+              continue;
+          }
           restart.add(edge.source);
-        else queue.push(edge.source);
+        } else queue.push(edge.source);
       }
     }
   }

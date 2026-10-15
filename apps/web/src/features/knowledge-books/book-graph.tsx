@@ -69,6 +69,7 @@ export function BookGraph({
   editable = false,
   changed,
   selected,
+  dismissed,
   added,
   execution,
 }: {
@@ -78,13 +79,14 @@ export function BookGraph({
   editable?: boolean;
   changed?: (value: BookWorkflow) => void;
   selected?: (id: string) => void;
+  dismissed?: () => void;
   added?: (type: BookNodeType, position: { x: number; y: number }) => void;
 }) {
   const { t } = useI18n();
   const host = useRef<HTMLDivElement>(null),
     graph = useRef<Graph | null>(null);
-  const callbacks = useRef({ changed, selected, workflow });
-  callbacks.current = { changed, selected, workflow };
+  const callbacks = useRef({ changed, selected, dismissed, workflow });
+  callbacks.current = { changed, selected, dismissed, workflow };
   const syncing = useRef(false),
     fitted = useRef(false),
     selectedId = useRef<string | null>(null);
@@ -176,6 +178,12 @@ export function BookGraph({
         selectedId.current = node.id;
       }
       callbacks.current.selected?.(node.id);
+    });
+    canvas.on("blank:click", () => {
+      const previous = selectedId.current ? canvas.getCellById(selectedId.current) : null;
+      if (previous?.isNode() && !execution) previous.attr("body/stroke", "#c4d4ef");
+      selectedId.current = null;
+      callbacks.current.dismissed?.();
     });
     canvas.on("edge:dblclick", ({ edge }) => {
       if (editable) edge.remove();

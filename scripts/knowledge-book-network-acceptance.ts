@@ -169,7 +169,7 @@ if (books.length !== 1)
   throw new Error("The assistant did not create exactly one knowledge book");
 const bookId = books[0]!.id,
   sourceIds: Record<string, string> = {};
-const docs = resolve("artifacts/network-guide");
+const docs = resolve("tests/fixtures/network-guide");
 for (const file of (await readdir(docs))
   .filter((file) => /^(link|net|trans|app|sec|exp)-\d.*\.md$/.test(file))
   .sort()) {

@@ -1,5 +1,7 @@
 # Doca 插件 SDK 与核心边界
 
+2026-10-14 工作区变更：[插件独立业务库](plugin-database-isolation.zh-CN.md)取代原同库 SQL 布局和私有表原子卸载描述。升级须在旧宿主正常卸载，再重装，不迁移业务数据；尚未发布或部署。
+
 [English](plugin-sdk-contract.md)
 
 状态：2026-10-12 更新（源码宿主 0.1.22 / SDK 源码 0.1.11，npm 发布及生产部署未验收），插件持久化全部由宿主管理，插件负责业务模型和授权。本文定义接下来重构的验收标准，不表示所有接口已经实现。当前实现差距见第 12 节。开发教程和部署文档不得把本文的目标接口写成现有导出。
@@ -10,7 +12,7 @@ SDK 源码 0.1.11 已导出 monitoring.v1、telemetry.v1，开放全站统计、
 
 ## 已实现存储修订（2026-10-03，SDK 源码 0.1.8）
 
-`@smartdoca/plugin-sdk/storage` 已导出安装身份绑定的 `pluginDatabaseToken`（`storage.sql.v1`）和 `pluginObjectStorageToken`（`storage.objects.v1`）。关系库支持显式 version 1 结构声明、text/int32/双精度列、主键/唯一约束、结构化查询/写入/删除，以及回调只执行一次的事务。SDK 源码 0.1.8 另导出 `pluginCredentialToken`（`storage.credentials.v1`），提供服务端加密凭证 CRUD、元数据与修订号检查，见[凭证接口](plugin-credentials.md)。联表、外键、通用 SQL、upsert 和临时工作区尚未导出。当前 SDK 通过宿主编译的查询和宿主连接中的命名空间表隔离；独立 PostgreSQL 角色与进程隔离是更强的待实现边界。
+`@smartdoca/plugin-sdk/storage` 已导出安装身份绑定的 `pluginDatabaseToken`（`storage.sql.v1`）和 `pluginObjectStorageToken`（`storage.objects.v1`）。关系库支持显式 version 1 结构声明、text/int32/双精度列、主键/唯一约束、结构化查询/写入/删除，以及回调只执行一次的事务。SDK 源码 0.1.8 另导出 `pluginCredentialToken`（`storage.credentials.v1`），提供服务端加密凭证 CRUD、元数据与修订号检查，见[凭证接口](plugin-credentials.md)。联表、外键、通用 SQL、upsert 和临时工作区尚未导出。业务 SQL 使用宿主管理的每插件独立数据库：SQLite 独立文件，或显式配置的 PostgreSQL 独立库及受限角色。进程隔离仍未实现，见[存储配置与先卸载再升级约定](plugin-database-isolation.zh-CN.md)。
 
 逻辑库为 `plugin:<pluginId>`，用户文件归属及私有对象使用 `plugins/<pluginId>`，发行包使用 `host/plugin-releases/<sha256>.zip`。ZIP 字节进入环境变量配置的文件存储，共享数据库只保存 version 2 清单、归档引用和可信文件哈希索引。有效缓存无需重新下载 ZIP。全部实例由运维逐个重启。新宿主基线拒绝旧数据库/格式/SDK 包，原数据保留，不提供迁移或 fallback。详见[准确实现与限制](unified-storage-implementation.md)。
 
@@ -262,7 +264,7 @@ owner binding 是资源归属事实，不等于访问授权。通过邮箱读取
 - 安装包必填 `doca.storage: "host"`，ZIP/npm/商店、离线目录和启动归档恢复都在导入服务端代码前校验，缺失/其他值拒绝。不提供插件业务数据目录环境变量、后端选择、旧存储适配或隐式迁移。
 - 托管关系库与内部对象已实现；托管凭证在 SDK 源码 0.1.8 实现，临时工作尚待实现。后端选择和共享部署由宿主负责；插件不区分本地/远端。精确导出状态见存储规范和第 12 节。
 - 托管库实际结构精确匹配，拒绝不匹配；不能为旧自管安装打开空库或借卸载绕开迁移方案。旧包和旧数据保持原样，任何转换另行确认。
-- 禁用/dispose 不删除持久数据。当前业务卸载钩子成功后，清单事务清理托管私有表、隔离安装代次、失效凭证并持久化对象清理意图；字节删除失败会重试。集群业务任务排空尚未实现，全部实例仍需人工重启。用户文件、回执和其他业务引用继续保留。
+- 禁用/dispose 不删除持久数据。当前业务卸载钩子成功后，清单事务隔离安装代次、失效凭证并持久化私有库/对象清理意图；业务表在提交后清理，失败会重试。集群业务任务排空尚未实现，全部实例仍需人工重启。用户文件、回执和其他业务引用继续保留。
 - 健康、脱敏日志、最近任务错误与 backlog 通过公开状态接口汇总，插件不能读取宿主存储路径。
 
 不提供：任意 SQL、跨插件/宿主分布式事务、自动导入旧存储或双写、默认将所有来源交给 AI、原生进程动态执行 npm 插件代码。

@@ -359,12 +359,13 @@ export function planSchemaChanges(
         });
   }
   for (const name of actual.keys())
-    if (!target.has(name) && !/^plugin_[a-f0-9]{56}$/.test(name))
+    if (!target.has(name))
       changes.push({
         kind: "review",
         table: name,
-        reason:
-          "unknown table retained; deletion requires ownership and data review",
+        reason: /^plugin_[a-f0-9]{56}$/.test(name)
+          ? "old plugin business table retained; uninstall plugins using the previous host before upgrading to independent plugin databases"
+          : "unknown table retained; deletion requires ownership and data review",
       });
   return changes;
 }

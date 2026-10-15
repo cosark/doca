@@ -162,7 +162,11 @@ const { t } = useI18n();
   useEffect(() => {
     if (!target) return;
     const key = (e: KeyboardEvent) => {
-      if (e.isComposing) return;
+      if (
+        e.isComposing || e.ctrlKey || e.metaKey || e.altKey ||
+        !(e.target instanceof window.Element) ||
+        !e.target.closest('[data-slate-editor],.document-mention-menu')
+      ) return;
       if (e.key === "Escape") {
         e.preventDefault();
         e.stopPropagation();
@@ -175,19 +179,20 @@ const { t } = useI18n();
             (i + (e.key === "ArrowDown" ? 1 : -1) + Math.max(users.length, 1)) %
             Math.max(users.length, 1),
         );
-      } else if ((e.key === "Enter" || e.key === "Tab") && users[index]) {
+      } else if (e.key === "Enter" || e.key === "Tab") {
         e.preventDefault();
         e.stopPropagation();
-        insert(users[index]!);
+        // Keep the editor from splitting the block while lookup is pending.
+        if (users[index]) insert(users[index]!);
       }
     };
     const dismiss = (e: PointerEvent) => {
       if (!(e.target as HTMLElement).closest(".document-mention-menu")) close();
     };
-    document.addEventListener("keydown", key, true);
+    window.addEventListener("keydown", key, true);
     document.addEventListener("pointerdown", dismiss);
     return () => {
-      document.removeEventListener("keydown", key, true);
+      window.removeEventListener("keydown", key, true);
       document.removeEventListener("pointerdown", dismiss);
     };
   }, [target, users, index]);

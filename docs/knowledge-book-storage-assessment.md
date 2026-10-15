@@ -6,7 +6,7 @@ Assessed on 2026-10-12 and implemented/verified on 2026-10-13 under the explicit
 
 ## Existing limits
 
-`book_size_limit` groups several HTTP 413 causes, including source/input/output budgets and release size; it does not establish a book-wide quota of a few kilobytes. The existing publication guard limits the artifact JSON to 10,000,000 characters. Source-group/combined node input is limited to 120,000 characters, a manual binding to 60,000 characters, and a model response to 500,000 characters. Model input uses its configured context; each response requests at most `min(maxOutput, 32,000)` tokens. Version 1 allows 1,000 claims, 200 pages, 200 paragraphs/page and 12,000 characters/paragraph. Writing batches expand the possible body size without removing these guards. Whole-book acceptance must still fit its model context; unlimited books are not promised.
+`book_size_limit` groups several HTTP 413 causes, including source/input/output budgets and release size; it does not establish a book-wide quota of a few kilobytes. The existing publication guard limits the artifact JSON to 10,000,000 characters. A source group is limited to 120,000 characters, a manual binding to 60,000 characters, and a model response to 500,000 characters. The combined-node ceiling was removed on 2026-10-14 under the approved batched execution plan. Model input uses its configured context; each response requests at most `min(maxOutput, 32,000)` tokens. Version 1 allows 1,000 claims, 200 pages, 200 paragraphs/page and 12,000 characters/paragraph. Writing batches expand the possible body size without removing these guards. Detailed acceptance is now batched; global acceptance receives host metrics, directory metadata and hierarchically bounded review summaries, not the complete body. Each request and metadata projection still must fit the configured context; unlimited books are not promised.
 
 New writing requests subdivide at complete claims/paragraphs after an input budget or truncated-output failure. Historical configurations, source bindings, node JSON and version 1 artifacts remain unchanged. Resume retains completed nodes; unfinished batches within a failed node are regenerated.
 
@@ -24,7 +24,7 @@ The synthetic six-chapter fixture uses 80,040 body characters, the current seven
 | Release artifact | 559,986 |
 | All node outputs plus run and release artifacts | 2,129,658 |
 
-This illustrates about 8.9 times the body-string bytes, excluding source history, SQL pages, indexes, WAL and backups. It is not a production database measurement. Repeated synthetic prose makes its gzip ratio unsuitable for estimating actual savings or costs. See `artifacts/knowledge-book-reliability-2026-10-12/storage-size.json`.
+This illustrates about 8.9 times the body-string bytes, excluding source history, SQL pages, indexes, WAL and backups. It is not a production database measurement. Repeated synthetic prose makes its gzip ratio unsuitable for estimating actual savings or costs. See `docs/verification/knowledge-book-reliability-2026-10-12/storage-size.json`.
 
 ## Implemented storage and conversion
 

@@ -1,0 +1,130 @@
+{
+  "version": "0.1.25",
+  "publication": "publication digests are recorded in the GitHub Release verification attachment",
+  "fullSuite": {
+    "passedFiles": 280,
+    "skippedFiles": 2,
+    "passedTests": 2857,
+    "skippedTests": 7,
+    "sheetVersion": "0.2.2",
+    "durationSeconds": 256.88
+  },
+  "typecheck": "passed",
+  "docs": {
+    "pages": 66,
+    "languages": 2,
+    "result": "passed"
+  },
+  "postgres17": {
+    "passedTests": 144,
+    "releasedPluginUpgrade": "passed",
+    "revision": "current execution code"
+  },
+  "postgres18": {
+    "passedTests": 144,
+    "releasedPluginUpgrade": "passed",
+    "initialAttempt": "test teardown exceeded 10-second hook timeout during concurrent image builds; full matrix rerun passed",
+    "revision": "current execution code"
+  },
+  "releasedSqlitePluginUpgrade": "passed",
+  "containerArchitectures": [
+    "linux/arm64",
+    "linux/amd64"
+  ],
+  "sourceFilesVerified": 415,
+  "webAssetFilesVerified": 470,
+  "imageSmoke": [
+    "health/version",
+    "Host validation",
+    "gzip/Brotli decoded bytes",
+    "fresh admin initialization",
+    "duplicate initialization preservation",
+    "password recovery",
+    "valid/invalid server Mermaid validation",
+    "graceful shutdown"
+  ],
+  "depthSample": {
+    "result": "paused; acceptance incomplete",
+    "chapters": 8,
+    "approximateChineseCharacters": 157000,
+    "diagramCount": 139,
+    "completedInspectionBatches": 96,
+    "totalInspectionBatches": 123,
+    "unresolvedContentFindings": 8,
+    "privateFixtureRetained": true,
+    "generationResumedForRelease": false
+  },
+  "productionDataModified": false,
+  "latestRuntimeTests": 84,
+  "latestBatchingTests": 13,
+  "latestDiagramTests": 5,
+  "focusedRealModelAudit": {
+    "incorrectParagraphsRejected": 4,
+    "positiveUDPLayoutCriterionPassed": true,
+    "nativeJSONPlanningPassed": true,
+    "incorrectFieldCountRejected": true,
+    "correctNUDStateRulesPassed": true,
+    "fieldCountRejectedInActualPipeline": true,
+    "missingQueueRuleFoundAndReinspected": true,
+    "correctSpacedOSPFEventControlPassed": true,
+    "expandedNormativeQueueRulePassed": true,
+    "expandedEvidenceStillRejectsWrongComparison": true,
+    "unsupportedCrossProtocolRTOAdviceRejected": true,
+    "correctDNSResolverPositiveControlPassed": true,
+    "crossProtocolAdviceRejectedInActual3000CharacterBatch": true,
+    "currentFlightDoesNotProveInitialCongestionWindowRejected": true,
+    "partialChapterAggregationPassed": true,
+    "failedPartialObservationRemainsFailed": true,
+    "completeOriginalOSPFStateRulesPassed": true
+  },
+  "latestKnowledgeBookCoreTests": 51,
+  "imageVerificationRevision": "all current shared changes and Sheet 0.2.2",
+  "boundedHarnessExecution": "HTTP reader starts after owned execution; background worker cannot bypass observer",
+  "fullSuiteRecheck": {
+    "result": "passed",
+    "workers": 4,
+    "revision": "current shared working tree with Sheet 0.2.2",
+    "passedTests": 2857,
+    "skippedTests": 7
+  },
+  "containerSmoke": "both Sheet 0.2.2 candidate architectures passed",
+  "runtimeAndContainerChecks": "passed for current Sheet 0.2.2 build",
+  "externalRepairFindings": "matching actual hydrated source scope; complete negative findings plus independent QA supplied",
+  "artifactPublication": "release attachments; workspace artifact ignore rule retained",
+  "sharedEditorInteractionVerification": {
+    "rounds": 3,
+    "passedPerRound": 29,
+    "idleSecondsPerRound": 60,
+    "fixture": "isolated in-memory SQLite and synthetic documents",
+    "evidence": "../editor-interactions-2026-10-15/report.json",
+    "redisCrossInstance": "not verified",
+    "sheet022Recheck": {
+      "passed": 29,
+      "idleSeconds": 60,
+      "evidence": "../sheet-package-upgrade-2026-10-15/editor-interactions.json"
+    }
+  },
+  "inspectionOrdinalHints": "ordinal prefix and spacing preserved; count interpretation unchanged",
+  "editorVersions": {
+    "slate": "0.4.15",
+    "sheet": "0.2.2",
+    "canvas": "0.4.3"
+  },
+  "sheetPatchAudit": {
+    "publicDeclarationsUnchanged": true,
+    "yjsModelXlsxRuntimeBytesUnchanged": true,
+    "sourceMapsMayDiffer": true,
+    "browserChecksPassed": 8,
+    "idleSeconds": 60,
+    "upstreamEngineCapabilityTestsPassed": 6,
+    "hostEditorInteractionChecksPassed": 29,
+    "hostEditorInteractionIdleSeconds": 60
+  },
+  "npmDecision": {
+    "hostPrivate": true,
+    "sixPublicWorkspacePackagesUnchanged": true,
+    "publishedVersionsMatchSource": true,
+    "sheet022AlreadyPublished": true,
+    "newPublicationRequired": false
+  }
+}

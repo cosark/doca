@@ -146,11 +146,11 @@ let book = savedState
       .executeTakeFirstOrThrow()
   : undefined;
 if (!book) {
-  for (const file of (await readdir(resolve("artifacts/network-guide")))
+  for (const file of (await readdir(resolve("tests/fixtures/network-guide")))
     .filter((file) => /^(link|net|trans|app|sec|exp)-\d.*\.md$/.test(file))
     .sort()) {
     const markdown = await readFile(
-        resolve("artifacts/network-guide", file),
+        resolve("tests/fixtures/network-guide", file),
         "utf8",
       ),
       title = markdown.match(/^#\s+(.+)$/m)?.[1] ?? file;

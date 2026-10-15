@@ -546,6 +546,10 @@ export function registerAssets(
         )
           fail(404, "文件不存在");
       }
+      if (asset.purpose === "ai_attachment" && a)
+        await authorizeKnowledgeAsset(db, a, asset.id);
+      if (asset.purpose === "ai_attachment")
+        reply.header("Cache-Control", "private, no-store");
       const selected =
         req.query.variant === "thumbnail"
           ? await thumbnailFor(db, asset.object_key)
@@ -557,9 +561,6 @@ export function registerAssets(
           .executeTakeFirstOrThrow(),
         c = decode(p);
       const cdn = storage.cdnUrl(c, selected.object_key);
-      if (asset.purpose === "ai_attachment")
-        reply.header("Cache-Control", "private, no-store");
-      if (asset.purpose === "ai_attachment" && a) await authorizeKnowledgeAsset(db, a, asset.id);
       if (
         cdn &&
         !asset.resource_id &&
@@ -572,7 +573,6 @@ export function registerAssets(
       // Vary separates a browser's anonymous, cookie and bearer sessions.
       if (
         /^image\/(png|jpeg|gif|webp|avif|svg\+xml)$/.test(selected.mime) &&
-        asset.purpose !== "ai_attachment" &&
         !req.query.trashPreview &&
         req.query.download !== "1"
       ) {

@@ -34,7 +34,7 @@ import { RegionComments, type RegionController } from "@web/features/comments/re
 import { activeCommentCandidate } from "@web/features/comments/region-comment-interaction.js";
 import { renderSheetObject } from "@web/features/documents/sheet-interactions.js";
 import { useAttachmentPreview } from "@web/features/documents/attachment-preview.js";
-import { SheetNativeMentions } from "@web/features/documents/sheet-native-mentions.js";
+import { SheetNativeMentions, useSheetMentionKeyboard } from "@web/features/documents/sheet-native-mentions.js";
 import { useSheetDocumentLinks } from "@web/features/documents/sheet-document-links.js";
 import { useSheetDocumentPicker } from "@web/features/documents/sheet-document-picker.js";
 import { useSheetPluginElements } from "./sheet-plugin-elements.js";
@@ -88,6 +88,7 @@ export default function SheetDocument({
   loadMoreComments?: () => Promise<void>;
 }) {
   const { locale } = useI18n();
+  const mentionKeyboard = useSheetMentionKeyboard();
   const id = detail.resource.id,
     sync = useSurfaceSync(
       id,
@@ -246,19 +247,6 @@ export default function SheetDocument({
     <section className={`surface-editor sheet-document ${reading ? "is-reading" : ""}`}>
       {documentPicker.picker}
       {attachmentPreview.dialog}
-      <button
-        className="icon canvas-comment-visibility"
-        aria-label={showCommentMarks ? "隐藏表格评论标记" : "显示表格评论标记"}
-        title={showCommentMarks ? "隐藏表格评论标记" : "显示表格评论标记"}
-        aria-pressed={showCommentMarks}
-        onClick={() => {
-          setShowCommentMarks((v) => !v);
-          setActive(null);
-          setCandidateIds([]);
-        }}
-      >
-        {showCommentMarks ? <Eye size={18} /> : <EyeOff size={18} />}
-      </button>
       {slots.live &&
         createPortal(<span role="status">{sync.status}</span>, slots.live)}
       <DocumentDownload
@@ -290,6 +278,7 @@ export default function SheetDocument({
       )}
       {handle && (
         <SheetNativeMentions
+          keyboard={mentionKeyboard}
           handle={handle}
           enabled={editable}
           onError={setError}
@@ -335,6 +324,21 @@ export default function SheetDocument({
         <p className="empty">正在加载表格…</p>
       )}
       <RegionComments
+        visibilityControl={
+          <button
+            className="icon comment-control canvas-comment-visibility"
+            aria-label={showCommentMarks ? "隐藏表格评论标记" : "显示表格评论标记"}
+            title={showCommentMarks ? "隐藏表格评论标记" : "显示表格评论标记"}
+            aria-pressed={showCommentMarks}
+            onClick={() => {
+              setShowCommentMarks((v) => !v);
+              setActive(null);
+              setCandidateIds([]);
+            }}
+          >
+            {showCommentMarks ? <Eye size={16} /> : <EyeOff size={16} />}
+          </button>
+        }
         candidateIds={candidateIds}
         createAction={createComment}
         detail={detail}

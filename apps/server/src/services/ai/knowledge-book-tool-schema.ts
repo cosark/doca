@@ -175,7 +175,7 @@ export const bookAssistantInputSchema = z
           .min(0)
           .optional()
           .describe(
-            "Use 0 when creating a source or feedback; for editing use that entity's current revision.",
+            "Use 0 when creating a source or feedback. Configuration/workflow commands use the book.revision; source/feedback edits use that item's revision. After every successful write, read the updated revision before the next write. Patching configuration changes future runs; run.resume keeps the existing run's frozen parameters.",
           ),
         title: z.string().max(200).optional(),
         status: z
@@ -205,8 +205,8 @@ export const bookAssistantInputSchema = z
           .optional(),
         node: bookNodeSchema.optional(),
         nodeId: bookNodeSchema.shape.id.optional(),
-        inputs: z.array(bookNodeSchema.shape.id).optional(),
-        outputs: z.array(bookNodeSchema.shape.id).optional(),
+        inputs: z.array(bookNodeSchema.shape.id).optional().describe("Node IDs feeding the new node. Use read.workflowRules.inputsByNodeType: synthesize accepts extract/feedback/human_review, organize accepts synthesize/human_review. Same-type chaining is invalid."),
+        outputs: z.array(bookNodeSchema.shape.id).optional().describe("Existing downstream node IDs. node.add only adds edges; it does not remove old edges. Use configuration.save for atomic graph rewiring. Large books batch internally; do not add serial synthesize nodes."),
         runId: z.string().uuid().optional(),
       })
       .strict()

@@ -1,0 +1,347 @@
+{
+  "slate": {
+    "from": "0.4.14",
+    "to": "0.4.15",
+    "unchanged": [
+      "dist/conversion.js",
+      "dist/fonts.d.ts.map",
+      "dist/slateCommands-CYgNdb_v.js",
+      "dist/ids-D0vMUo2L.cjs",
+      "dist/headless.cjs",
+      "dist/tableNavigation.d.ts.map",
+      "dist/blockSelection.d.ts.map",
+      "dist/yjs.cjs",
+      "dist/yjsTransport.d.ts.map",
+      "dist/RichTextEditor.d.ts.map",
+      "dist/languages.d.ts",
+      "dist/ids.d.ts",
+      "dist/formula.d.ts",
+      "dist/headless.d.ts.map",
+      "dist/yjsTransport.d.ts",
+      "dist/api.d.ts",
+      "dist/codec.d.ts",
+      "dist/diagramPlacement.d.ts.map",
+      "dist/data.d.ts.map",
+      "dist/search.d.ts",
+      "dist/columns.d.ts.map",
+      "dist/inline.d.ts",
+      "dist/search.d.ts.map",
+      "dist/katex.js",
+      "dist/attachment.d.ts",
+      "dist/resources.d.ts.map",
+      "dist/diagramTemplates.d.ts.map",
+      "dist/tableCommands.d.ts.map",
+      "dist/pasteUrl.d.ts",
+      "dist/api.d.ts.map",
+      "dist/i18n.d.ts",
+      "dist/inline.d.ts.map",
+      "dist/languages.d.ts.map",
+      "dist/headless.js",
+      "dist/languageMessages.d.ts",
+      "dist/blockSelection.d.ts",
+      "dist/mindmap.d.ts",
+      "dist/insertMenu.d.ts",
+      "dist/i18n.d.ts.map",
+      "dist/tableNormalization.d.ts",
+      "dist/editor-BirbspPL.cjs",
+      "dist/resources.d.ts",
+      "dist/insertMenu.d.ts.map",
+      "dist/codec.cjs",
+      "dist/slateCommands.d.ts",
+      "dist/diagramPlacement.d.ts",
+      "dist/outline.d.ts",
+      "dist/data.d.ts",
+      "dist/columns.d.ts",
+      "dist/slateCommands-BcjDSdow.cjs",
+      "dist/tableCommands-Dijj52E1.cjs",
+      "dist/schema.d.ts.map",
+      "dist/diagramShapes.d.ts",
+      "dist/editor.d.ts.map",
+      "dist/ids-DTJ1wilq.js",
+      "dist/codec.js",
+      "dist/formula.d.ts.map",
+      "dist/clipboard.d.ts",
+      "dist/conversion.cjs",
+      "dist/editor.d.ts",
+      "dist/pasteUrl.d.ts.map",
+      "dist/yjs.d.ts",
+      "dist/attachment.d.ts.map",
+      "dist/diagramTemplates.d.ts",
+      "dist/diagramArrows.d.ts.map",
+      "dist/media.d.ts",
+      "dist/tableCommands-BJaD9rP7.js",
+      "dist/table.d.ts",
+      "dist/editor-booQVV9Q.js",
+      "dist/diagramShapes.d.ts.map",
+      "dist/RichTextEditor.d.ts",
+      "dist/tableCommands.d.ts",
+      "dist/style.css",
+      "dist/outline.d.ts.map",
+      "dist/katex.d.ts",
+      "dist/katex.d.ts.map",
+      "dist/table.d.ts.map",
+      "dist/schema.d.ts",
+      "dist/tableNormalization.d.ts.map",
+      "dist/ids.d.ts.map",
+      "dist/tableNavigation.d.ts",
+      "dist/clipboard.d.ts.map",
+      "dist/headless.d.ts",
+      "dist/yjs.js",
+      "dist/fonts.d.ts",
+      "dist/index.d.ts",
+      "dist/slateCommands.d.ts.map",
+      "dist/codec.d.ts.map",
+      "dist/media.d.ts.map",
+      "dist/yjs.d.ts.map",
+      "dist/mindmap.d.ts.map",
+      "dist/katex.cjs",
+      "dist/diagramArrows.d.ts",
+      "dist/codeHighlight.d.ts",
+      "dist/index.d.ts.map",
+      "dist/codeHighlight.d.ts.map",
+      "dist/components/SlashMenu.d.ts",
+      "dist/components/LinkPopover.d.ts.map",
+      "dist/components/BlockHandle.d.ts.map",
+      "dist/components/SelectMenu.d.ts",
+      "dist/components/FormulaBlock.d.ts.map",
+      "dist/components/BlockTypeIcon.d.ts.map",
+      "dist/components/DocumentOutline.d.ts.map",
+      "dist/components/LinkPopover.d.ts",
+      "dist/components/DiagramArrowSettings.d.ts.map",
+      "dist/components/MediaLightbox.d.ts",
+      "dist/components/SelectMenu.d.ts.map",
+      "dist/components/VideoBlock.d.ts.map",
+      "dist/components/FloatingToolbar.d.ts",
+      "dist/components/MindMapBlock.d.ts.map",
+      "dist/components/FormulaBlock.d.ts",
+      "dist/components/MindMapBlock.d.ts",
+      "dist/components/ColumnsBlock.d.ts.map",
+      "dist/components/VideoBlock.d.ts",
+      "dist/components/TablePickerPopover.d.ts.map",
+      "dist/components/TableBlock.d.ts",
+      "dist/components/DocumentOutline.d.ts",
+      "dist/components/useFormatPainter.d.ts.map",
+      "dist/components/InsertSubmenu.d.ts.map",
+      "dist/components/SlashMenu.d.ts.map",
+      "dist/components/useFormatPainter.d.ts",
+      "dist/components/DiagramArrowSettings.d.ts",
+      "dist/components/BlockTypeIcon.d.ts",
+      "dist/components/TableGridPicker.d.ts.map",
+      "dist/components/ElementRenderer.d.ts",
+      "dist/components/ColumnsBlock.d.ts",
+      "dist/components/TableGridPicker.d.ts",
+      "dist/components/BlockHandle.d.ts",
+      "dist/components/TablePickerPopover.d.ts",
+      "dist/components/InsertSubmenu.d.ts",
+      "dist/components/TableBlock.d.ts.map",
+      "dist/components/FloatingToolbar.d.ts.map",
+      "dist/components/MediaLightbox.d.ts.map",
+      "dist/conversion/docx.d.ts.map",
+      "dist/conversion/markdown.d.ts.map",
+      "dist/conversion/types.d.ts",
+      "dist/conversion/common.d.ts",
+      "dist/conversion/markdown.d.ts",
+      "dist/conversion/docx.d.ts",
+      "dist/conversion/common.d.ts.map",
+      "dist/conversion/types.d.ts.map",
+      "dist/conversion/index.d.ts",
+      "dist/conversion/index.d.ts.map"
+    ],
+    "changed": [
+      "dist/components/DiagramBlock.d.ts",
+      "dist/components/DiagramBlock.d.ts.map",
+      "dist/components/ElementRenderer.d.ts.map",
+      "dist/index.cjs",
+      "dist/index.js",
+      "dist/languageMessages.d.ts.map",
+      "dist/languages.cjs",
+      "dist/languages.js",
+      "dist/types.d.ts",
+      "dist/types.d.ts.map",
+      "docs/DIAGRAM_EDITING.md",
+      "package.json"
+    ]
+  },
+  "sheet": {
+    "from": "0.2.0-rc.19",
+    "to": "0.2.1",
+    "unchanged": [
+      "dist/xlsx.cjs.map",
+      "dist/xlsxTypes-j07OQ4jS.d.ts",
+      "dist/xlsx.d.ts",
+      "dist/xlsx.cjs",
+      "dist/xlsxTypes-j07OQ4jS.d.cts",
+      "dist/xlsx.js.map",
+      "dist/xlsx.d.cts",
+      "dist/xlsx.js"
+    ],
+    "changed": [
+      "dist/index.cjs",
+      "dist/index.cjs.map",
+      "dist/index.css",
+      "dist/index.css.map",
+      "dist/index.d.cts",
+      "dist/index.d.ts",
+      "dist/index.js",
+      "dist/index.js.map",
+      "dist/model.cjs",
+      "dist/model.cjs.map",
+      "dist/model.d.cts",
+      "dist/model.d.ts",
+      "dist/model.js",
+      "dist/model.js.map",
+      "dist/types-D9GUTWDO.d.cts",
+      "dist/types-Lt3kzhs0.d.cts",
+      "dist/types-kNDVYusw.d.ts",
+      "dist/types-lF1hNPZs.d.ts",
+      "dist/yjs.cjs",
+      "dist/yjs.cjs.map",
+      "dist/yjs.d.cts",
+      "dist/yjs.d.ts",
+      "dist/yjs.js",
+      "dist/yjs.js.map",
+      "package.json"
+    ]
+  },
+  "sheetDefaultProjection": {
+    "rowHeight": 18,
+    "columnWidth": 72,
+    "affects": "CRDT-added and virtual recovery sheets; baseline sheets unchanged",
+    "storedSeedFields": [
+      "id",
+      "name",
+      "rowCount",
+      "columnCount"
+    ]
+  },
+  "status": "integrated; related regressions and browser acceptance passed; full suite has one pre-existing attachment cache-header assertion failure",
+  "approval": "User approved native 18/72 projection defaults for existing CRDT-added sheets; baseline fields retained; no data rewrite or old-flowchart compatibility promise.",
+  "registry": {
+    "@smartdoca/slate@0.4.14": {
+      "tarball": "https://registry.npmjs.org/@smartdoca/slate/-/slate-0.4.14.tgz",
+      "integrity": "sha512-ArTRutfbFrsaJE0QZscdwd5viHyZjZDCpdHKI723+cntT2qpu+PsqGQD4F5AdMxUDHktyW+NvCdgTsTVMVaQ2w=="
+    },
+    "@smartdoca/slate@0.4.15": {
+      "tarball": "https://registry.npmjs.org/@smartdoca/slate/-/slate-0.4.15.tgz",
+      "integrity": "sha512-mGlH/owrYIeVpghIeb4PzH92FumG5yE+bFa4E1Z6gSQHxbUU2B0+yBTvPV6bn0YApxKZXzmDwoQSi6ZhE4F0QQ=="
+    },
+    "@smartdoca/sheet@0.2.0-rc.19": {
+      "tarball": "https://registry.npmjs.org/@smartdoca/sheet/-/sheet-0.2.0-rc.19.tgz",
+      "integrity": "sha512-N67eR3jT4CJ7T2Fyb+rFAVfDnFtfKcyMeIkvFP0D5tDo2C8SX1xiZFpFPpjO1G1PhrCHkOHHXdUXoHX9S0q9zA=="
+    },
+    "@smartdoca/sheet@0.2.1": {
+      "tarball": "https://registry.npmjs.org/@smartdoca/sheet/-/sheet-0.2.1.tgz",
+      "integrity": "sha512-+eIcNPdVCu1WogdKqp8IE6H7iuaXtbFwbsh948w+AfGwQ2tldGs2FI2HGGmc+ltKwvsfyjS5qb1fvVclMYoipw=="
+    }
+  },
+  "checks": {
+    "preUpgrade": {
+      "typecheck": "passed",
+      "relatedTests": {
+        "files": 8,
+        "tests": 55
+      }
+    },
+    "postUpgradeRelatedTests": {
+      "files": 12,
+      "tests": 69,
+      "result": "passed",
+      "log": "related-tests.log"
+    },
+    "fullSuite": {
+      "result": "one failure unrelated to editor upgrade",
+      "passedFiles": 279,
+      "failedFiles": 1,
+      "skippedFiles": 2,
+      "passedTests": 2806,
+      "failedTests": 1,
+      "skippedTests": 7,
+      "failure": {
+        "file": "tests/ai-attachments.test.ts",
+        "line": 212,
+        "expected": "private, no-store",
+        "actual": "no-store"
+      },
+      "log": "tests.log"
+    },
+    "previousEditorFailureReproduction": {
+      "versions": {
+        "slate": "0.4.14",
+        "sheet": "0.2.0-rc.19"
+      },
+      "passedTests": 18,
+      "failedTests": 1,
+      "sameCacheHeaderFailure": true,
+      "log": "previous-editor-attachments.log"
+    },
+    "build": {
+      "result": "passed",
+      "log": "build.log"
+    },
+    "docs": {
+      "result": "passed",
+      "pages": 65,
+      "languages": 2
+    },
+    "browser": {
+      "result": "passed",
+      "checks": [
+        "native rotation persists through host ACK and reaches a same-user peer without echo",
+        "rotation remains native and editable after reload",
+        "host-authorized image selects first, previews second and resets selection after an outside click",
+        "native select-all remains responsive in edit/readonly mode and keeps worksheet content unchanged",
+        "new 18/72 dimensions and edited cells survive host reload",
+        "60 seconds of idle, selection and resize produces zero rich-text/spreadsheet writes or peer echo"
+      ],
+      "errors": [],
+      "idleSeconds": 60
+    },
+    "fixtureAndRotationRetest": {
+      "result": "passed",
+      "files": 2,
+      "tests": 28
+    },
+    "typecheck": {
+      "result": "passed",
+      "log": "typecheck.log"
+    },
+    "previousEditorTypecheck": {
+      "result": "passed",
+      "log": "previous-editor-typecheck.log"
+    }
+  },
+  "limitations": [
+    "Not deployed or published",
+    "No native-device or external-service verification",
+    "Not every diagram gesture or spreadsheet operation was tested"
+  ],
+  "hostChanges": [
+    "Exact new package pins and lockfile with matching registry integrities",
+    "Byte-identical DOCX patch rebound to slate 0.4.15",
+    "Finite DiagramNode.angle validation and AI preservation guidance",
+    "18/72 dimensions only for new host blank worksheets; existing baselines not rewritten",
+    "Real rc.19 fixture with explicit/omitted baseline dimensions and an appended sheet",
+    "Updated bilingual integration/rollback notes and synchronized project/installed skill copies"
+  ],
+  "rollback": {
+    "localBackup": ".local/editor-package-upgrade-2026-10-14",
+    "previousRegistryArtifactsRetained": true,
+    "oldPatchRetained": "patches/@smartdoca__slate@0.4.14.patch",
+    "restore": "Restore only editor version pins and the old patch binding, reinstall and rebuild server/Web together; do not overwrite unrelated concurrent edits. Database rollback follows its separately approved procedures."
+  },
+  "fixture": {
+    "path": "tests/fixtures/editor-upgrade/sheet-rc19.json",
+    "sha256": "b713122574f4a0d84bbb0dec3b95f62ac2f0854bd056c38edc3f63a678924bdd",
+    "sourcePackage": "@smartdoca/sheet@0.2.0-rc.19",
+    "includes": [
+      "Explicit baseline 31/119 dimensions",
+      "Baseline with omitted dimension fields",
+      "Old-package appended worksheet seed"
+    ]
+  },
+  "screenshots": [
+    "rotation-editor.png",
+    "rich-host.png",
+    "sheet-readonly-select-all.png"
+  ]
+}

@@ -13,6 +13,7 @@ import {
   storageConfigForProfile,
 } from "@server/adapters/storage.js";
 import { derivativeKey } from "@server/services/storage-policy.js";
+import { createFileProcessingWorker } from "@server/jobs/file-processing-worker.js";
 import { openTestDatabase } from "./database.js";
 import type { DB } from "@db/index.js";
 
@@ -182,7 +183,7 @@ it("privately caches document images, revalidates without bytes and checks permi
   expect(unavailable.headers.etag).toBeUndefined();
 });
 
-it("keeps originals and thumbnails separate, and excludes AI attachments and non-images", async () => {
+it("keeps originals and thumbnails separate, and excludes non-images", async () => {
   const id = await upload();
   const original = await read(id);
   const asset = await db
@@ -237,7 +238,7 @@ it("keeps originals and thumbnails separate, and excludes AI attachments and non
     ).statusCode,
   ).toBe(304);
   for (const other of [
-    await upload("ai_attachment"),
+    await upload("ai_attachment", Buffer.from("plain file"), "cache.txt"),
     await upload("attachment", Buffer.from("plain file"), "cache.txt"),
   ]) {
     const response = await read(other, "", { "if-none-match": "*" });
@@ -245,4 +246,49 @@ it("keeps originals and thumbnails separate, and excludes AI attachments and non
     expect(String(response.headers["cache-control"])).toContain("no-store");
     expect(response.headers.etag).toBeUndefined();
   }
+});
+
+it("caches assistant images and compressed thumbnails, while authorizing revalidation and downloading originals", async () => {
+  const originalBytes = await sharp({
+    create: { width: 2048, height: 1024, channels: 3, background: "#123456" },
+  }).png().toBuffer();
+  const id = await upload("ai_attachment", originalBytes);
+  const pending = await read(id, "?variant=thumbnail");
+  expect(pending.statusCode).toBe(404);
+  expect(pending.headers["cache-control"]).toBe("no-store");
+  const worker = createFileProcessingWorker(db, runtime);
+  while (await worker.pump()) { /* Drain isolated thumbnail jobs. */ }
+  const original = await read(id);
+  const thumbnail = await read(id, "?variant=thumbnail");
+  expect(original.statusCode, original.body).toBe(200);
+  expect(original.rawPayload).toEqual(originalBytes);
+  expect(thumbnail.statusCode, thumbnail.body).toBe(200);
+  expect(thumbnail.headers["content-type"]).toBe("image/webp");
+  expect(await sharp(thumbnail.rawPayload).metadata()).toMatchObject({ width: 480, height: 240 });
+  expect(thumbnail.rawPayload.length).toBeLessThan(originalBytes.length);
+  expect(thumbnail.headers.etag).not.toBe(original.headers.etag);
+  for (const [query, response] of [["", original], ["?variant=thumbnail", thumbnail]] as const) {
+    const etag = String(response.headers.etag);
+    expect(response.headers["cache-control"]).toBe("private, max-age=3600, must-revalidate");
+    expect(response.headers.vary).toBe("Cookie, Authorization");
+    const cached = await read(id, query, { "if-none-match": etag });
+    expect(cached.statusCode).toBe(304);
+    expect(cached.rawPayload.length).toBe(0);
+    for (const deniedCookie of ["", otherCookie]) {
+      const denied = await read(id, query, { cookie: deniedCookie, "if-none-match": etag });
+      expect(denied.statusCode).toBe(404);
+      expect(denied.headers["cache-control"]).toBe("no-store");
+      expect(denied.headers.etag).toBeUndefined();
+    }
+    const download = await read(id, "?download=1", { "if-none-match": etag });
+    expect(download.statusCode).toBe(200);
+    expect(download.rawPayload).toEqual(originalBytes);
+    expect(String(download.headers["cache-control"])).toContain("no-store");
+    expect(download.headers.etag).toBeUndefined();
+  }
+  await db.updateTable("assets").set({ deleted_at: new Date().toISOString() }).where("id", "=", id).execute();
+  const deleted = await read(id, "?variant=thumbnail", { "if-none-match": String(thumbnail.headers.etag) });
+  expect(deleted.statusCode).toBe(404);
+  expect(deleted.headers["cache-control"]).toBe("no-store");
+  expect(deleted.headers.etag).toBeUndefined();
 });

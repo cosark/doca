@@ -35,7 +35,7 @@ export const bookNodeSchema = z
       .strict(),
   })
   .strict();
-const allowedInputs: Record<BookNodeType, readonly BookNodeType[]> = {
+export const bookNodeInputs: Record<BookNodeType, readonly BookNodeType[]> = {
   sources: [],
   feedback: [],
   extract: ["sources", "feedback", "human_review"],
@@ -78,13 +78,13 @@ export const bookWorkflowSchema = z
         continue;
       }
       unique.add(key);
-      if (!allowedInputs[to.type].includes(from.type))
-        error("Workflow node input type mismatch");
+      if (!bookNodeInputs[to.type].includes(from.type))
+        error(`Workflow node input type mismatch: ${from.id} (${from.type}) -> ${to.id} (${to.type}). ${to.type} accepts: ${bookNodeInputs[to.type].join(", ") || "no inputs"}. Parallel writing batches connect extract -> synthesize -> organize; do not chain synthesize nodes.`);
       incoming.set(to.id, incoming.get(to.id)! + 1);
     }
     for (const node of graph.nodes) {
-      if (allowedInputs[node.type].length && !incoming.get(node.id))
-        error("Workflow node is missing input");
+      if (bookNodeInputs[node.type].length && !incoming.get(node.id))
+        error(`Workflow node is missing input: ${node.id} (${node.type})`);
     }
     const order = graph.nodes
       .filter((node) => !incoming.get(node.id))

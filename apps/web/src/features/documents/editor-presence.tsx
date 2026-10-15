@@ -369,12 +369,12 @@ export function RemoteCursors({
               className="remote-caret"
               style={{ ...m.caret, borderColor: m.color }}
             >
-              <span
+              {m.name.trim() && <span
                 className={m.flip ? "flip" : undefined}
                 style={{ background: m.color }}
               >
-                {m.name}
-              </span>
+                {m.name.trim()}
+              </span>}
             </span>
           </div>
         ))}

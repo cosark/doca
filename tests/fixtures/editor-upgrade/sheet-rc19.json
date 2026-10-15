@@ -1,0 +1,50 @@
+{
+  "package": "@smartdoca/sheet",
+  "version": "0.2.0-rc.19",
+  "integrity": "sha512-N67eR3jT4CJ7T2Fyb+rFAVfDnFtfKcyMeIkvFP0D5tDo2C8SX1xiZFpFPpjO1G1PhrCHkOHHXdUXoHX9S0q9zA==",
+  "addedSheetId": "996c156c-6034-413d-ae2c-c4cdc49ba048",
+  "baseline": {
+    "codec": "exlsx-cell-registers",
+    "schemaVersion": 6,
+    "workbookId": "upgrade-fixture",
+    "epochId": "fixture-epoch-rc19",
+    "baselineId": "6b67217b1c6c5ac5636f88c0c53ffeec64dba113362b3a46d61ae0ba88340182",
+    "snapshot": {
+      "id": "upgrade-fixture",
+      "name": "Package upgrade fixture",
+      "appVersion": "0.25.1",
+      "locale": "zhCN",
+      "styles": {},
+      "sheetOrder": [
+        "base",
+        "unsized"
+      ],
+      "sheets": {
+        "unsized": {
+          "id": "unsized",
+          "name": "未设置尺寸的已有工作表",
+          "rowCount": 20,
+          "columnCount": 10,
+          "cellData": {}
+        },
+        "base": {
+          "id": "base",
+          "name": "Baseline",
+          "rowCount": 20,
+          "columnCount": 10,
+          "defaultRowHeight": 31,
+          "defaultColumnWidth": 119,
+          "cellData": {
+            "0": {
+              "0": {
+                "v": "保留已有数据"
+              }
+            }
+          }
+        }
+      }
+    }
+  },
+  "update": "AgXl0NeSDAAoAQ5leGxzeDptZXRhZGF0YQVjb2RlYwF3FGV4bHN4LWNlbGwtcmVnaXN0ZXJzKAEOZXhsc3g6bWV0YWRhdGENc2NoZW1hVmVyc2lvbgF9BigBDmV4bHN4Om1ldGFkYXRhCndvcmtib29rSWQBdw91cGdyYWRlLWZpeHR1cmUoAQ5leGxzeDptZXRhZGF0YQdlcG9jaElkAXcSZml4dHVyZS1lcG9jaC1yYzE5KAEOZXhsc3g6bWV0YWRhdGEKYmFzZWxpbmVJZAF3QDZiNjcyMTdiMWM2YzVhYzU2MzZmODhjMGM1M2ZmZWVjNjRkYmExMTMzNjJiM2E0NmQ2MWFlMGJhODgzNDAxODIC+fj4JQAoARFleGxzeDpzaGVldC1zZWVkcyQ5OTZjMTU2Yy02MDM0LTQxM2QtYWUyYy1jNGNkYzQ5YmEwNDgBdgQCaWR3JDk5NmMxNTZjLTYwMzQtNDEzZC1hZTJjLWM0Y2RjNDliYTA0OARuYW1ldxXml6fljIXov73liqDlt6XkvZzooagIcm93Q291bnR9iAMLY29sdW1uQ291bnR9GigBFWV4bHN4OnNoZWV0LXBvc2l0aW9ucyQ5OTZjMTU2Yy02MDM0LTQxM2QtYWUyYy1jNGNkYzQ5YmEwNDgBdQl9gYCAgAR9voMEfb39An2JtAd9taECfZehBX2guAZ9oqYHfaeHAQA=",
+  "checkpointSeq": 1
+}

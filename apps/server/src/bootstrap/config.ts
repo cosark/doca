@@ -4,6 +4,7 @@ import type { DatabaseConfig } from "@db/index.js";
 import { webhookDatabaseConfig } from "@db/webhook-database.js";
 import { sessionDurations } from "../app/session-policy.js";
 import { createCredentialCipher } from "../services/credential-cipher.js";
+import { pluginDatabaseConfig } from "../services/plugin-databases.js";
 export function assetBase(value: string | undefined) {
   const raw = value?.trim();
   if (!raw) return undefined;
@@ -58,6 +59,7 @@ export function config() {
       poolMax: port(process.env.DOCA_DATABASE_POOL_MAX, 10),
     };
   else throw new Error("Invalid database configuration");
+  pluginDatabaseConfig(database);
   const webhookUrl = process.env.DOCA_WEBHOOK_DATABASE_URL?.trim();
   let webhookDatabase: DatabaseConfig;
   if (webhookUrl) {

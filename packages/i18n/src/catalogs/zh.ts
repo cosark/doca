@@ -3383,8 +3383,13 @@ export const zh = {
   "dialog.confirmTransfer": "确认转移",
   "dialog.move": "迁移文档",
   "dialog.moveMode": "迁移方式",
+  "dialog.moveCurrent": "迁移当前文档",
+  "dialog.copyCurrent": "复制当前文档",
   "dialog.moveTree": "迁移当前文档及全部子文档",
   "dialog.copyOne": "只复制当前文档",
+  "dialog.moveCurrentHint":
+    "迁移当前文档需要你拥有该文档，并拥有当前文档及目标位置的管理权限。",
+  "dialog.copyCurrentHint": "复制当前文档需要当前文档及目标位置的管理权限。",
   "dialog.moveTreeHint":
     "带子文档迁出需要你拥有当前文档及全部子文档，并拥有它们的管理权限。",
   "dialog.copyOneHint":
@@ -3392,7 +3397,8 @@ export const zh = {
   "dialog.destination": "目标目录",
   "dialog.chooseDestination": "请选择目标位置",
   "dialog.failed": "操作失败",
-  "dialog.confirmMove": "确认移动并重置权限",
+  "dialog.confirmMove": "确认迁移",
+  "dialog.confirmCopy": "确认复制",
   "dialog.close": "关闭",
   "dialog.collaboratorsFailed": "无法读取协作者",
   "aiusage.day": "今日",

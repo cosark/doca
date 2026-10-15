@@ -2,7 +2,7 @@
 
 [中文](deployment.zh-CN.md)
 
-One server can run the published image `docker.io/smartdoca/doca:0.1.24`. A single container uses SQLite and does not need PostgreSQL or Redis. Use those only when you run more than one application replica. See [single instance and horizontal scaling](horizontal-scaling.md).
+One server can run the published image `docker.io/smartdoca/doca:0.1.25`. A single container uses SQLite and does not need PostgreSQL or Redis. Use those only when you run more than one application replica. See [single instance and horizontal scaling](horizontal-scaling.md).
 
 ## Requirements
 
@@ -26,7 +26,7 @@ Edit `.env` before the first start.
 
 File storage also requires `DOCA_FILE_STORE_ID` and `DOCA_FILE_STORES_JSON`, as provided by `docker.env.example`. Backend paths and credentials are read from the environment; the administration page is read-only. See [file storage](storage.md).
 
-Release 0.1.24 uses generation `doca-2026-10-12-book-payload-storage-v1`. Startup automatically aligns released 0.1.22 databases on `doca-2026-10-09-history-storage-v1` through current-DDL review/reconciliation and records the new generation. All old rows remain, including SQL book outcomes; no body conversion, cleanup or old-body adapter is added. Residual old book records can require manual handling. Existing 0.1.23 object data remains. See [database structure evolution](database-schema-evolution.md) and [0.1.24 requirements](releases/0.1.24.md). The exact 0.1.13 baseline `doca-2026-10-08-knowledge-books-v2` still needs the explicit history upgrade below. Preserve databases, private objects, configuration and the original credential master key.
+Release 0.1.25 uses generation `doca-2026-10-12-book-payload-storage-v1`. Startup automatically aligns released 0.1.22 databases on `doca-2026-10-09-history-storage-v1` through current-DDL review/reconciliation and records the new generation. All old rows remain, including SQL book outcomes; no body conversion, cleanup or old-body adapter is added. Residual old book records can require manual handling. Existing 0.1.23 object data remains. See [database structure evolution](database-schema-evolution.md) and [0.1.25 requirements](releases/0.1.25.md). The exact 0.1.13 baseline `doca-2026-10-08-knowledge-books-v2` still needs the explicit history upgrade below. Preserve databases, private objects, configuration and the original credential master key.
 
 `DOCA_ORIGIN` is the origin users type in the browser. HTTP and HTTPS are accepted, including in production. Use only the origin without a subpath, query, or fragment; a root trailing slash is normalized.
 
@@ -38,11 +38,13 @@ The Docker example already supplies the required file-store values. For a fresh 
 
 ## Start
 
-Stop all old hosts and back up the database before updating. Released 0.1.22 schema aligns automatically on 0.1.24 startup with all existing business rows retained. No manual book command is required. Retained SQL book outcomes are not adapted to the native object format; handle residual records manually as needed. To preserve them as usable outcomes, run the existing optional [lossless conversion](knowledge-book-storage-verification.md) before first startup. Earlier supported generations first complete the history upgrade below. Update all host and web instances together.
+0.1.25 includes the approved independent plugin database change. If external business plugins are installed, normally uninstall all of them on the old host before stopping and updating it. Old private plugin records, credentials and objects are discarded; reinstall and reconfigure afterwards. Core data remains, with no migration or automatic old-table deletion. See [0.1.25 upgrade requirements](releases/0.1.25.md) and [independent plugin databases](plugin-database-isolation.md).
+
+Stop all old hosts and back up the database before updating. Released 0.1.22 schema aligns automatically on 0.1.25 startup with all existing business rows retained. No manual book command is required. Retained SQL book outcomes are not adapted to the native object format; handle residual records manually as needed. To preserve them as usable outcomes, run the existing optional [lossless conversion](knowledge-book-storage-verification.md) before first startup. Earlier supported generations first complete the history upgrade below. Update all host and web instances together.
 
 ### Upgrade from 0.1.13
 
-Stop every Doca instance and back up databases (including SQLite WAL), file storage and configuration. Keep the original `DOCA_CREDENTIAL_MASTER_KEY`. Check out `v0.1.24`, pull the image and run one offline maintenance container with the existing deployment environment:
+Stop every Doca instance and back up databases (including SQLite WAL), file storage and configuration. Keep the original `DOCA_CREDENTIAL_MASTER_KEY`. Check out `v0.1.25`, pull the image and run one offline maintenance container with the existing deployment environment:
 
 ```sh
 docker compose stop
@@ -59,7 +61,7 @@ docker compose pull
 docker compose up -d
 ```
 
-`docker compose up -d` pulls `docker.io/smartdoca/doca:0.1.24`. Add `--build` only when you want an image built from this checkout.
+`docker compose up -d` pulls `docker.io/smartdoca/doca:0.1.25`. Add `--build` only when you want an image built from this checkout.
 
 Check the container:
 
@@ -70,7 +72,7 @@ curl -fsS -H 'Host: docs.example.com' http://127.0.0.1:39120/health
 
 Replace `docs.example.com` with the host in your configured origin, including its port if nonstandard. The built-in container probe already supplies this Host; wait for `docker compose ps` to show `healthy`. A bare loopback curl is rejected with 421.
 
-A healthy process returns `{"status":"ok","version":"0.1.24"}`.
+A healthy process returns `{"status":"ok","version":"0.1.25"}`.
 
 Document rendering also needs its deployment checks: this checkout adds LibreOffice and sandboxed Chromium, while optional SAM requires a separate trusted Linux runtime. See [Docker document renderers](docker-rendering.md) for component availability, the included Chromium seccomp policy and the explicit SAM mount. A healthy server alone does not verify those tools.
 
@@ -153,8 +155,8 @@ Set the static hashed-file **Cache policy** separately: Minimum TTL 0, Default/M
 A static Nginx CDN can serve a release directory as follows, with standard `mime.types` loaded by the server:
 
 ```nginx
-location /doca/0.1.24/assets/ {
-    alias /srv/doca/0.1.24/assets/;
+location /doca/0.1.25/assets/ {
+    alias /srv/doca/0.1.25/assets/;
     add_header Cache-Control "public, max-age=31536000, immutable";
     add_header Access-Control-Allow-Origin "https://doca.example.com";
 }
@@ -163,11 +165,11 @@ location /doca/0.1.24/assets/ {
 When proxying Doca `/assets/`, hide the existing origin header with `proxy_hide_header Cache-Control;` before adding its replacement. The example omits `always` so missing files do not receive a year-long 404 cache. Check the final CDN response:
 
 ```sh
-curl -I https://cdn.example.com/doca/0.1.24/assets/<actual-hashed-JS-filename>.js
+curl -I https://cdn.example.com/doca/0.1.25/assets/<actual-hashed-JS-filename>.js
 ```
 
 Verify Cache-Control, Content-Type and CORS. HTML stays on Doca with revalidation. For document images and protected files, use [storage: browser image caching and the file CDN](storage.md#browser-image-caching-and-the-file-cdn).
 
 ## Knowledge-book payload conversion
 
-0.1.24 aligns the supported old generation through ordinary schema comparison, retaining all business data without automatic book cleanup or runtime body adapters. Existing target-generation objects remain unchanged. The existing [optional lossless procedure](knowledge-book-storage-verification.md) must run before first startup if old SQL outcomes must remain usable. Interrupted conversions still require their original manifest. Preserve all data and later writes when restoring backups; update every host and web build together.
+0.1.25 aligns the supported old generation through ordinary schema comparison, retaining all business data without automatic book cleanup or runtime body adapters. Existing target-generation objects remain unchanged. The existing [optional lossless procedure](knowledge-book-storage-verification.md) must run before first startup if old SQL outcomes must remain usable. Interrupted conversions still require their original manifest. Preserve all data and later writes when restoring backups; update every host and web build together.

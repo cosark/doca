@@ -24,6 +24,7 @@ const diagram = () => ({
       shape: "block-arrow" as const,
       x: 20,
       y: 40,
+      angle: 30,
       width: 180,
       height: 120,
       arrowDirection: "down" as const,
@@ -71,6 +72,9 @@ it.each(
 });
 
 it.each([
+  { angle: "30" },
+  { angle: Infinity },
+  { angle: NaN },
   { arrowDirection: "diagonal" },
   { arrowRoute: "curve" },
   { arrowThickness: -1 },
@@ -107,7 +111,7 @@ it.each([
   ).toThrow();
 });
 
-it("preserves native arrow and manual route fields through durable ACK, remote replay, undo and checkpoint restore", async () => {
+it("preserves native rotation, arrow and manual route fields through durable ACK, remote replay, undo and checkpoint restore", async () => {
   const db = await openTestDatabase({ driver: "sqlite", path: ":memory:" });
   const replicas: {
     doc: Doc;
@@ -168,13 +172,39 @@ it("preserves native arrow and manual route fields through durable ACK, remote r
     b.runtime.applyRemoteUpdate(update);
     expect(b.events).toHaveLength(0);
     expect(b.runtime.getValue()).toEqual(a.runtime.getValue());
+    // Insertion and a later rotation are separate user actions, not one batch.
+    a.runtime.undoManager.stopCapturing();
+    const rotated = {
+      ...block,
+      nodes: block.nodes.map((node) => ({ ...node, angle: 45 })),
+    };
+    const rotation = a.runtime.execute({
+      type: "setBlock",
+      blockId: block.id,
+      properties: { nodes: rotated.nodes },
+    });
+    const rotationMessage = {
+      ...protocol,
+      epochId: initial.epochId,
+      messageId: randomUUID(),
+      update: b64(rotation),
+    };
+    expect(
+      (await documents.exchange(owner, resource.id, rotationMessage)).seq,
+    ).toBe(2);
+    expect(
+      (await documents.exchange(owner, resource.id, rotationMessage)).seq,
+    ).toBe(2);
+    b.runtime.applyRemoteUpdate(rotation);
+    expect(b.runtime.getValue()).toEqual(a.runtime.getValue());
+    expect(b.events).toHaveLength(0);
     const saved = await restoreDocument(db, resource.id);
     try {
       expect(
         saved.runtime
           .getValue()
           .find((node) => "id" in node && node.id === block.id),
-      ).toEqual(block);
+      ).toEqual(rotated);
       const restored = new DocaYjsDocument(new Doc());
       try {
         restored.restore(encodeStateAsUpdate(saved.doc));
@@ -188,13 +218,13 @@ it("preserves native arrow and manual route fields through durable ACK, remote r
     }
     a.runtime.undo();
     expect(
-      a.runtime.getValue().some((node) => "id" in node && node.id === block.id),
-    ).toBe(false);
+      a.runtime.getValue().find((node) => "id" in node && node.id === block.id),
+    ).toEqual(block);
     a.runtime.redo();
     expect(
       a.runtime.getValue().find((node) => "id" in node && node.id === block.id),
-    ).toEqual(block);
-    expect(a.events).toHaveLength(3);
+    ).toEqual(rotated);
+    expect(a.events).toHaveLength(4);
     expect(b.events).toHaveLength(0);
   } finally {
     for (const replica of replicas) {

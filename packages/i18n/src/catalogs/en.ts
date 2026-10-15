@@ -3616,8 +3616,14 @@ export const en = {
   "dialog.confirmTransfer": "Transfer",
   "dialog.move": "Move document",
   "dialog.moveMode": "How to move",
+  "dialog.moveCurrent": "Move this document",
+  "dialog.copyCurrent": "Copy this document",
   "dialog.moveTree": "Move this document and every child",
   "dialog.copyOne": "Copy only this document",
+  "dialog.moveCurrentHint":
+    "Moving this document requires ownership and manage access on the document and destination.",
+  "dialog.copyCurrentHint":
+    "Copying this document requires manage access on the document and destination.",
   "dialog.moveTreeHint":
     "Moving with children requires manage access on this document and every child.",
   "dialog.copyOneHint":
@@ -3625,7 +3631,8 @@ export const en = {
   "dialog.destination": "Destination",
   "dialog.chooseDestination": "Choose a destination",
   "dialog.failed": "That didn’t work",
-  "dialog.confirmMove": "Move and reset access",
+  "dialog.confirmMove": "Move",
+  "dialog.confirmCopy": "Copy",
   "dialog.close": "Close",
   "dialog.collaboratorsFailed": "Couldn’t load collaborators",
   "aiusage.day": "Today",

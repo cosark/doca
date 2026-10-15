@@ -1,0 +1,35 @@
+{
+  "from": "0.2.1",
+  "to": "0.2.2",
+  "checks": {
+    "exports": true,
+    "dependencies": true,
+    "peerDependencies": true,
+    "files": true,
+    "publicDeclarationsUnchanged": true,
+    "modelYjsXlsxRuntimeBytesUnchanged": true
+  },
+  "changedFiles": [
+    "package/dist/index.cjs",
+    "package/dist/index.cjs.map",
+    "package/dist/index.js",
+    "package/dist/index.js.map",
+    "package/dist/model.cjs.map",
+    "package/dist/model.js.map",
+    "package/dist/yjs.cjs.map",
+    "package/dist/yjs.js.map",
+    "package/package.json",
+    "package/tests/current-default-browser.cua.js"
+  ],
+  "artifacts": {
+    "0.2.1": {
+      "sha256": "fa9cb6620624ba0b491e9f944364238a307ab9cb41c4423fd64656a337e12933",
+      "integrity": "sha512-+eIcNPdVCu1WogdKqp8IE6H7iuaXtbFwbsh948w+AfGwQ2tldGs2FI2HGGmc+ltKwvsfyjS5qb1fvVclMYoipw=="
+    },
+    "0.2.2": {
+      "sha256": "34ad3a39aa255271919a2f9b293f8e8e9fdcfdadbd6ec78233091906d9c60b0e",
+      "integrity": "sha512-FDILR9ooWh35obngTgOCkMo4oavsAGxHCKKkecX2l+HTqSq86cbst+nqHdKS4q8yBktftLkbqXtCvVPOPDRVyg=="
+    }
+  },
+  "sourceMaps": "Yjs/model source maps differ; runtime JavaScript and public declarations are byte-identical."
+}

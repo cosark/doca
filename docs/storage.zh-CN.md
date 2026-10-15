@@ -52,7 +52,7 @@ DOCA_FILE_STORES_JSON='{"version":1,"stores":{"cloud":{"provider":"s3","bucket":
 
 ## 图片的浏览器缓存与文件 CDN
 
-文档正文、评论中的普通图片，以及由宿主代理的头像、封面，通过稳定的 `/api/v1/assets/:id/content` 地址缓存。成功的内联图片响应（包括缩略图）返回：
+文档正文、评论中的普通图片、助手图片，以及由宿主代理的头像、封面，通过稳定的 `/api/v1/assets/:id/content` 地址缓存。成功的内联图片响应（包括缩略图）返回：
 
 ```http
 Cache-Control: private, max-age=3600, must-revalidate
@@ -62,7 +62,7 @@ ETag: W/"对象及变体的标识摘要"
 
 浏览器可以在一小时内复用本机缓存；过期后发送 `If-None-Match`，宿主先核对当前权限，再对相同对象返回 `304`，不再传图片字节。原图和缩略图具有不同 ETag。对象 key 不可变，替换图片需要上传新资产。账号切换后 Cookie/Authorization 变化会选择另一份缓存；缓存有效期内不会再次核对撤权，已下载字节无法撤回。浏览器可能因空间不足、用户清理、强制刷新或“Disable cache”提前丢弃缓存。这里使用 HTTP 缓存，不额外建立 IndexedDB 或 Service Worker 副本。`no-cache` 表示重新验证，`no-store` 表示不保存，区别见 [MDN 缓存指南](https://developer.mozilla.org/en-US/docs/Web/HTTP/Guides/Caching)。
 
-AI 对话附件、`download=1`、回收站预览及错误响应仍使用 `no-store`，不应用上述缓存策略。即使带有效 ETag，未获授权的请求也不能获得 `304`。文档正文图片具有 resourceId，当前始终由宿主代理；开启 S3 文件 CDN 不会把这些图片自动改成公开地址。
+非图片的 AI 对话附件、`download=1`、回收站预览及错误响应仍使用 `no-store`，不应用上述缓存策略。即使带有效 ETag，未获授权的请求也不能获得 `304`。文档正文图片具有 resourceId，当前始终由宿主代理；开启 S3 文件 CDN 不会把这些图片自动改成公开地址。助手图片同样由宿主代理。生成图片卡片与助手正文中的图片使用现有的 480 像素 WebP 缩略图，点击打开原图，下载保留原始文件字节；异步缩略图任务尚未完成或不可用时，行内图片可先显示原图。
 
 文件 CDN 的签名跳转保持 `no-store`，避免浏览器重复使用过期的 60 秒签名。CDN 最终文件响应的 header 必须配置在文件 CDN 或 S3 源站；Doca 跳转响应上的 header 不会传给最终响应。新上传的 S3 对象元数据当前为 `Cache-Control: private, max-age=60`；已有对象的元数据不会由本次修复批量改写。
 

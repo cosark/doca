@@ -137,8 +137,14 @@ export function unverifiedDocumentDelivery(
   hasWriteReceipt: boolean,
 ): DeliveryReview | null {
   if (hasWriteReceipt) return null;
-  const sentences = text
-    .split(/[。！？\n]/)
+  const clauses = text
+    .split(/[，,;；。！？\n]/)
+    .map((clause) =>
+      clause.replace(
+        /(?:可以|可直接|可(?=加入|添加|插入)|能够|支持|\bcan\b|\bcould\b|\bmay\b)[^，,;；。！？\n]{0,30}(?:加入|添加|插入|add|insert)[^，,;；。！？\n]{0,12}(?:文档|表格|画布|画板|幻灯片|PPT|document|spreadsheet|slide|canvas)/gi,
+        "",
+      ),
+    )
     .filter(
       (s) =>
         !/(?:没有|尚未|未能|并未|不能|无法|不再|不需要|不用|不要|无需|无须|不必|未完成|未保存|未修改|未创建|未生成|未写入|\bnot\b|\bnever\b)/i.test(
@@ -146,12 +152,12 @@ export function unverifiedDocumentDelivery(
         ),
     );
   const claim =
-    /(?:已|已经|本次|这次)[^。！？\n]{0,45}(?:修复|修改|更新|保存|插入|删除|移动|创建|写入|恢复|改为|改成)|(?:修复|修改|更新|保存|插入|写入|恢复)[^。！？\n]{0,12}(?:成功|完成|完毕)|(?:I\s+(?:have\s+)?|successfully\s+)(?:fixed|saved|updated|inserted|deleted|created|edited)\b/i;
+    /(?:已|已经|本次|这次)[^。！？\n]{0,45}(?:修复|修改|更新|保存|插入|加入|添加|删除|移动|创建|写入|恢复|改为|改成)|(?:修复|修改|更新|保存|插入|加入|添加|写入|恢复)[^。！？\n]{0,12}(?:成功|完成|完毕)|(?:I\s+(?:have\s+)?|successfully\s+)(?:fixed|saved|updated|inserted|added|deleted|created|edited)\b/i;
   const document =
     /文档|代码块|段落|标题|章节|正文|画布|画板|表格|单元格|幻灯片|PPT|document|spreadsheet|slide|canvas|code block/i;
-  // A delivery claim only counts when the same sentence says a document was
-  // persisted; mentioning documents elsewhere in a text answer is not a claim.
-  if (!sentences.some((s) => claim.test(s) && document.test(s))) return null;
+  // Keep the saved object and its claim in the same clause. An image saved to
+  // the session folder followed by "can be added to a document" is not a write.
+  if (!clauses.some((s) => claim.test(s) && document.test(s))) return null;
   return {
     verdict: "revise",
     summary:

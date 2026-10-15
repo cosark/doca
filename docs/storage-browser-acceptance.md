@@ -73,11 +73,11 @@
 
 ## 浏览器证据
 
-- [同版本重装后旧实例待重启](../artifacts/storage-acceptance/same-version-generation-pending.jpg)
-- [模板和素材成为宿主文档](../artifacts/storage-acceptance/plugin-template-material.jpg)
-- [宿主文件恢复后跨实例预览](../artifacts/storage-acceptance/host-file-restored-cross-instance.jpg)
-- [Markdown 跨实例协作](../artifacts/storage-acceptance/markdown-cross-instance.jpg)
-- [只读环境存储配置](../artifacts/storage-acceptance/storage-environment-readonly.jpg)
-- [插件内容源订阅即时更新](../artifacts/storage-acceptance/plugin-content-subscription.jpg)
+- [同版本重装后旧实例待重启](verification/storage-acceptance/same-version-generation-pending.jpg)
+- [模板和素材成为宿主文档](verification/storage-acceptance/plugin-template-material.jpg)
+- [宿主文件恢复后跨实例预览](verification/storage-acceptance/host-file-restored-cross-instance.jpg)
+- [Markdown 跨实例协作](verification/storage-acceptance/markdown-cross-instance.jpg)
+- [只读环境存储配置](verification/storage-acceptance/storage-environment-readonly.jpg)
+- [插件内容源订阅即时更新](verification/storage-acceptance/plugin-content-subscription.jpg)
 
 本地预览及其隔离数据保留，方便复查；没有部署生产或发布 npm 包。

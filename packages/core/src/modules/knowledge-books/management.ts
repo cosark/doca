@@ -118,6 +118,7 @@ export async function listKnowledgeBooks(db: DB, actor: Actor, offset = 0) {
       "r.owner_id",
       "b.updated_at",
     ])
+    .select(roleQuery(sql.ref("r.id"), actor).as("permission"))
     .where("r.deleted_at", "is", null)
     .where(roleQuery(sql.ref("r.id"), actor), ">=", 1)
     .orderBy("b.updated_at", "desc")

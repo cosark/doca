@@ -52,7 +52,7 @@ Without a CDN, the host proxies private cloud files. Storage secrets are never r
 
 ## Browser image caching and the file CDN
 
-Ordinary document/comment images and host-proxied avatars/covers use the stable `/api/v1/assets/:id/content` URL. Successful inline image responses, including thumbnails, send:
+Document/comment images, assistant images and host-proxied avatars/covers use the stable `/api/v1/assets/:id/content` URL. Successful inline image responses, including thumbnails, send:
 
 ```http
 Cache-Control: private, max-age=3600, must-revalidate
@@ -62,7 +62,7 @@ ETag: W/"object-and-variant-identity-digest"
 
 The browser can reuse its local copy for an hour. Once stale, `If-None-Match` revalidates it: the host checks current access before returning `304` without image bytes. Originals and thumbnails have distinct ETags. Object keys are immutable; replacing an image requires a new asset. Cookie/Authorization changes select a separate cached response when switching accounts. Revocation is not rechecked during freshness; downloaded bytes cannot be recalled. Browsers can evict entries, and force reload/DevTools **Disable cache** can bypass them. This uses HTTP caching without an additional IndexedDB or Service Worker copy. See [MDN HTTP caching](https://developer.mozilla.org/en-US/docs/Web/HTTP/Guides/Caching) for revalidation versus `no-store`.
 
-AI attachments, `download=1`, trash previews and errors remain `no-store`. An unauthorized request cannot obtain `304` with a known ETag. Document images have a resourceId and currently stay behind the host proxy even when an S3 file CDN is configured.
+Non-image AI attachments, `download=1`, trash previews and errors remain `no-store`. An unauthorized request cannot obtain `304` with a known ETag. Document images have a resourceId and currently stay behind the host proxy even when an S3 file CDN is configured. Assistant images also stay behind the host proxy. Generated-image cards and inline assistant images request the existing 480-pixel WebP thumbnail; clicking them opens the original, and downloads keep the original bytes. While the asynchronous thumbnail job is pending or unavailable, the inline image can display the original.
 
 Signed file-CDN redirects stay `no-store` so the browser does not reuse an expired 60-second signature. Final file-response headers belong on the CDN or S3 origin; redirect headers do not carry over. New S3 objects currently use `Cache-Control: private, max-age=60`; this change does not rewrite existing objects.
 

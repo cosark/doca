@@ -228,7 +228,7 @@ it("rejects invalid installed footprints before changing user data", async () =>
     /Invalid recorded database structure/,
   );
 });
-it("leaves host-managed plugin tables outside core reconciliation", async () => {
+it("rejects old colocated plugin tables without changing core structure or plugin data", async () => {
   const path = await oldDatabase(),
     raw = new Sqlite(path),
     name = "plugin_" + "a".repeat(56);
@@ -236,8 +236,9 @@ it("leaves host-managed plugin tables outside core reconciliation", async () => 
     `create table ${name}(id text primary key, value text); insert into ${name} values ('retained','plugin-data')`,
   );
   raw.close();
-  const db = await openDatabase({ driver: "sqlite", path });
-  await db.destroy();
+  await expect(openDatabase({ driver: "sqlite", path })).rejects.toThrow(
+    "schema changes require review",
+  );
   const check = new Sqlite(path);
   try {
     expect(check.prepare(`select value from ${name}`).get()).toEqual({

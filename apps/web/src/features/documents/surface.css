@@ -39,24 +39,24 @@
   right: 12px;
   top: 82px;
   display: flex;
-  gap: 4px;
-  padding: 3px;
-  border: 1px solid var(--border, #dee0e3);
-  background: var(--surface, #fff);
-  border-radius: 8px;
-  box-shadow: 0 2px 8px #0001;
-}
-.region-comment-controls button {
-  display: inline-flex;
   align-items: center;
-  justify-content: center;
-  width: 32px;
-  height: 32px;
-  flex: none;
+  gap: 2px;
   padding: 4px;
+  border: 1px solid #e4e7ed;
+  background: var(--surface, #fff);
+  border-radius: 10px;
+  box-shadow: 0 2px 8px #1f232908;
 }
-.region-comment-controls svg {
-  flex-shrink: 0;
+.region-comment-controls > .comment-control + .comment-control {
+  margin-left: 3px;
+}
+.region-comment-controls > .comment-control + .comment-control::before {
+  content: "";
+  position: absolute;
+  left: -4px;
+  height: 16px;
+  width: 1px;
+  background: #e9edf2;
 }
 .surface-editor .region-comments-drawer {
   position: absolute;
@@ -259,16 +259,7 @@
   box-shadow: none;
 }
 .canvas-comment-visibility {
-  position: absolute;
-  right: 62px;
-  top: 85px;
-  z-index: 12;
-  width: 32px;
-  height: 32px;
-  padding: 4px;
-  background: white;
-  border: 1px solid var(--border, #dee0e3);
-  border-radius: 8px;
+  position: relative;
 }
 .doca-canvas .anchor-decoration-marker::before {
   content: "";

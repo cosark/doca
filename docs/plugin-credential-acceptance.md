@@ -18,9 +18,9 @@
 
 浏览器截图：
 
-![刷新后跨重启读取，仅显示元数据与校验结果](../artifacts/credential-acceptance/restart-read.png)
+![刷新后跨重启读取，仅显示元数据与校验结果](verification/credential-acceptance/restart-read.png)
 
-![管理员只读环境存储说明](../artifacts/credential-acceptance/storage-environment.png)
+![管理员只读环境存储说明](verification/credential-acceptance/storage-environment.png)
 
 S3 的 SDK 命令和条件提交使用测试适配器验证；本次未连接真实云账号。邮箱独立业务包和真实 SMTP/IMAP/OAuth 收发流程未在本次验收中运行，不能把宿主 SDK 凭证接口通过称为邮箱全部功能通过。邮箱侧应按[公开凭证接口](plugin-credentials.md)更新到 ^0.1.8 并独立联调。
 

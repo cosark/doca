@@ -99,7 +99,8 @@ export async function registerRealtime(
       ? {
           connectionId: c.connectionId,
           userId: c.user.id,
-          name: c.user.display_name,
+          name:
+            c.user.display_name.trim() || c.user.public_id?.trim() || c.user.id,
           color: c.color,
           ...(c.room ? { room: c.room } : {}),
           selection: c.cursor,
