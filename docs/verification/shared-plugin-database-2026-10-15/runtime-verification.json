@@ -1,0 +1,67 @@
+{
+  "runtimeSourceFiles": 415,
+  "sourceMatchesWorkingTree": true,
+  "platformSourcesIdentical": true,
+  "webAssetsIdentical": true,
+  "platforms": {
+    "arm64": {
+      "version": "0.1.26",
+      "hostValidation": true,
+      "compression": [
+        "gzip",
+        "br"
+      ],
+      "sdkVersion": "0.1.11",
+      "sourceChangesPresent": true,
+      "editorVersions": true,
+      "serverMermaidValidAndInvalid": true,
+      "platform": "linux/arm64",
+      "freshDatabaseAndAdmin": true,
+      "repeatBootstrapPreservesAccount": true,
+      "passwordRecovery": true,
+      "noExternalNetwork": true,
+      "chromiumSandboxPdf": true,
+      "gracefulShutdown": true,
+      "execution": "native arm64 Docker host",
+      "assetCount": 470,
+      "assetHashesSha256": "f0386d5a2ec5d25dd7c869fdd0f98e2446082b2453148dd2fa16fec9dfba7167",
+      "sharedPluginStorage": {
+        "sharedSQLiteFile": true,
+        "automaticNamespaces": true,
+        "logicalTableIsolation": true,
+        "rollbackOnce": true,
+        "uninstallIsolation": true,
+        "staleGenerationFenced": true
+      }
+    },
+    "amd64": {
+      "version": "0.1.26",
+      "hostValidation": true,
+      "compression": [
+        "gzip",
+        "br"
+      ],
+      "sdkVersion": "0.1.11",
+      "sourceChangesPresent": true,
+      "editorVersions": true,
+      "serverMermaidValidAndInvalid": true,
+      "platform": "linux/amd64",
+      "freshDatabaseAndAdmin": true,
+      "repeatBootstrapPreservesAccount": true,
+      "passwordRecovery": true,
+      "noExternalNetwork": true,
+      "gracefulShutdown": true,
+      "execution": "emulated amd64 on arm64 Docker host",
+      "assetCount": 470,
+      "assetHashesSha256": "f0386d5a2ec5d25dd7c869fdd0f98e2446082b2453148dd2fa16fec9dfba7167",
+      "sharedPluginStorage": {
+        "sharedSQLiteFile": true,
+        "automaticNamespaces": true,
+        "logicalTableIsolation": true,
+        "rollbackOnce": true,
+        "uninstallIsolation": true,
+        "staleGenerationFenced": true
+      }
+    }
+  }
+}

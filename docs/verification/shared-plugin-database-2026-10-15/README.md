@@ -16,3 +16,7 @@ Validation results:
 - Full default suite: 2,861 passed, 8 environment-conditional skipped; 280 files passed and 2 skipped.
 - TypeScript check and production Web build passed.
 - Documentation build/check passed: 67 pages in both languages, including link/heading validation.
+- PostgreSQL 17 and 18: each passed all 149 matrix tests and the actual released 0.1.25 uninstall/upgrade/reinstall check, including retained-row/declaration comparison after rejected startup.
+- Candidate images: native arm64 and emulated amd64 both passed shared-file/automatic namespace, same-name data isolation, once-only rollback, uninstall isolation and stale-handle checks with no external network. All 415 runtime source files match the working tree and each other.
+- The packaged deployment starts a fresh isolated volume on both architectures. Health/version, Host validation, gzip/Brotli bytes, administrator initialization/repeat protection/password recovery and graceful shutdown passed. All 470 Web assets match across platforms. Native arm64 also passed Chromium sandbox PDF and LibreOffice availability checks.
+- GitHub PR #58 initially passed PostgreSQL 17/18 and documentation workflows. Final evidence adds documentation and captured results only.
