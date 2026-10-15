@@ -1,5 +1,6 @@
 # Pending change: independent plugin databases
 
+Historical record: this per-plugin database design was released in 0.1.25. [0.1.26](0.1.26.md) replaces it with one shared plugin business database and requires uninstall/reinstall without data migration.
 [简体中文](pending-plugin-database-isolation.zh-CN.md)
 
 2026-10-14. This working-tree change is not published or deployed.

@@ -43,41 +43,38 @@ export async function testTableColumns(
   return [...tables.values()];
 }
 
-/** Dedicated databases and restricted roles for plugin fixtures, never user databases. */
+/** One dedicated shared plugin database and restricted role per fixture. */
 function testPluginDatabases(
   db: Awaited<ReturnType<typeof openDatabase>>,
   testUrl: string,
 ) {
   const config = {
     driver: "postgres" as const,
-    databases: {} as Record<string, { url: string; poolMax: number }>,
+    url: null as string | null,
+    poolMax: 2,
   };
   configurePluginDatabases(db, config);
   const host = pluginDatabases(db),
     open = host.open.bind(host);
-  const provisions = new Map<string, Promise<void>>();
-  const owned: { name: string; role: string }[] = [];
   const admin = new Pool({ connectionString: testUrl, max: 1 });
+  const name = "doca_test_plugin_" + randomUUID().replaceAll("-", ""),
+    role = name + "_role";
+  let provision: Promise<void> | undefined,
+    roleCreated = false;
   host.open = async (id, mustExist, coreConnection) => {
-    let pending = provisions.get(id);
-    if (!pending) {
-      pending = (async () => {
-        const name = "doca_test_plugin_" + randomUUID().replaceAll("-", ""),
-          role = name + "_role",
-          password = randomUUID().replaceAll("-", "");
-        await admin.query(`create role ${role} login password '${password}'`);
-        owned.push({ name, role });
-        await admin.query(`create database ${name} owner ${role}`);
-        const url = new URL(testUrl);
-        url.pathname = "/" + name;
-        url.username = role;
-        url.password = password;
-        url.searchParams.delete("options");
-        config.databases[id] = { url: url.href, poolMax: 2 };
-      })();
-      provisions.set(id, pending);
-    }
-    await pending;
+    provision ??= (async () => {
+      const password = randomUUID().replaceAll("-", "");
+      await admin.query(`create role ${role} login password '${password}'`);
+      roleCreated = true;
+      await admin.query(`create database ${name} owner ${role}`);
+      const url = new URL(testUrl);
+      url.pathname = "/" + name;
+      url.username = role;
+      url.password = password;
+      url.searchParams.delete("options");
+      config.url = url.href;
+    })();
+    await provision;
     return open(id, mustExist, coreConnection);
   };
   const destroy = db.destroy.bind(db);
@@ -88,11 +85,9 @@ function testPluginDatabases(
         await destroy();
       } finally {
         try {
-          await Promise.allSettled([...provisions.values()]);
-          for (const { name, role } of owned) {
-            await admin.query(`drop database if exists ${name} with (force)`);
-            await admin.query(`drop role ${role}`);
-          }
+          await provision?.catch(() => {});
+          await admin.query(`drop database if exists ${name} with (force)`);
+          if (roleCreated) await admin.query(`drop role ${role}`);
         } finally {
           await admin.end();
         }
@@ -105,7 +100,7 @@ export async function openTestDatabase(config: DatabaseConfig) {
   if (!testUrl || config.driver !== "sqlite" || config.path !== ":memory:") {
     const db = await openDatabase(config);
     testBookPayloadStore(db);
-    // Never inherit a deployment's plugin database directory or credentials.
+    // Never inherit a deployment's shared plugin database path or credentials.
     configurePluginDatabases(db, pluginDatabaseConfig(config, {}));
     return db;
   }

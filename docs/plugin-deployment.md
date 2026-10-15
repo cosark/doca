@@ -1,6 +1,6 @@
 # Install and deploy plugins
 
-2026-10-14 working-tree change: [independent plugin databases](plugin-database-isolation.md) supersede the former colocated SQL layout and atomic private-table uninstall descriptions. Upgrade requires normal uninstall on the previous host, then reinstall; no business data is migrated. Not yet published or deployed.
+0.1.26 uses a [shared plugin business database](plugin-database-isolation.md), separate from core, with automatic namespaces. It replaces the per-plugin databases released in 0.1.25. Upgrade requires normal uninstall on the previous host and reinstall; plugin data is not migrated.
 
 [中文](plugin-deployment.zh-CN.md)
 
@@ -27,7 +27,7 @@ Restart every instance in a multi-instance deployment; use the appropriate super
 
 ## Implemented storage revision (2026-10-03, SDK source 0.1.8)
 
-`@smartdoca/plugin-sdk/storage` now exports installation-bound `pluginDatabaseToken` (`storage.sql.v1`) and `pluginObjectStorageToken` (`storage.objects.v1`). The database subset is explicit schema version 1, text/int32/double columns, primary/unique constraints, structured select/insert/update/remove and transactions with callbacks executed once. SDK source 0.1.8 additionally exports `pluginCredentialToken` (`storage.credentials.v1`): server-only encrypted CRUD, metadata and revision checks. See [credential API](plugin-credentials.md). Joins, foreign keys, generic SQL, upsert and workspaces are not exported. Business SQL uses an independent host-managed database per plugin, with separate SQLite files or configured PostgreSQL databases and restricted roles. Process isolation remains unimplemented. See [storage configuration and the uninstall-before-upgrade contract](plugin-database-isolation.md).
+`@smartdoca/plugin-sdk/storage` now exports installation-bound `pluginDatabaseToken` (`storage.sql.v1`) and `pluginObjectStorageToken` (`storage.objects.v1`). The database subset is explicit schema version 1, text/int32/double columns, primary/unique constraints, structured select/insert/update/remove and transactions with callbacks executed once. SDK source 0.1.8 additionally exports `pluginCredentialToken` (`storage.credentials.v1`): server-only encrypted CRUD, metadata and revision checks. See [credential API](plugin-credentials.md). Joins, foreign keys, generic SQL, upsert and workspaces are not exported. Business SQL uses one shared host-managed database separate from core: one SQLite file with table prefixes, or one PostgreSQL URL/restricted role with automatic plugin schemas and a shared connection pool. Process isolation remains unimplemented. See [storage configuration and the uninstall-before-upgrade contract](plugin-database-isolation.md).
 
 Logical databases use `plugin:<pluginId>`, user-file attribution and private objects use `plugins/<pluginId>`, and release ZIPs use `host/plugin-releases/<sha256>.zip`. Complete immutable ZIP bytes live in environment-configured file storage; the shared database holds registry version 2, archive references and trusted file-hash indexes. Verified cache hits do not download ZIPs again. All instances are restarted manually. The new host baseline rejects older databases/formats/SDK packages and preserves their data, with no migration or fallback. See [exact implementation and limitations](unified-storage-implementation.md).
 

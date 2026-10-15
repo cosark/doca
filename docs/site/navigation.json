@@ -164,8 +164,8 @@
       ],
       [
         "plugin-database-isolation",
-        "Independent business databases",
-        "独立业务库"
+        "Shared business database",
+        "共享业务库"
       ],
       [
         "plugin-credentials",
@@ -266,6 +266,11 @@
     "en": "Releases",
     "zh": "发行记录",
     "pages": [
+      [
+        "releases/0.1.26",
+        "0.1.26 release notes",
+        "0.1.26 发行记录"
+      ],
       [
         "releases/0.1.25",
         "0.1.25 release notes",

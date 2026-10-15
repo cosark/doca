@@ -1,0 +1,5 @@
+Released 0.1.25 created retained core data and independent plugin business rows
+Working tree rejected residual 0.1.25 installations without changing their declarations or core data
+Rejected startup preserved the released core rows and old installation declaration
+Released 0.1.25 normal uninstall removed private business tables, credentials and objects
+sqlite: released-image uninstall → upgrade → reinstall passed; core data retained, business store starts empty

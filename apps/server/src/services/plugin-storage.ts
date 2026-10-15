@@ -1,4 +1,3 @@
-import { currentSchemaTables } from "@db/introspection.js";
 import { createHash, randomUUID } from "node:crypto";
 import { z } from "zod";
 import type { Kysely } from "kysely";
@@ -23,7 +22,11 @@ import {
 } from "./plugin-credentials.js";
 import { createPluginStorageNamespace } from "./plugin-storage-namespaces.js";
 import type { HostFileStore } from "./host-file-store.js";
-import { pluginDatabases } from "./plugin-databases.js";
+import {
+  pluginDatabases,
+  pluginDatabaseTables,
+  pluginPhysicalTable,
+} from "./plugin-databases.js";
 import { registerDriver, databaseDriver } from "@db/transactions.js";
 import {
   pluginStorageIdentifier as identifier,
@@ -63,7 +66,7 @@ const queryParser = z
   .strict();
 const hash = (value: string) =>
   createHash("sha256").update(value).digest("hex");
-const emptyDeclaration = () => canonical({ storageVersion: 2, schema: null });
+const emptyDeclaration = () => canonical({ storageVersion: 3, schema: null });
 /** Old installed plugins must be uninstalled by the previous host before upgrading. */
 export function pluginStorageDeclaration(definition: string | null) {
   try {
@@ -82,7 +85,7 @@ const databaseMarker = (
   schema: PluginDatabaseSchema,
 ) =>
   canonical({
-    storageVersion: 2,
+    storageVersion: 3,
     pluginId: id,
     generation,
     dataVersion,
@@ -144,10 +147,11 @@ async function verifyConstraints(
       );
   } else {
     for (const name of Object.keys(schema.tables)) {
+      const physicalName = pluginPhysicalTable(db, name);
       const columns = await sql<{
         name: string;
         pk: number;
-      }>`select name, pk from pragma_table_info(${name}) where pk > 0 order by pk`.execute(
+      }>`select name, pk from pragma_table_info(${physicalName}) where pk > 0 order by pk`.execute(
         db,
       );
       add(
@@ -158,7 +162,9 @@ async function verifyConstraints(
       const indexes = await sql<{
         name: string;
         origin: string;
-      }>`select name, origin from pragma_index_list(${name})`.execute(db);
+      }>`select name, origin from pragma_index_list(${physicalName})`.execute(
+        db,
+      );
       for (const index of indexes.rows) {
         if (index.origin === "pk") continue;
         const fields = await sql<{
@@ -174,11 +180,11 @@ async function verifyConstraints(
       }
       const foreign = await sql<{
         id: number;
-      }>`select id from pragma_foreign_key_list(${name})`.execute(db);
+      }>`select id from pragma_foreign_key_list(${physicalName})`.execute(db);
       if (foreign.rows.length) add(name, "f", []);
       const ddl = await sql<{
         definition: string;
-      }>`select sql as definition from sqlite_schema where type = 'table' and name = ${name}`.execute(
+      }>`select sql as definition from sqlite_schema where type = 'table' and name = ${physicalName}`.execute(
         db,
       );
       if (/\bcheck\s*\(/i.test(ddl.rows[0]!.definition)) add(name, "c", []);
@@ -395,7 +401,7 @@ export async function cleanupPluginDatabases(db: DB) {
         if (business)
           await business.transaction().execute(async (tx) => {
             registerDriver(tx, databaseDriver(business));
-            const tables = await currentSchemaTables(tx);
+            const tables = await pluginDatabaseTables(tx);
             if (tables.length) {
               let installedSchema = schema;
               if (!installedSchema) {
@@ -743,7 +749,7 @@ export async function bindPluginStorage(
       defineSchema: (input: PluginDatabaseSchema) =>
         safe(async () => {
           const schema = validateSchema(input);
-          const definition = canonical({ storageVersion: 2, schema });
+          const definition = canonical({ storageVersion: 3, schema });
           await transact(db, async (tx) => {
             const row = await current(tx, true);
             const declared = pluginStorageDeclaration(row.definition);
@@ -758,7 +764,7 @@ export async function bindPluginStorage(
             const business = await databases.open(id, !!declared.schema, tx);
             await business.transaction().execute(async (businessTx) => {
               registerDriver(businessTx, databaseDriver(business));
-              const tables = await currentSchemaTables(businessTx);
+              const tables = await pluginDatabaseTables(businessTx);
               if (tables.length) {
                 // An interrupted first declaration may have committed the business
                 // transaction. Adopt only its exact installation marker and schema.
