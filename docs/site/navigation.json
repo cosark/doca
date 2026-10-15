@@ -163,6 +163,11 @@
         "插件部署"
       ],
       [
+        "plugin-database-isolation",
+        "Independent business databases",
+        "独立业务库"
+      ],
+      [
         "plugin-credentials",
         "Managed credentials",
         "托管凭证"
@@ -261,6 +266,11 @@
     "en": "Releases",
     "zh": "发行记录",
     "pages": [
+      [
+        "releases/0.1.25",
+        "0.1.25 release notes",
+        "0.1.25 发行记录"
+      ],
       [
         "releases/0.1.24",
         "0.1.24",

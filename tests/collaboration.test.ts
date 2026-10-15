@@ -406,6 +406,64 @@ it("serves authenticated WebSocket collaboration, pushes notifications, counts u
       expect(first[0].userId).toBe(owner.id);
       expect(first[0].name).toBe(owner.display_name);
       expect((await selfAtA).sessions).toHaveLength(0);
+      expect(owner.public_id).toBeTruthy();
+      for (const profile of [
+        {
+          display_name: "",
+          public_id: owner.public_id!,
+          name: owner.public_id,
+        },
+        {
+          display_name: " \t ",
+          public_id: owner.public_id!,
+          name: owner.public_id,
+        },
+        { display_name: "", public_id: "", name: owner.id },
+      ]) {
+        await db
+          .updateTable("users")
+          .set({
+            display_name: profile.display_name,
+            public_id: profile.public_id,
+          })
+          .where("id", "=", owner.id)
+          .execute();
+        const fallbackCursor = next(b, "cursors", (m) =>
+          m.sessions.some((p: any) => p.name === profile.name),
+        );
+        a.send(
+          JSON.stringify({
+            type: "cursor",
+            id: crypto.randomUUID(),
+            room: r.id,
+            userId: reader.id,
+            name: "forged",
+            color: "red",
+            selection: { anchor: point, focus: point },
+          }),
+        );
+        expect((await fallbackCursor).sessions[0]).toMatchObject({
+          connectionId: first[0].connectionId,
+          userId: owner.id,
+          name: profile.name,
+          color: first[0].color,
+        });
+        expect(
+          await db
+            .selectFrom("users")
+            .select(["display_name", "public_id"])
+            .where("id", "=", owner.id)
+            .executeTakeFirstOrThrow(),
+        ).toEqual({
+          display_name: profile.display_name,
+          public_id: profile.public_id,
+        });
+      }
+      await db
+        .updateTable("users")
+        .set({ display_name: owner.display_name, public_id: owner.public_id })
+        .where("id", "=", owner.id)
+        .execute();
       const cursorAtA = next(a, "cursors"),
         ownAtB = next(b, "cursors");
       b.send(

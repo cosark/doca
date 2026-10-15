@@ -278,18 +278,6 @@ export default function CanvasDocument({
     >
       {slots.live &&
         createPortal(<span role="status">{sync.status}</span>, slots.live)}
-      <button
-        className="icon canvas-comment-visibility"
-        aria-label={showCommentMarks ? "隐藏画板评论标记" : "显示画板评论标记"}
-        title={showCommentMarks ? "隐藏画板评论标记" : "显示画板评论标记"}
-        aria-pressed={showCommentMarks}
-        onClick={() => {
-          setShowCommentMarks((v) => !v);
-          setActive(null);
-        }}
-      >
-        {showCommentMarks ? <Eye size={18} /> : <EyeOff size={18} />}
-      </button>
       <DocumentDownload
         disabled={!handle}
         onError={setError}
@@ -370,6 +358,20 @@ export default function CanvasDocument({
         <ModelFind documentId={detail.resource.id} handle={ref} revision={sync.revision} canEdit={editable} />
       )}
       <RegionComments
+        visibilityControl={
+          <button
+            className="icon comment-control canvas-comment-visibility"
+            aria-label={showCommentMarks ? "隐藏画板评论标记" : "显示画板评论标记"}
+            title={showCommentMarks ? "隐藏画板评论标记" : "显示画板评论标记"}
+            aria-pressed={showCommentMarks}
+            onClick={() => {
+              setShowCommentMarks((v) => !v);
+              setActive(null);
+            }}
+          >
+            {showCommentMarks ? <Eye size={16} /> : <EyeOff size={16} />}
+          </button>
+        }
         createAction={createComment}
         detail={detail}
         user={user}

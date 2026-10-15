@@ -28,7 +28,13 @@ import {
   installPluginStorage,
   removePluginStorage,
   cleanupPluginObjects,
+  cleanupPluginDatabases,
 } from "@server/services/plugin-storage.js";
+import {
+  pluginDatabases,
+  configurePluginDatabases,
+  pluginDatabaseConfig,
+} from "@server/services/plugin-databases.js";
 import { createHostFileStore } from "@server/services/host-file-store.js";
 import { storageRuntime } from "@server/adapters/storage.js";
 import { scopeInstalledPlugin } from "@server/plugins/scope.js";
@@ -38,7 +44,7 @@ const dbs: DB[] = [],
   dirs: string[] = [];
 afterEach(async () => {
   vi.restoreAllMocks();
-  await Promise.all(dbs.splice(0).map((d) => d.destroy()));
+  for (const db of dbs.splice(0).reverse()) await db.destroy();
   await Promise.all(
     dirs.splice(0).map((d) => rm(d, { recursive: true, force: true })),
   );
@@ -161,11 +167,8 @@ it("rolls transactions back, invokes user callbacks once and expires retained ha
 it("refuses implicit empty schema repair after business tables are lost", async () => {
   const { db, files, a } = await fixture();
   await a.database.defineSchema(schema);
-  const table = (await currentSchemaTables(db)).find(
-    (t) =>
-      /^plugin_[a-f0-9]{56}$/.test(t.name) && t.columns.some((c) => c.name === "score"),
-  )!;
-  await db.schema.dropTable(table.name).execute();
+  const business = await pluginDatabases(db).open("example.a-b", true);
+  await business.schema.dropTable("notes").execute();
   const restarted = await bindPluginStorage(db, files, "example.a-b", "1");
   await expect(restarted.database.defineSchema(schema)).rejects.toMatchObject({
     code: "unavailable",
@@ -203,6 +206,7 @@ it("stores opaque private objects under plugin prefixes, verifies bytes and forb
     processed: 0,
     failed: 0,
   });
+  expect(await cleanupPluginDatabases(db)).toEqual({ failed: 0 });
 });
 it("fences stale handles on uninstall and creates a distinct generation on explicit reinstall", async () => {
   const { db, files, a } = await fixture();
@@ -231,6 +235,7 @@ it("fences stale handles on uninstall and creates a distinct generation on expli
     processed: 1,
     failed: 0,
   });
+  expect(await cleanupPluginDatabases(db)).toEqual({ failed: 0 });
   await db
     .transaction()
     .execute((tx) => installPluginStorage(tx, "example.a-b", "2"));
@@ -331,7 +336,9 @@ it("rejects earlier baselines and partial new storage schemas without modifying 
     .set({ id: "doca-2026-09-27" })
     .where("id", "=", CURRENT_SCHEMA_BASELINE)
     .execute();
-  await expect(createSchema(db)).rejects.toThrow("compatibility generation is not supported");
+  await expect(createSchema(db)).rejects.toThrow(
+    "compatibility generation is not supported",
+  );
   expect(
     await db.selectFrom("plugin_storage_namespaces").selectAll().execute(),
   ).toHaveLength(2);
@@ -341,7 +348,9 @@ it("rejects earlier baselines and partial new storage schemas without modifying 
     .where("id", "=", "doca-2026-09-27")
     .execute();
   await db.schema.dropTable("plugin_private_objects").execute();
-  await expect(createSchema(db)).rejects.toThrow("schema changes require review");
+  await expect(createSchema(db)).rejects.toThrow(
+    "schema changes require review",
+  );
   expect(
     (await currentSchemaTables(db)).some(
       (t) => t.name === "plugin_private_objects",
@@ -360,12 +369,25 @@ it("shares relational data between independent database connections", async () =
     }>`select current_schema() as name`.execute(db);
     const url = new URL(process.env.DOCA_TEST_POSTGRES);
     url.searchParams.set("options", "-csearch_path=" + current.rows[0]!.name);
-    second = await openDatabase({ driver: "postgres", url: url.href });
+    second = await openDatabase({
+      driver: "postgres",
+      url: url.href,
+      poolMax: 1,
+    });
+    configurePluginDatabases(second, pluginDatabases(first).config);
     dbs.push(second);
   } else {
     first = await openDatabase({ driver: "sqlite", path });
+    configurePluginDatabases(
+      first,
+      pluginDatabaseConfig({ driver: "sqlite", path }, {}),
+    );
     dbs.push(first);
     second = await openDatabase({ driver: "sqlite", path });
+    configurePluginDatabases(
+      second,
+      pluginDatabaseConfig({ driver: "sqlite", path }, {}),
+    );
     dbs.push(second);
   }
   await first
@@ -383,15 +405,223 @@ it("shares relational data between independent database connections", async () =
   ]);
 });
 
+it("keeps readable business tables outside the core and outside every other plugin database", async () => {
+  const { db, a, b } = await fixture();
+  const original = (await currentSchemaTables(db)).map((t) => t.name);
+  await a.database.defineSchema(schema);
+  await b.database.defineSchema(schema);
+  const left = await pluginDatabases(db).open("example.a-b", true),
+    right = await pluginDatabases(db).open("example.a.b", true);
+  expect(left).not.toBe(right);
+  expect((await currentSchemaTables(db)).map((t) => t.name)).toEqual(original);
+  expect((await currentSchemaTables(left)).map((t) => t.name).sort()).toEqual([
+    "_doca_plugin_store",
+    "notes",
+  ]);
+  await expect(
+    left.selectFrom("users").selectAll().execute(),
+  ).rejects.toThrow();
+  await expect(
+    db
+      .selectFrom("notes" as any)
+      .selectAll()
+      .execute(),
+  ).rejects.toThrow();
+  await createSchema(db);
+});
+
+it.each([null, JSON.stringify(schema)])(
+  "rejects old installation declarations without resetting them: %s",
+  async (definition) => {
+    const { db, files } = await fixture();
+    await db
+      .updateTable("plugin_storage_namespaces")
+      .set({ definition })
+      .where("plugin_id", "=", "example.a-b")
+      .execute();
+    const before = await db
+      .selectFrom("plugin_storage_namespaces")
+      .selectAll()
+      .where("plugin_id", "=", "example.a-b")
+      .executeTakeFirstOrThrow();
+    await expect(createSchema(db)).rejects.toThrow(
+      "schema changes require review",
+    );
+    await expect(
+      bindPluginStorage(db, files, "example.a-b", "1"),
+    ).rejects.toThrow("previous host");
+    await expect(
+      db
+        .transaction()
+        .execute((tx) => installPluginStorage(tx, "example.a-b", "1")),
+    ).rejects.toThrow("previous host");
+    await expect(
+      db.transaction().execute((tx) => removePluginStorage(tx, "example.a-b")),
+    ).rejects.toThrow("previous host");
+    expect(
+      await db
+        .selectFrom("plugin_storage_namespaces")
+        .selectAll()
+        .where("plugin_id", "=", "example.a-b")
+        .executeTakeFirstOrThrow(),
+    ).toEqual(before);
+  },
+);
+
+it("recovers an interrupted initial declaration only from the exact committed business marker", async () => {
+  const { db, a } = await fixture();
+  const initial = await db
+    .selectFrom("plugin_storage_namespaces")
+    .select("definition")
+    .where("plugin_id", "=", "example.a-b")
+    .executeTakeFirstOrThrow();
+  await a.database.defineSchema(schema);
+  await a.database.insert("notes", [{ id: "one", text: "retained", score: 1 }]);
+  // Model business commit followed by an interrupted core declaration commit.
+  await db
+    .updateTable("plugin_storage_namespaces")
+    .set(initial)
+    .where("plugin_id", "=", "example.a-b")
+    .execute();
+  const other = structuredClone(schema) as any;
+  other.tables.notes!.columns.other = { type: "text", nullable: true };
+  await expect(a.database.defineSchema(other)).rejects.toMatchObject({
+    code: "unavailable",
+  });
+  await a.database.defineSchema(schema);
+  expect(await a.database.select("notes")).toEqual([
+    { id: "one", text: "retained", score: 1 },
+  ]);
+});
+
+it("cleans an interrupted declaration on explicit uninstall before allowing a fresh generation", async () => {
+  const { db, files, a } = await fixture();
+  const initial = await db
+    .selectFrom("plugin_storage_namespaces")
+    .select("definition")
+    .where("plugin_id", "=", "example.a-b")
+    .executeTakeFirstOrThrow();
+  await a.database.defineSchema(schema);
+  await db
+    .updateTable("plugin_storage_namespaces")
+    .set(initial)
+    .where("plugin_id", "=", "example.a-b")
+    .execute();
+  await db
+    .transaction()
+    .execute((tx) => removePluginStorage(tx, "example.a-b"));
+  expect(await cleanupPluginDatabases(db)).toEqual({ failed: 0 });
+  await db
+    .transaction()
+    .execute((tx) => installPluginStorage(tx, "example.a-b", "2"));
+  const current = await bindPluginStorage(db, files, "example.a-b", "2");
+  await current.database.defineSchema(schema);
+  expect(await current.database.select("notes")).toEqual([]);
+});
+
+it("retains a failed cleanup intent, fences old handles and retries without deleting unexpected data", async () => {
+  const { db, files, a } = await fixture();
+  await a.database.defineSchema(schema);
+  await a.database.insert("notes", [{ id: "one", text: "retained", score: 1 }]);
+  const business = await pluginDatabases(db).open("example.a-b", true);
+  await business.schema
+    .createTable("unexpected")
+    .addColumn("id", "text")
+    .execute();
+  await db
+    .transaction()
+    .execute((tx) => removePluginStorage(tx, "example.a-b"));
+  expect(await cleanupPluginDatabases(db)).toEqual({ failed: 1 });
+  await expect(a.database.select("notes")).rejects.toMatchObject({
+    code: "unavailable",
+  });
+  expect(await business.selectFrom("notes").selectAll().execute()).toHaveLength(
+    1,
+  );
+  await expect(
+    db
+      .transaction()
+      .execute((tx) => installPluginStorage(tx, "example.a-b", "2")),
+  ).rejects.toThrow("cleanup is pending");
+  await business.schema.dropTable("unexpected").execute();
+  expect(await cleanupPluginDatabases(db)).toEqual({ failed: 0 });
+  expect(await cleanupPluginDatabases(db)).toEqual({ failed: 0 });
+  await db
+    .transaction()
+    .execute((tx) => installPluginStorage(tx, "example.a-b", "2"));
+  const current = await bindPluginStorage(db, files, "example.a-b", "2");
+  await current.database.defineSchema(schema);
+  expect(await current.database.select("notes")).toEqual([]);
+});
+
+it("retries cleanup after business deletion committed but the core intent was not cleared", async () => {
+  const { db, a } = await fixture();
+  await a.database.defineSchema(schema);
+  await db
+    .transaction()
+    .execute((tx) => removePluginStorage(tx, "example.a-b"));
+  const business = await pluginDatabases(db).open("example.a-b", true);
+  await business.transaction().execute(async (tx) => {
+    await tx.schema.dropTable("notes").execute();
+    await tx.schema.dropTable("_doca_plugin_store").execute();
+  });
+  expect(await cleanupPluginDatabases(db)).toEqual({ failed: 0 });
+  await db
+    .transaction()
+    .execute((tx) => installPluginStorage(tx, "example.a-b", "2"));
+});
+
+it("does not collide logical table names with host-created constraint names", async () => {
+  const { a } = await fixture();
+  const declaration = structuredClone(schema) as any;
+  declaration.tables.notes_pk = structuredClone(declaration.tables.notes);
+  declaration.tables.notes_u0 = structuredClone(declaration.tables.notes);
+  declaration.tables.notes.unique = [["text"]];
+  await a.database.defineSchema(declaration);
+  await a.database.defineSchema(declaration);
+  await a.database.insert("notes_pk", [{ id: "one", text: "valid", score: 1 }]);
+  expect(await a.database.select("notes_pk")).toHaveLength(1);
+});
+
+it("lets an admitted business transaction finish before uninstall fences its generation", async () => {
+  const { db, a } = await fixture();
+  await a.database.defineSchema(schema);
+  let entered!: () => void, release!: () => void;
+  const started = new Promise<void>((resolve) => {
+      entered = resolve;
+    }),
+    finish = new Promise<void>((resolve) => {
+      release = resolve;
+    });
+  const write = a.database.transaction(async (tx) => {
+    await tx.insert("notes", [{ id: "admitted", text: "committed", score: 1 }]);
+    entered();
+    await finish;
+  });
+  await started;
+  const uninstall = db
+    .transaction()
+    .execute((tx) => removePluginStorage(tx, "example.a-b"));
+  release();
+  await write;
+  await uninstall;
+  await expect(a.database.select("notes")).rejects.toMatchObject({
+    code: "unavailable",
+  });
+  const business = await pluginDatabases(db).open("example.a-b", true);
+  expect(await business.selectFrom("notes").selectAll().execute()).toHaveLength(
+    1,
+  );
+  expect(await cleanupPluginDatabases(db)).toEqual({ failed: 0 });
+});
+
 it("rejects altered physical column types and nullability without recreating data", async () => {
   const { db, a } = await fixture();
   await a.database.defineSchema(schema);
-  const table = (await currentSchemaTables(db)).find((t) =>
-    /^plugin_[a-f0-9]{56}$/.test(t.name),
-  )!;
-  await db.schema.dropTable(table.name).execute();
-  await db.schema
-    .createTable(table.name)
+  const business = await pluginDatabases(db).open("example.a-b", true);
+  await business.schema.dropTable("notes").execute();
+  await business.schema
+    .createTable("notes")
     .addColumn("id", "text", (c) => c.notNull())
     .addColumn("text", "text", (c) => c.notNull())
     .addColumn("score", "text", (c) => c.notNull())
@@ -400,8 +630,8 @@ it("rejects altered physical column types and nullability without recreating dat
   await expect(a.database.defineSchema(schema)).rejects.toThrow(
     "structure is incomplete",
   );
-  const changed = (await currentSchemaTables(db)).find(
-    (t) => t.name === table.name,
+  const changed = (await currentSchemaTables(business)).find(
+    (t) => t.name === "notes",
   )!;
   expect(
     changed.columns.find((c) => c.name === "score")!.dataType.toLowerCase(),

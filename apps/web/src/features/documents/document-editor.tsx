@@ -846,14 +846,15 @@ function RichDocument({
         )}
       {!commentsOpen && (
         <button
-          className="icon editor-panel-toggle"
+          className="icon comment-control editor-panel-toggle"
           aria-label={t("comment.openRegion")}
           title={t("comment.region")}
+          aria-expanded={false}
           onMouseDown={(e) => e.preventDefault()}
           onClick={() => setCommentsOpen(true)}
         >
           <MessageSquare size={18} />
-          {roots.length > 0 && <small>{roots.length}</small>}
+          {roots.length > 0 && <small className="comment-control-count">{roots.length}</small>}
         </button>
       )}
       {error && (
@@ -1151,8 +1152,9 @@ function RichDocument({
                 }}
               />
               <button
-                className="icon"
+                className="icon comment-control"
                 aria-label={t("comment.closeRegion")}
+                title={t("comment.closeRegion")}
                 onClick={() => setCommentsOpen(false)}
               >
                 <PanelRightClose size={18} />

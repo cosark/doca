@@ -3,7 +3,7 @@ import { inheritDatabaseRuntimeScope } from "./runtime-scope.js";
 import type { DB, Schema } from "./schema.js";
 
 const drivers = new WeakMap<object, "sqlite" | "postgres">();
-export function registerDriver(db: DB, driver: "sqlite" | "postgres") {
+export function registerDriver(db: object, driver: "sqlite" | "postgres") {
   drivers.set(db, driver);
 }
 

@@ -1,9 +1,10 @@
 import { useI18n } from "@web/shared/i18n.js";
 import { useEffect, useRef, useState } from "react";
-import { Alert, Button, Image, Modal, Space, Tag, Tooltip } from "antd";
+import { Alert, Button, Modal, Space, Tag, Tooltip } from "antd";
 import { Download, FilePlus2 } from "lucide-react";
 import { api, assetUrl } from "@web/shared/api.js";
 import { SearchPanel } from "@web/features/search/search.js";
+import { AIAssetImage } from "./ai-asset-image.js";
 
 export function AIGeneratedImage({
   image,
@@ -114,8 +115,8 @@ const { t } = useI18n();
           {t(image.validation?.state === "passed" ? "chat.imageValidationPassed" : image.validation?.state === "rejected" ? "chat.imageValidationFailed" : image.validation?.state === "pending" ? "chat.imageAwaitingValidation" : "chat.imageValidationUnrecorded")}
         </Tag>
       </Tooltip>
-      <Image
-        src={assetUrl(image.assetId)}
+      <AIAssetImage
+        assetId={image.assetId}
         alt="AI 生成图片"
         width="100%"
         style={{ maxHeight: 320, objectFit: "contain", borderRadius: 10 }}

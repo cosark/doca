@@ -23,6 +23,14 @@ export const TOOL_EXAMPLES: Record<string, Record<string, unknown>[]> = {
       operation: "source.save", expectedRevision: 0, title: "网络协议资料", status: "active",
       configuration: { version: 1, items: [{ id: "tcp-rfc", kind: "url", url: "https://www.rfc-editor.org/rfc/rfc9293.html" }] },
     } },
+    { action: "command", bookId: SAMPLE.doc, command: {
+      operation: "workflow.node.patch", expectedRevision: 1, nodeId: "synthesize", changes: { parameters: { instructions: "保留支持的完整机制、实例和 Mermaid 图表；长文由节点内部自动分批。" } },
+    } },
+    { action: "command", bookId: SAMPLE.doc, command: {
+      operation: "workflow.node.add", expectedRevision: 1,
+      node: { id: "parallel-writer", type: "synthesize", label: "并行章节撰写", position: { x: 500, y: 250 }, parameters: { instructions: "仅撰写当前分支范围", sourceIds: [], criterionIds: [], sourceWeight: 1, feedbackWeight: 1 } },
+      inputs: ["extract"], outputs: ["organize"],
+    } },
     { action: "command", bookId: SAMPLE.doc, command: { operation: "run.start" } },
     { action: "human_tasks", bookId: SAMPLE.doc, status: "pending", offset: 0 },
     { action: "resolve_task", bookId: SAMPLE.doc, taskId: SAMPLE.note, expectedRevision: 1, decision: "retry", note: "临时模型失败，按当前配置重试；revision 必须替换为 human_tasks 返回值。" },

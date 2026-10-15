@@ -22,6 +22,7 @@ import {
 } from "./schema-reconciliation.js";
 import { transact, databaseDriver, registerDriver } from "./transactions.js";
 import { inheritDatabaseRuntimeScope } from "./runtime-scope.js";
+import { pluginStorageDeclarationParser } from "./plugin-storage-format.js";
 import type { DB } from "./schema.js";
 
 const schemaStatements = [
@@ -380,12 +381,50 @@ async function validateBaseline(
 export async function validateSchema(db: Kysely<any>) {
   await transact(db as DB, async (tx) => {
     await validateBaseline(tx);
+    await validatePluginStorageFormat(tx);
     const changes = await inspectSchema(tx, createCurrentStructure, {
       newTables: [],
       newColumns: [],
     });
     if (changes.length) throw new SchemaReviewRequired(changes);
   });
+}
+
+/** The approved split requires old installations to be removed by the old host. */
+async function validatePluginStorageFormat(db: Kysely<any>) {
+  const tables = await currentSchemaTables(db);
+  const namespaces = tables.find(
+    (table) => table.name === "plugin_storage_namespaces",
+  );
+  if (
+    !namespaces ||
+    !["plugin_id", "definition", "state"].every((name) =>
+      namespaces.columns.some((column) => column.name === name),
+    )
+  )
+    return;
+  const active = await db
+    .selectFrom("plugin_storage_namespaces")
+    .select(["plugin_id", "definition"])
+    .where("state", "=", "active")
+    .execute();
+  const incompatible = active.filter((row) => {
+    try {
+      return !pluginStorageDeclarationParser.safeParse(
+        JSON.parse(row.definition ?? "null"),
+      ).success;
+    } catch {
+      return true;
+    }
+  });
+  if (incompatible.length)
+    throw new SchemaReviewRequired(
+      incompatible.map((row) => ({
+        kind: "review" as const,
+        table: "plugin_storage_namespaces",
+        reason: `old or invalid plugin installation ${row.plugin_id}; uninstall using the previous host before upgrading and reinstalling; no plugin data is migrated`,
+      })),
+    );
 }
 
 /** Latest structure only. Used for both fresh databases and upgrade planning. */
@@ -437,6 +476,7 @@ export async function createSchema(db: Kysely<any>) {
         await sql`update schema_baseline set created_at=created_at`.execute(tx);
       // Keep the existing semantic history upgrade/rollback gates.
       const advanceGeneration = await validateBaseline(tx, true);
+      await validatePluginStorageFormat(tx);
       await reconcileSchema(tx, createCurrentStructure, schemaEvolution);
       if (advanceGeneration) {
         // Approved schema-only upgrade: old SQL book outcomes remain untouched.

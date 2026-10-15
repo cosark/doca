@@ -10,6 +10,8 @@ import {
   bindPluginStorage,
   removePluginStorage,
   cleanupPluginObjects,
+  cleanupPluginDatabases,
+  pluginStorageDeclaration,
 } from "../services/plugin-storage.js";
 import { isDeepStrictEqual } from "node:util";
 import { mkdir, rename, readdir } from "node:fs/promises";
@@ -117,6 +119,7 @@ export class PluginManager {
           "Plugin storage differs from installation; refresh and retry",
         );
       result[id] = namespace.generation;
+      pluginStorageDeclaration(namespace.definition);
     }
     return result;
   }
@@ -238,6 +241,8 @@ export class PluginManager {
   }
   /** Global registry is authoritative; folders dropped locally are published before discovery. */
   async prepare(disabled: Readonly<Record<string, boolean | undefined>> = {}) {
+    await this.generations((await this.read()).state.desired);
+    await cleanupPluginDatabases(this.db);
     const folders = await readdir(this.directory, {
       withFileTypes: true,
     }).catch((error) => {
@@ -345,6 +350,8 @@ export class PluginManager {
     npm?: import("@core/shared/plugin-store.js").NpmRelease,
   ) {
     unpack(bytes);
+    await this.generations((await this.read()).state.desired);
+    await cleanupPluginDatabases(this.db);
     const hash = digest(bytes);
     const { state, revision } = await this.read();
     // A matching hash is immutable. Never repair a currently running release during a request.
@@ -485,8 +492,10 @@ export class PluginManager {
       undefined,
       action === "remove" ? id : undefined,
     );
-    if (action === "remove")
+    if (action === "remove") {
+      await cleanupPluginDatabases(this.db);
       await cleanupPluginObjects(this.db, this.archiveStore);
+    }
     return this.inventory();
   }
 }

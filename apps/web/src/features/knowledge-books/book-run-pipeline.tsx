@@ -294,6 +294,7 @@ export function BookRunPipeline({
           workflow={workflow}
           execution={execution}
           selected={select}
+          dismissed={() => select(undefined)}
         />
       )}
       <Drawer
@@ -301,7 +302,7 @@ export function BookRunPipeline({
         title={node ? nodeLabel(node.id) : bt("executionLogs")}
         onClose={() => select(undefined)}
         size={Math.min(560, Math.max(320, width))}
-        mask={false}
+        mask={{ enabled: true, blur: false }}
         className="book-node-log-drawer"
       >
         <div className="book-run-detail" key={selected ?? "all"}>

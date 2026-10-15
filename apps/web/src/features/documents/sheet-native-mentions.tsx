@@ -1,5 +1,5 @@
 import { useI18n } from "@web/shared/i18n.js";
-import { useEffect, useLayoutEffect, useRef, useState } from "react";
+import { useEffect, useLayoutEffect, useMemo, useRef, useState, type MutableRefObject } from "react";
 import { createPortal } from "react-dom";
 import type {
   SpreadsheetEditorHandle,
@@ -9,15 +9,29 @@ import type {
 import { lookupUsers, mentionHandle, mentionLabel, type MentionUser } from "@web/features/comments/rich-comments.js";
 import { setUserCardsSuppressed, UserBadge } from "@web/shared/components/user-badge.js";
 
+type MentionKeyboard = MutableRefObject<((event: KeyboardEvent) => void) | null>;
+/** Mount in the host before the SDK installs its global capture shortcuts. */
+export function useSheetMentionKeyboard(): MentionKeyboard {
+  const handler = useRef<((event: KeyboardEvent) => void) | null>(null);
+  useLayoutEffect(() => {
+    const key = (event: KeyboardEvent) => handler.current?.(event);
+    window.addEventListener("keydown", key, true);
+    return () => window.removeEventListener("keydown", key, true);
+  }, []);
+  return handler;
+}
+
 /** Host-owned directory UI; insertion uses the SDK's retained native draft token. */
 export function SheetNativeMentions({
   handle,
   enabled,
   onError,
+  keyboard,
 }: {
   handle: SpreadsheetEditorHandle;
   enabled: boolean;
   onError(message: string): void;
+  keyboard: MentionKeyboard;
 }) {
 const { t } = useI18n();
 
@@ -31,7 +45,10 @@ const { t } = useI18n();
   const suppressed = useRef("");
   const queryRef = useRef<string | null>(null);
   const suppressedNodeKey = useRef<string | null>(null);
-  const api = handle.getNativeText();
+  const editingInput = useRef<Element | null>(null);
+  // getNativeText returns a new wrapper. Resubscribing on every render resets
+  // the retained draft and immediately schedules another popup position update.
+  const api = useMemo(() => handle.getNativeText(), [handle]);
   queryRef.current = query;
   const nodeKey = (event: SpreadsheetInlineNodeEvent) =>
     `${event.cell.sheetId}:${event.cell.row}:${event.cell.column}:${event.node.type}:${event.node.refId}`;
@@ -40,6 +57,7 @@ const { t } = useI18n();
     openKey.current = "";
     if (target.current) api?.release(target.current);
     target.current = null;
+    editingInput.current = null;
     setQuery(null);
   };
   const choose = (user: MentionUser) => {
@@ -103,6 +121,7 @@ const { t } = useI18n();
               endOffset: state.startOffset,
             });
             openKey.current = key;
+            editingInput.current = document.activeElement;
             setRect(
               handle.getRangeRect({
                 sheetId: state.cell.sheetId,
@@ -178,27 +197,29 @@ const { t } = useI18n();
       controller.abort();
     };
   }, [query, onError]);
-  useEffect(() => {
+  useLayoutEffect(() => {
     if (query === null) return;
     const key = (e: KeyboardEvent) => {
       if (
-        e.isComposing ||
+        !enabled || e.isComposing || e.ctrlKey || e.metaKey || e.altKey ||
         !(e.target instanceof Element) ||
-        !e.target.closest(".sheet-document")
+        // Univer's native text input is portaled outside .sheet-document.
+        !(editingInput.current?.contains(e.target) ||
+          e.target.closest(".sheet-document,.sheet-native-candidates"))
       )
         return;
       if (e.key === "Escape") {
         e.preventDefault();
-        e.stopPropagation();
+        e.stopImmediatePropagation();
         close();
       } else if (
-        users.length &&
-        ["ArrowDown", "ArrowUp", "Enter"].includes(e.key)
+        ["ArrowDown", "ArrowUp", "Enter", "Tab"].includes(e.key)
       ) {
         e.preventDefault();
-        e.stopPropagation();
-        if (e.key === "Enter") choose(users[index]!);
-        else
+        e.stopImmediatePropagation();
+        if (e.key === "Enter" || e.key === "Tab") {
+          if (users[index]) choose(users[index]!);
+        } else if (users.length)
           setIndex(
             (i) =>
               (i + (e.key === "ArrowDown" ? 1 : -1) + users.length) %
@@ -206,9 +227,9 @@ const { t } = useI18n();
           );
       }
     };
-    document.addEventListener("keydown", key, true);
-    return () => document.removeEventListener("keydown", key, true);
-  }, [query, users, index, enabled, api]);
+    keyboard.current = key;
+    return () => { if (keyboard.current === key) keyboard.current = null; };
+  }, [query, users, index, enabled, api, keyboard]);
   if (!rect || (query === null && !node)) return null;
   if (query === null && node)
     return createPortal(

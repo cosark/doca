@@ -165,6 +165,8 @@ export async function provisionSurface(
                 name: "Sheet1",
                 rowCount: 1000,
                 columnCount: 100,
+                defaultRowHeight: 18,
+                defaultColumnWidth: 72,
                 cellData: {},
               },
             },

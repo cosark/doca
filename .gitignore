@@ -37,8 +37,8 @@ __pycache__/
 /plugins/*
 !/plugins/README.md
 
-# Local browser-test output, scratch work and logs; keep reusable tests.
-/artifacts/knowledge-book-network-demo/
+# Local browser-test output, scratch work and logs.
+/artifacts/
 test-results/
 playwright-report/
 blob-report/

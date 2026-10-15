@@ -1,5 +1,7 @@
 # 插件托管存储实施状态
 
+以下记录原同库版本。2026-10-14 工作区已改为[插件独立业务库](plugin-database-isolation.zh-CN.md)，旧插件须先在旧版正常卸载再升级重装，不迁移业务数据；尚未发布或部署。
+
 2026-10-03：用户确认不兼容旧版，具体实现和部署约束见 [统一存储实现](unified-storage-implementation.md)。早期升级工具、八表租约系统和临时工作区的拟议方案不属于本次已实现能力。
 
 SDK 源码 0.1.8 已提供 `@smartdoca/plugin-sdk/storage`：

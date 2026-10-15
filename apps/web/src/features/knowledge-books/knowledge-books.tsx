@@ -13,6 +13,7 @@ import {
   Trash2,
   Plus,
   Layers,
+  Pencil,
 } from "lucide-react";
 import {
   Alert,
@@ -53,7 +54,8 @@ import {
 } from "@core/modules/knowledge-books/protocol.js";
 import { useAI } from "@web/features/ai/ai-context.js";
 import type { ContentSourceDescriptor } from "@smartdoca/plugin-sdk/content";
-import { api, type Detail } from "@web/shared/api.js";
+import { api, type Detail, type Resource } from "@web/shared/api.js";
+import { ResourceActionDialog } from "@web/features/documents/uploads.js";
 import { useI18n } from "@web/shared/i18n.js";
 import MarkdownPreview from "@web/features/documents/markdown-preview.js";
 import { PermissionDialog } from "@web/features/documents/dialogs.js";
@@ -211,6 +213,7 @@ export function KnowledgeBooksPage({ id }: { id?: string }) {
   );
 }
 function KnowledgeBookList({ tasks }: { tasks: boolean }) {
+  const { t } = useI18n(), ai = useAI();
   const bt = useBookText();
   const [items, setItems] = useState<
     Array<{
@@ -218,6 +221,8 @@ function KnowledgeBookList({ tasks }: { tasks: boolean }) {
       title: string;
       revision: number;
       published_release_id: string | null;
+      permission: number;
+      owner_id: string;
     }>
   >([]);
   const [offset, setOffset] = useState(0),
@@ -225,6 +230,13 @@ function KnowledgeBookList({ tasks }: { tasks: boolean }) {
     [creating, setCreating] = useState(false),
     [busy, setBusy] = useState(false),
     [title, setTitle] = useState("");
+  const [resourceAction, setResourceAction] = useState<{ resource: Resource; action: "rename" | "trash" }>();
+  const openAction = async (id: string, action: "rename" | "trash") => {
+    try {
+      const detail = await api<Detail>(`/resources/${id}`);
+      setResourceAction({ resource: detail.resource, action });
+    } catch (e) { setError(failure(e)); }
+  };
   const load = useCallback(async () => {
     try {
       setItems(
@@ -266,6 +278,10 @@ function KnowledgeBookList({ tasks }: { tasks: boolean }) {
                 title={
                   <a href={`#/knowledge-books/${item.id}`}>{item.title}</a>
                 }
+                extra={<Space size={4}>
+                  {item.permission >= 3 && <Button type="text" size="small" aria-label={`${t("shell.rename")} ${item.title}`} title={t("shell.rename")} icon={<Pencil size={15} />} onClick={() => void openAction(item.id, "rename")} />}
+                  {item.owner_id === ai?.userId && <Button type="text" size="small" danger aria-label={`${t("common.delete")} ${item.title}`} title={t("common.delete")} icon={<Trash2 size={15} />} onClick={() => void openAction(item.id, "trash")} />}
+                </Space>}
               >
                 <Tag>
                   {item.published_release_id
@@ -298,6 +314,7 @@ function KnowledgeBookList({ tasks }: { tasks: boolean }) {
           </Space>
         </div>
       )}
+      {resourceAction && <ResourceActionDialog resource={resourceAction.resource} action={resourceAction.action} close={() => setResourceAction(undefined)} saved={() => void load()} />}
       <Modal
         title={bt("create")}
         open={creating}
@@ -654,7 +671,7 @@ function KnowledgeBookPage({ id }: { id: string }) {
         actions={
           <>
             <Button
-              disabled={!ai?.userId}
+              disabled={!ai?.userId || ai.resource?.id !== id}
               onClick={() => {
                 ai?.addDocument(book.detail.resource);
                 ai?.setComposerDraft(
@@ -918,6 +935,7 @@ function KnowledgeBookPage({ id }: { id: string }) {
                   editable={book.canEdit}
                   changed={(workflow) => change({ ...draft, workflow })}
                   selected={setNodeId}
+                  dismissed={() => setNodeId(undefined)}
                   added={(type, position) => {
                     const newId = `${type}-${crypto.randomUUID().slice(0, 8)}`;
                     change({

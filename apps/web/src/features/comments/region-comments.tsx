@@ -5,6 +5,7 @@ import {
   useRef,
   useState,
   type MutableRefObject,
+  type ReactNode,
 } from "react";
 import { Eye, EyeOff, MessageSquare, PanelRightClose } from "lucide-react";
 import { api, type Detail, type User } from "@web/shared/api.js";
@@ -53,6 +54,7 @@ export function RegionComments({
   createAction,
   candidateIds,
   annotationVisibility,
+  visibilityControl,
 }: {
   detail: Detail;
   user: User | null;
@@ -69,6 +71,7 @@ export function RegionComments({
   createAction: MutableRefObject<() => void>;
   candidateIds?: string[];
   annotationVisibility?: { visible: boolean; change(visible: boolean): void };
+  visibilityControl?: ReactNode;
 }) {
   const { t } = useI18n();
   useAIBridge(detail.resource.id, { capture: () => controller?.capture(), describe: a => controller?.label(a) ?? t("comment.quote"), reveal: a => { if (!controller?.valid(a)) throw Error(t("comment.quoteStale")); controller.reveal(a); }, ready: () => !!controller && connected && !dirty, flush: () => controller?.flush?.() });
@@ -301,7 +304,7 @@ export function RegionComments({
   );
   const visibilityAction = annotationVisibility && (
     <button
-      className="icon"
+      className="icon comment-control"
       title={annotationVisibility.visible ? t("comment.hideMarks") : t("comment.showMarks")}
       aria-label={
         annotationVisibility.visible ? t("comment.hideMarks") : t("comment.showMarks")
@@ -315,22 +318,23 @@ export function RegionComments({
     >
       {annotationVisibility.visible ? <Eye size={18} /> : <EyeOff size={18} />}
     </button>
-  );
+  ) || visibilityControl;
   return (
     <>
       <div className="region-comment-controls">
         {visibilityAction}
         <button
-          className="icon region-comment-toggle"
+          className="icon comment-control region-comment-toggle"
           title={t("comment.region")}
           aria-label={t("comment.openRegion")}
+          aria-expanded={open}
           onClick={() => {
             if (!open) annotationVisibility?.change(true);
             setOpen(!open);
           }}
         >
           <MessageSquare size={18} />
-          {roots.length > 0 && <small>{roots.length}</small>}
+          {roots.length > 0 && <small className="comment-control-count">{roots.length}</small>}
         </button>
       </div>
       {open && (
@@ -375,7 +379,8 @@ export function RegionComments({
               />
               {visibilityAction}
               <button
-                className="icon"
+                className="icon comment-control"
+                title={t("comment.closeRegion")}
                 aria-label={t("comment.closeRegion")}
                 onClick={() => {
                   setOpen(false);

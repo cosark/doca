@@ -48,6 +48,8 @@ pnpm docs:dev
 
 ## 资源与更新
 
+需要保留的验收摘要与文档附件放在 [`docs/verification/`](verification/README.md)，按验收主题或发行版本分目录；可复用的脚本输入放在 `tests/fixtures/`。自动生成的日志、截图、报告与缓存统一写入 `artifacts/`，该目录由 Git 整体忽略。新增保留资料无需调整忽略规则。
+
 Docsify 运行库、搜索插件、亮色/暗色样式及 MIT 许可证随站点保存于 `docs/site/assets/vendor/docsify/`。`README.txt` 记录版本及校验过的上游 npm 包完整性，这些资源从文档站自身加载。Mermaid 图按需加载 `site.js` 固定的 ESM 版本，需要能够访问该 CDN。
 
 新增公开页面时，创建双语文件，登记到 `navigation.json`，执行 `pnpm docs:check`。代码示例和版本要求保持一致。修改契约时遵循仓库相应技能，并按要求同步打包引用。运行库和额外插件需明确选择版本并完成浏览器验证。

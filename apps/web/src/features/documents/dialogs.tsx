@@ -9,6 +9,7 @@ import React, { useState, useEffect, useRef } from "react";
 import { X } from "lucide-react";
 import { api, type Resource } from "@web/shared/api.js";
 import { useI18n } from "@web/shared/i18n.js";
+import "@web/features/documents/dialogs.css";
 
 export function Dialog({
   title,
@@ -209,35 +210,49 @@ export function MoveDialog({
   saved: () => Promise<void>;
 }) {
   const { t } = useI18n();
+  const personal = resource.library_id === null;
   const [mode, setMode] = useState<"subtree" | "current">("subtree"),
     [destination, setDestination] = useState(""),
     [error, setError] = useState(""),
     [busy, setBusy] = useState(false);
   return (
-    <Dialog title={t("dialog.move")} close={close}>
-      <fieldset>
+    <Dialog
+      title={t("dialog.move")}
+      close={close}
+      className="modal-compact document-move-dialog"
+    >
+      <fieldset className="document-move-modes">
         <legend>{t("dialog.moveMode")}</legend>
-        <label>
+        <label className="document-move-choice">
           <input
             type="radio"
             name="document-move-mode"
             checked={mode === "subtree"}
-            onChange={() => setMode("subtree")}
+            onChange={() => {
+              setMode("subtree");
+              if (personal && destination === "__personal__") setDestination("");
+            }}
           />
-          {t("dialog.moveTree")}
+          <span>{personal ? t("dialog.moveCurrent") : t("dialog.moveTree")}</span>
         </label>
-        <label>
+        <label className="document-move-choice">
           <input
             type="radio"
             name="document-move-mode"
             checked={mode === "current"}
             onChange={() => setMode("current")}
           />
-          {t("dialog.copyOne")}
+          <span>{personal ? t("dialog.copyCurrent") : t("dialog.copyOne")}</span>
         </label>
       </fieldset>
       <p className="warning">
-        {mode === "subtree" ? t("dialog.moveTreeHint") : t("dialog.copyOneHint")}
+        {mode === "subtree"
+          ? personal
+            ? t("dialog.moveCurrentHint")
+            : t("dialog.moveTreeHint")
+          : personal
+            ? t("dialog.copyCurrentHint")
+            : t("dialog.copyOneHint")}
       </p>
       <label>
         {t("dialog.destination")}
@@ -303,7 +318,7 @@ export function MoveDialog({
             }
           }}
         >
-          {t("dialog.confirmMove")}
+          {mode === "subtree" ? t("dialog.confirmMove") : t("dialog.confirmCopy")}
         </button>
       </footer>
     </Dialog>

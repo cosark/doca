@@ -42,6 +42,7 @@ import {
 } from "@smartdoca/web-plugin-registry";
 import { api } from "@web/shared/api.js";
 import { useI18n } from "@web/shared/i18n.js";
+import { useNotificationUnread } from "@web/shared/notification-unread.js";
 import "./navigation.css";
 let pending: Promise<ResolvedNavigation> | undefined;
 function fetchLayout() {
@@ -129,7 +130,8 @@ export function NavigationArea({
 }) {
   const loaded = useNavigationLayout(),
     data = provided ?? loaded;
-  const { locale } = useI18n();
+  const { locale, t } = useI18n();
+  const unread = useNotificationUnread();
   const placements = data.layout.placements.filter(
     (p) =>
       p.slot === slot &&
@@ -175,7 +177,7 @@ export function NavigationArea({
                   );
                 }
               }}
-              aria-label={title}
+              aria-label={entry.id === "doca.notifications" ? `${title} ${t("shell.unread", { count: unread })}` : title}
               data-display={display}
               data-entry-id={entry.id}
               className={
@@ -201,6 +203,9 @@ export function NavigationArea({
                 )
               )}
               {display !== "icon" && <span>{title}</span>}
+              {entry.id === "doca.notifications" && unread > 0 && (
+                <b className="notification-count" aria-hidden="true">{unread}</b>
+              )}
             </a>
           </Tooltip>
         );

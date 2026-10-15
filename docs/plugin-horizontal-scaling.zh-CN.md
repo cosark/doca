@@ -1,12 +1,14 @@
 # 插件水平扩展与托管存储规范
 
+2026-10-14 工作区变更：[插件独立业务库](plugin-database-isolation.zh-CN.md)取代原同库 SQL 布局和私有表原子卸载描述。升级须在旧宿主正常卸载，再重装，不迁移业务数据；尚未发布或部署。
+
 [English](plugin-horizontal-scaling.md)
 
 状态：2026-10-02 已确认规范。源码基线为宿主 0.1.10、SDK 0.1.8；不代表 npm 发布或生产验收。所有持久化依赖宿主，插件不感知本地/远端后端。包声明校验与环境配置清理已实现；托管 SQL 与内部对象已导出；凭证已在 SDK 源码 0.1.8 导出，临时工作服务尚未导出。本次没有读取、转换或删除旧业务数据。
 
 ## 已实现存储修订（2026-10-03，SDK 源码 0.1.7）
 
-`@smartdoca/plugin-sdk/storage` 已导出安装身份绑定的 `pluginDatabaseToken`（`storage.sql.v1`）和 `pluginObjectStorageToken`（`storage.objects.v1`）。关系库支持显式 version 1 结构声明、text/int32/双精度列、主键/唯一约束、结构化查询/写入/删除，以及回调只执行一次的事务。SDK 源码 0.1.8 另导出 `pluginCredentialToken`（`storage.credentials.v1`），提供服务端加密凭证、元数据、修订号更新与删除。联表、外键、通用 SQL、upsert 和临时工作区尚未导出。见[凭证接口](plugin-credentials.md)。当前 SDK 通过宿主编译的查询和宿主连接中的命名空间表隔离；独立 PostgreSQL 角色与进程隔离是更强的待实现边界。
+`@smartdoca/plugin-sdk/storage` 已导出安装身份绑定的 `pluginDatabaseToken`（`storage.sql.v1`）和 `pluginObjectStorageToken`（`storage.objects.v1`）。关系库支持显式 version 1 结构声明、text/int32/双精度列、主键/唯一约束、结构化查询/写入/删除，以及回调只执行一次的事务。SDK 源码 0.1.8 另导出 `pluginCredentialToken`（`storage.credentials.v1`），提供服务端加密凭证、元数据、修订号更新与删除。联表、外键、通用 SQL、upsert 和临时工作区尚未导出。见[凭证接口](plugin-credentials.md)。业务 SQL 使用宿主管理的每插件独立数据库：SQLite 独立文件，或显式配置的 PostgreSQL 独立库及受限角色。进程隔离仍未实现，见[存储配置与先卸载再升级约定](plugin-database-isolation.zh-CN.md)。
 
 逻辑库为 `plugin:<pluginId>`，用户文件归属及私有对象使用 `plugins/<pluginId>`，发行包使用 `host/plugin-releases/<sha256>.zip`。ZIP 字节进入环境变量配置的文件存储，共享数据库只保存 version 2 清单、归档引用和可信文件哈希索引。有效缓存无需重新下载 ZIP。全部实例由运维逐个重启。新宿主基线拒绝旧数据库/格式/SDK 包，原数据保留，不提供迁移或 fallback。详见[准确实现与限制](unified-storage-implementation.md)。
 
@@ -115,7 +117,7 @@ flowchart LR
 | 现有 files.v1 文件 ID、绑定、权限和回执         | 保持既有格式与语义，不转换为内部对象、不因业务库改造删除                    | 验证引用、下载权限、回执和对象存在性                                                                                                         |
 | 系统目录内其他旧持久文件                        | 保持原样，不自动扫描移动                                                    | 未来按插件确认目标服务，校验数量、大小、哈希及授权                                                                                           |
 | 禁用、停机、dispose                             | 只回收进程资源，不删持久数据                                                | 注册/任务排空，业务状态仍由宿主管理                                                                                                          |
-| 显式卸载                                        | 插件用公共服务处理业务解绑/外部撤销；宿主负责托管私有库、内部对象和凭证清理 | 私有库/对象卸载在清单事务中执行 generation 隔离与持久化对象清理；业务任务集群排空仍未实现，所有实例需人工重启。部分清理失败不得假称回滚/成功；用户文件及其他引用不自动删除。 |
+| 显式卸载                                        | 插件用公共服务处理业务解绑/外部撤销；宿主负责托管私有库、内部对象和凭证清理 | 清单事务执行 generation 隔离并记录私有库/对象清理意图，业务表在提交后清理并支持重试；业务任务集群排空仍未实现，所有实例需人工重启。部分清理失败不得假称回滚/成功；用户文件及其他引用不自动删除。 |
 
 不再提供插件业务数据目录环境变量，Compose 和环境配置示例不再传入它。安装缓存 `DOCA_PLUGINS_DIR` 保留，仅存可重建代码归档与解压结果，不能承载持久业务数据。数据库/对象存储的本地或远端配置完全归宿主，SDK 不返回这些配置或要求插件判断后端。
 

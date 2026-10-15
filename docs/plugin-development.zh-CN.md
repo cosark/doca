@@ -1,5 +1,7 @@
 # Doca 插件开发规范
 
+2026-10-14 工作区变更：[插件独立业务库](plugin-database-isolation.zh-CN.md)取代原同库 SQL 布局和私有表原子卸载描述。升级须在旧宿主正常卸载，再重装，不迁移业务数据；尚未发布或部署。
+
 更新：2026-10-12；源码宿主 0.1.22，SDK 源码 0.1.11（npm 发布及生产部署未验收）。本文是插件开发的主入口，包含当前内容、App 和安装约定；链接文档补充完整类型、协议和历史验收记录。任何新增或修改兼容策略、旧格式转换或数据库迁移，必须先与项目负责人对齐方案。
 
 [English](plugin-development.md)
@@ -10,7 +12,7 @@
 
 ## 已实现存储修订（2026-10-03，SDK 源码 0.1.8）
 
-`@smartdoca/plugin-sdk/storage` 已导出安装身份绑定的 `pluginDatabaseToken`（`storage.sql.v1`）和 `pluginObjectStorageToken`（`storage.objects.v1`）。关系库支持显式 version 1 结构声明、text/int32/双精度列、主键/唯一约束、结构化查询/写入/删除，以及回调只执行一次的事务。SDK 源码 0.1.8 另导出 `pluginCredentialToken`（`storage.credentials.v1`），提供服务端加密凭证 CRUD、元数据与修订号检查，见[凭证接口](plugin-credentials.md)。联表、外键、通用 SQL、upsert 和临时工作区尚未导出。当前 SDK 通过宿主编译的查询和宿主连接中的命名空间表隔离；独立 PostgreSQL 角色与进程隔离是更强的待实现边界。
+`@smartdoca/plugin-sdk/storage` 已导出安装身份绑定的 `pluginDatabaseToken`（`storage.sql.v1`）和 `pluginObjectStorageToken`（`storage.objects.v1`）。关系库支持显式 version 1 结构声明、text/int32/双精度列、主键/唯一约束、结构化查询/写入/删除，以及回调只执行一次的事务。SDK 源码 0.1.8 另导出 `pluginCredentialToken`（`storage.credentials.v1`），提供服务端加密凭证 CRUD、元数据与修订号检查，见[凭证接口](plugin-credentials.md)。联表、外键、通用 SQL、upsert 和临时工作区尚未导出。业务 SQL 使用宿主管理的每插件独立数据库：SQLite 独立文件，或显式配置的 PostgreSQL 独立库及受限角色。进程隔离仍未实现，见[存储配置与先卸载再升级约定](plugin-database-isolation.zh-CN.md)。
 
 逻辑库为 `plugin:<pluginId>`，用户文件归属及私有对象使用 `plugins/<pluginId>`，发行包使用 `host/plugin-releases/<sha256>.zip`。ZIP 字节进入环境变量配置的文件存储，共享数据库只保存 version 2 清单、归档引用和可信文件哈希索引。有效缓存无需重新下载 ZIP。全部实例由运维逐个重启。新宿主基线拒绝旧数据库/格式/SDK 包，原数据保留，不提供迁移或 fallback。详见[准确实现与限制](unified-storage-implementation.md)。
 
@@ -144,7 +146,7 @@ Doca 不内置会员、货币价格、积分或业务额度。模型管理中的
 
 已安装插件必须实现 `uninstall(context)`，工厂缺失时拒绝安装。该钩子处理业务解绑/外部撤销，只使用宿主公共服务，重复调用必须幂等，不能打开或递归删除宿主存储路径。没有独立状态的插件可使用空实现。
 
-私有库与对象由宿主管理：业务卸载钩子成功后，清单事务使当前 generation 失效、删除已声明的私有表并持久化对象清理意图，失败的字节清理会重试。凭证托管已实现；集群业务任务排空仍未实现；所有实例需人工重启。钩子失败保留安装状态，外部副作用不能自动回滚。用户文件和其他业务引用保留，不以卸载替代数据迁移。
+私有库与对象由宿主管理：业务卸载钩子成功后，清单事务使当前 generation 失效并持久化私有库/对象清理意图，业务表在提交后清理，失败会重试。凭证托管已实现；集群业务任务排空仍未实现；所有实例需人工重启。钩子失败保留安装状态，外部副作用不能自动回滚。用户文件和其他业务引用保留，不以卸载替代数据迁移。
 
 禁用、停机和 `dispose` 只回收注册、计时器和连接，不删除持久数据。插件移除不自动删除用户文件、文档载荷、其他业务仍使用的绑定或文件持久回执。文件清理必须走文件服务，校验归属、授权与其他引用。
 

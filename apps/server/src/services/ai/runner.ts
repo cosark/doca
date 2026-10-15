@@ -13,7 +13,7 @@ import { resourceRequest } from "@core/modules/creation-resources/document-templ
 import type { TemplateSelection } from "@smartdoca/plugin-contracts";
 import { recordSessionResource } from "@core/modules/ai/session-resources.js";
 import { folderInSearch } from "@core/modules/discovery/catalog.js";
-import { authorizeFileFolder } from "@core/modules/access/file-access.js";
+import { authorizeFileFolder, authorizeFileItem } from "@core/modules/access/file-access.js";
 import { authorizeKnowledgeFile, knowledgeFolderKind, knowledgeFileLocation, knowledgeFolderLocation, projectKnowledgeSessionFiles, readKnowledgeSessionFolder, requireKnowledgeFolder } from "@core/modules/knowledge/file-folders.js";
 import { queryResourcePage } from "@core/modules/resources/queries.js";
 import { createToolFailureGuard, toolResultFailed } from "./tool-failure-guard.js";
@@ -1712,6 +1712,20 @@ export function createAIRunner(
           requiresApproval: true as const,
           message: "已提交审批，尚未保存文件。用户确认后用同一参数重试。",
         };
+      const receiptId = operationId(rootJobId, {
+        operation: args.approvalCode,
+        args: args.approvalArgs,
+      });
+      const hash = digest(args.approvalArgs);
+      const deliveryOf = (row: Schema["file_items"]) => ({
+        id: row.id,
+        name: row.name,
+        path: `${location.path} / ${row.name}`,
+        href: fileExplorerHref(location.href ?? "", row.id),
+        downloadUrl: `/api/v1/files/items/${row.id}/content?download=1`,
+        mime: row.mime,
+        local: !!args.local,
+      });
       const row = await storeUserFile(db, {
         actorId: actor.id,
         ownerId,
@@ -1721,17 +1735,35 @@ export function createAIRunner(
         mime: args.mime,
         body: args.body,
         storage: options.storage,
+        // The user lock in storeUserFile serializes this check and commit.
+        // The file and its existing file_item delivery shape commit together,
+        // so an approval replay or a lost model response cannot create a copy.
+        beforeCreate: async (tx) => {
+          const previous = await tx.selectFrom("ai_operations").selectAll()
+            .where("id", "=", receiptId).executeTakeFirst();
+          if (!previous) return;
+          if (previous.user_id !== actor.id || previous.digest !== hash)
+            fail(409, "重复请求内容不同");
+          return authorizeFileItem(tx, actor, JSON.parse(previous.result).id);
+        },
+        afterCreate: async (tx, file) => {
+          await tx.insertInto("ai_operations").values({
+            id: receiptId,
+            user_id: actor.id,
+            job_id: job.id,
+            digest: hash,
+            result: JSON.stringify({ kind: "file_item", ...deliveryOf(file), title: file.name }),
+            created_at: new Date().toISOString(),
+          }).execute();
+        },
       });
+      const currentLocation = await fileLocation(row.parent_type, row.parent_id, row.metadata);
       const file = {
-        id: row.id,
-        name: row.name,
-        path: `${location.path} / ${row.name}`,
-        href: fileExplorerHref(location.href ?? "", row.id),
-        downloadUrl: `/api/v1/files/items/${row.id}/content?download=1`,
-        mime: row.mime,
-        local: !!args.local,
+        ...deliveryOf(row),
+        path: `${currentLocation.path} / ${row.name}`,
+        href: fileExplorerHref(currentLocation.href ?? "", row.id),
       };
-      await recordFileDelivery(file);
+      await publishFile(file);
       if (destination.type === "folder")
         await recordFolderDelivery(destination.id);
       return { ok: true as const, file };
@@ -4020,7 +4052,7 @@ export function createAIRunner(
       ...(input.skillIds.includes("knowledge") || /知识册|knowledge\s*books?/i.test(input.text) || hasBookContext ? {
       knowledge_book: createTool({
         id: "knowledge_book",
-        ...withCallExamples("knowledge_book", "已有当前知识册上下文时直接用其 ID；未指定时先 list，再用 ask_user 展示已有册标题和新建选项，不向用户索要 UUID。所有写操作必须 action=command，具体命令放 command.operation，不能把 source.save 等放 action。管理知识册的目标、来源、编排图、权重、验收项、人工反馈及人工待办。与人工页面使用同一权限和 revision 协议。先 read 再修改；查找网页用 search_sources（query、sites、language），check_web_sources 验证实际网页后再绑定，source.save 保存时也会复验；configuration.patch 使用 changes 修改目标/模型/验收项等字段，workflow.node.patch 使用 nodeId、changes.parameters/sourceIds/权重等修改一个节点，均带 expectedRevision；workflow.node.add 通过 node、inputs、outputs 添加节点，run.resume 使用当前运行冻结的配置从失败节点继续，保持同一流水线ID并复验已完成节点；run.retry 按当前配置新建重试运行；成果只能由编排发布，纠错用 feedback.save。新增来源或反馈时省略 command.id，并用 expectedRevision=0；编辑时 command.id 是那条来源或反馈的 ID，绝不能填知识册 bookId。运行排队、重试或批准发布后宿主自动登记后台等待，结束或需要人工决定时会自动续跑，无需重复轮询或让用户再问。需要等待已有运行时用 action=wait、bookId、runId。当前流水线的技术修复优先使用 command.operation=run.resume，不要用 run.start 新建流水线。用户明确要求按当前配置新建重试时才用 resolve_task decision=retry 或 run.retry。不能把未处理待办说成已经关闭或让用户忽略。等待自动续跑已经登记，不要求用户再发消息通知；人工验收发布仍由用户在业务待办处理。运行排队后用 run 查看状态，candidate_page 分页检查节点候选成果，source 按 bindingId 分页读人工材料绑定。source.save 的 configuration 必须使用 {version:1,items:[{id:稳定绑定标识,kind:document,resourceId:文档ID},{id:另一标识,kind:url,url:网址}]}，最多50个，可混合document/library/file/folder/url/manual/content，content需要sourceId和config，manual需要markdown。修改来源必须保留未修改绑定的id，read中人工材料正文被省略，先用source读取完整材料再修改，禁止用null覆盖。read/run/release 返回目录清单；用 page 分页读正文与证据，find 定位待纠正段落。book_size_limit 是来源、模型上下文或单次响应等超限的共用分类，不代表整册容量；根据 error 的 data.detail 和节点日志定位具体限制，历史错误没有 detail 时不得猜测阈值或擅自降低知识深度。"),
+        ...withCallExamples("knowledge_book", "已有当前知识册上下文时直接用其 ID；未指定时先 list，再用 ask_user 展示已有册标题和新建选项，不向用户索要 UUID。所有写操作必须 action=command，具体命令放 command.operation，不能把 source.save 等放 action。管理知识册的目标、来源、编排图、权重、验收项、人工反馈及人工待办。与人工页面使用同一权限和 revision 协议。先 read 再修改；查找网页用 search_sources（query、sites、language），check_web_sources 验证实际网页后再绑定，source.save 保存时也会复验；configuration.patch 使用 changes 修改目标/模型/验收项等字段，workflow.node.patch 使用 nodeId、changes.parameters/sourceIds/权重等修改一个节点，均带 expectedRevision；workflow.node.add 通过 node、inputs、outputs 添加节点，run.resume 使用当前运行冻结的配置从失败节点继续，保持同一流水线ID并复验已完成节点；修改配置或节点参数不会修改已有运行的冻结配置，patch 后 resume 仍按原参数执行，不能声称修改已应用到该运行；需要应用新配置时说明差异，用户同意新建重试后用 run.retry；run.retry 按当前配置新建重试运行；成果只能由编排发布，纠错用 feedback.save。新增来源或反馈时省略 command.id，并用 expectedRevision=0；编辑时 command.id 是那条来源或反馈的 ID，绝不能填知识册 bookId。运行排队、重试或批准发布后宿主自动登记后台等待，结束或需要人工决定时会自动续跑，无需重复轮询或让用户再问。需要等待已有运行时用 action=wait、bookId、runId。当前流水线的技术修复优先使用 command.operation=run.resume，不要用 run.start 新建流水线。用户明确要求按当前配置新建重试时才用 resolve_task decision=retry 或 run.retry。不能把未处理待办说成已经关闭或让用户忽略。等待自动续跑已经登记，不要求用户再发消息通知；人工验收发布仍由用户在业务待办处理。运行排队后用 run 查看状态，candidate_page 分页检查节点候选成果，source 按 bindingId 分页读人工材料绑定。source.save 的 configuration 必须使用 {version:1,items:[{id:稳定绑定标识,kind:document,resourceId:文档ID},{id:另一标识,kind:url,url:网址}]}，最多50个，可混合document/library/file/folder/url/manual/content，content需要sourceId和config，manual需要markdown。修改来源必须保留未修改绑定的id，read中人工材料正文被省略，先用source读取完整材料再修改，禁止用null覆盖。read/run/release 返回目录清单；用 page 分页读正文与证据，find 定位待纠正段落。book_size_limit 是来源、模型上下文或单次响应等超限的共用分类，不代表整册容量；根据 error 的 data.detail 和节点日志定位具体限制，历史错误没有 detail 时不得猜测阈值或擅自降低知识深度。"),
         inputSchema: bookAssistantInputSchema,
         execute: async rawArgs => {
           const args = bookAssistantActionSchema.parse(rawArgs);
@@ -5120,7 +5152,7 @@ export function createAIRunner(
         id: "file_create",
         ...withCallExamples(
           "file_create",
-          "把研究报告等写成 Word、Markdown、Excel 或 PDF 文件保存到文件夹，不是在线文档。parentId 默认 root；不能写入 ai 或 documents。正文用 Markdown：# 标题、- 列表、| 表格 |。Word 会转成标题、列表和表格，不要把 # 和表格竖线留给用户。Excel 可用 rows 或 Markdown 表格。成功后界面给出文件卡片，卡片即可下载。不要再手写「点击下载」链接。创建需要审批。",
+          "仅当用户明确要求 Word/docx、PDF、Excel/xlsx、Markdown 文件或下载/导出文件时使用。撰写文档、研究报告、周报、纪要等默认用 document_create 创建在线富文本文档（rich_text），不要自行选 Word。此工具把指定格式的文件保存到文件夹，parentId 默认 root；不能写入 ai 或 documents。正文用 Markdown：# 标题、- 列表、| 表格 |。Word 会转成标题、列表和表格。Excel 可用 rows 或 Markdown 表格。成功后界面给出可下载的文件卡片，不再手写下载链接；重试相同参数会复用已保存文件。创建需要审批。",
         ),
         inputSchema: z.object({
           format: z.enum(["word", "markdown", "excel", "pdf"]),
@@ -5285,7 +5317,7 @@ export function createAIRunner(
         id: "document_create",
         ...withCallExamples(
           "document_create",
-          "在授权位置创建可编辑文档或知识库。仅当用户明确要求创建或保存文档（或已通过 ask_user 确认）时使用；只要求输出文字时不要调用。文档默认创建富文本 rich_text 格式；仅当用户明确要求 Markdown 或场景明显更适合其他格式（如代码资料库、数据表格、汇报演示）时才选对应 format；无法判断文档类型时先调用 ask_user 让用户选择，不自行决定。Markdown 可直接带 markdown 正文一次写完。新文档可能自带标题或空白页；创建后先读结构，复用已有标题/页面，不重复插入同名标题或留下空白封面。富文本先创建再一次 *_edit 写入整篇，不要拆成很多轮工具调用。不要传 initialContent。可先检索插件模板，传template:{ref,parameters}创建；模板与format必须匹配。",
+          "在授权位置创建可编辑在线文档或知识库。用户要求撰写、生成、创建或保存文档、研究报告、周报、纪要等时默认使用此工具；只要求在对话输出文字时不要调用。文档默认 rich_text 富文本，无需再询问在线还是 Word；仅在用户明确要求 Markdown 或场景明显更适合数据表格、画板、汇报演示等时选择对应 format。明确要求 Word/PDF 等下载或导出文件时用 file_create。Markdown 可直接带 markdown 正文一次写完。新文档可能自带标题或空白页；创建后先读结构，复用已有标题/页面，不重复插入同名标题或留下空白封面。富文本先创建再一次 *_edit 写入整篇，不要拆成很多轮工具调用。不要传 initialContent。可先检索插件模板，传template:{ref,parameters}创建；模板与format必须匹配。",
         ),
         inputSchema: z.object({
           title: z.string().min(1).max(160),
@@ -5575,7 +5607,6 @@ export function createAIRunner(
       });
     }
     const neededFormats = relevantSkillFormats(input.text, formats);
-    const wantsEditing = neededFormats.size > 0;
     const skills = stablePromptCatalog([
       ...(config.officialSkills ?? defaultOfficialSkills).filter(
         (s) => s.enabled,
@@ -5684,8 +5715,10 @@ export function createAIRunner(
     }
     const droppedContext = describeDroppedExplorerItems(droppedItems);
     const knowledgeTask =
-      !!currentKnowledgeLibrary ||
-      /知识库|知识体系|整理指引|knowledge\s*base/i.test(input.text);
+      !currentKnowledgeBook && (
+        !!currentKnowledgeLibrary ||
+        /知识库|知识体系|整理指引|knowledge\s*base/i.test(input.text)
+      );
     // Validate and freeze the current input's complete context before historical
     // compaction. The one user-message write also survives a compaction failure.
     let recentUserTexts: string[] = [];
@@ -5742,13 +5775,12 @@ export function createAIRunner(
               (skill) =>
                 `插件技能 ${skill.id}：${skill.description ?? "遵循该插件技能约束"}。`,
             ),
-          ...(wantsEditing
+          "用户要求撰写或生成文档、报告、周报、纪要等时，默认 document_create 创建在线富文本文档 rich_text，再读取结构并编辑正文。仅在明确要求 Word/docx、PDF、Excel/xlsx、Markdown 文件或下载/导出文件时用 file_create。普通问答或明确要求只在对话输出文字时直接回复。编辑已有文档须遵循用户要求和实际格式，手册尚未提供时先 load_skill。",
+          ...(neededFormats.size > 0
             ? [
                 `本轮可能涉及文档编辑，相关格式：${JSON.stringify([...neededFormats])}。宿主已自动提供可用的对应完整手册，按文档实际格式使用。先 document_read 默认 outline；尚未提供的手册必须在编辑前 load_skill。`,
               ]
-            : [
-                "未明确要求改在线文档时不要调用文档编辑或 document_create。研究报告或 Word/Excel/PDF/Markdown 文件用 file_create。",
-              ]),
+            : []),
           ...(savedImages.length
             ? [`当前会话图片回执：${JSON.stringify(savedImages)}。`]
             : []),
@@ -5772,7 +5804,7 @@ export function createAIRunner(
               ]
             : []),
           ...(currentKnowledgeBook
-            ? [`当前知识册上下文：${JSON.stringify(currentKnowledgeBook)}。用户说“本册/这个知识册”即指此册，直接 knowledge_book read 使用这个 ID，不要求用户提供 ID 或重复选择。没有当前知识册且用户没明确指定册时，先 knowledge_book list，再用 ask_user 展示已有册标题和新建选项，选项显示册名，用户选择后再次 list 核对真实 ID；重名时用更新时间区分，不要让用户手填 UUID。知识册不是普通知识库整理助手。`]
+            ? [`当前知识册上下文：${JSON.stringify(currentKnowledgeBook)}。这是用户正在操作的知识册，优先于泛化的知识库/文档意图。用户要求整理百科、生成长文或流程图/架构图时，默认在此册用 knowledge_book 管理目标、来源、流水线和验收，正文及 Mermaid 图由流水线生成；不要因底层 resource.kind=library 而改成创建普通文档或知识库整理助手。用户说“本册/这个知识册”即指此册，先 knowledge_book read 使用这个 ID，不要求用户提供 ID 或重复选择。先读 workflowRules 再调整节点；长文在节点内部自动分批，不用串联同类型节点。`]
             : []),
           ...(currentFolder
             ? [
@@ -6084,7 +6116,7 @@ export function createAIRunner(
               ? [
                   {
                     role: "user" as const,
-                    content: `用户已批准以下操作：${JSON.stringify(decisions)}。请重试对应的原始工具调用，平台会核对参数；其他操作仍需审批。`,
+                    content: `用户已批准以下操作：${JSON.stringify(decisions)}。仅对尚未执行成功的操作重试原始工具调用，平台会核对参数；已有成功回执的成果直接复用，不为验收或获取回执重复创建。其他操作仍需审批。`,
                   },
                 ]
               : []),

@@ -1,4 +1,4 @@
-import { Image, Spin, Checkbox } from "antd";
+import { Spin, Checkbox } from "antd";
 import { Fragment, memo } from "react";
 import { CodeHighlighter, Mermaid, XProvider } from "@ant-design/x";
 import { antDesignXLocale } from "@web/shared/antd-locale.js";
@@ -8,6 +8,7 @@ import "@ant-design/x-markdown/themes/light.css";
 import Latex from "@ant-design/x-markdown/plugins/Latex";
 import type { FileDelivery, FolderDelivery } from "@core/modules/ai/progress.js";
 import { webPluginRegistry } from "@web/plugins/registry.js";
+import { AIAssetImage } from "./ai-asset-image.js";
 import {
   answerSegments,
   folderExplorerHash,
@@ -76,8 +77,8 @@ const markdownComponents = {
     type === "checkbox" ? <Checkbox checked={!!checked} disabled /> : null,
   img: ({ src, alt }: ComponentProps) =>
     /^\/api\/v1\/assets\/[a-f0-9-]{36}\/content$/.test(String(src ?? "")) ? (
-      <Image
-        src={String(src)}
+      <AIAssetImage
+        assetId={String(src).split("/")[4]!}
         alt={String(alt ?? "生成图片")}
         style={{ maxWidth: "100%" }}
       />

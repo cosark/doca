@@ -8,6 +8,7 @@ import { openTestDatabase } from "./database.js";
 import { createUser, type Actor } from "@core/modules/identity/passwords.js";
 import { aiDefaults, saveAIConfig } from "@core/modules/ai/config.js";
 import { createContent } from "@core/workflows/resources.js";
+import { readAIDocument } from "@core/workflows/ai-documents.js";
 import { createApp } from "../apps/server/src/app/create-app.js";
 import { storageRuntime } from "../apps/server/src/adapters/storage.js";
 import { generateTestImageAsset as generateImageAsset } from "./fixtures/ai-image-operation.js";
@@ -22,7 +23,8 @@ let root: string,
   owner: Actor,
   headers: Record<string, string>,
   other: Record<string, string>;
-let toolPlan: Array<{ name: string; args: unknown }>, toolResults: any[];
+let toolPlan: Array<{ name: string; args: unknown; copies?: number }>, toolResults: any[];
+let modelRequests: any[];
 
 beforeEach(async () => {
   root = await mkdtemp(join(tmpdir(), "doca-ai-session-folders-"));
@@ -83,6 +85,7 @@ beforeEach(async () => {
   );
   toolPlan = [];
   toolResults = [];
+  modelRequests = [];
   const fallback = mockAI();
   app = await createApp(db, {
     origin,
@@ -91,6 +94,7 @@ beforeEach(async () => {
       memory: { driver: "sqlite", url: ":memory:" },
       fetch: (async (url, init) => {
         const body = JSON.parse(String(init?.body ?? "{}"));
+        modelRequests.push(body);
         if (
           !toolPlan.length ||
           body.tools?.some(
@@ -105,8 +109,13 @@ beforeEach(async () => {
         const results = messages
           .slice(lastUser + 1)
           .filter((message) => message.role === "tool");
-        toolResults = results.map((message) => JSON.parse(message.content));
+        toolResults = results.map((message) => {
+          try { return JSON.parse(message.content); }
+          catch { return { error: true, message: String(message.content) }; }
+        });
         const planned = toolPlan[results.length];
+        const args = typeof planned?.args === "function"
+          ? await planned.args(toolResults) : planned?.args;
         return completionResponse(
           {
             id: "session-folder-test",
@@ -121,16 +130,16 @@ beforeEach(async () => {
                   ? {
                       role: "assistant",
                       content: null,
-                      tool_calls: [
+                      tool_calls: Array.from({ length: planned.copies ?? 1 }, (_, index) => (
                         {
-                          id: `folder-test-${results.length}`,
+                          id: `folder-test-${results.length}-${index}`,
                           type: "function",
                           function: {
                             name: planned.name,
-                            arguments: JSON.stringify(planned.args),
+                            arguments: JSON.stringify(args),
                           },
-                        },
-                      ],
+                        }
+                      )),
                     }
                   : { role: "assistant", content: "文件夹已查看。" },
               },
@@ -231,6 +240,92 @@ async function aiPage(id = "ai", auth = headers) {
     auth,
   );
 }
+
+it("creates a long report request as one online rich-text document and provides consistent format guidance", async () => {
+  const title = "日本校园霸凌调查报告";
+  toolPlan = [
+    { name: "document_create", args: { title } },
+    { name: "document_read", args: (results: any[]) => ({ resourceId: results[0].id }) },
+    { name: "rich_text_edit", args: (results: any[]) => ({
+      resourceId: results[0].id, seq: results[1].seq, epochId: results[1].epochId,
+      operations: [{ type: "append", text: "隔离测试报告正文：现状、成因和治理建议。" }],
+    }) },
+  ];
+  const sent = await send(await session(), [], {
+    text: "帮我写一篇关于调研日本校园霸凌的调查文档",
+    skipApprovals: { create: true },
+  });
+  const resources = await db.selectFrom("resources").selectAll()
+    .where("title", "=", title).execute();
+  expect(resources).toHaveLength(1);
+  expect(resources[0]?.format).toBe("rich_text");
+  expect(await db.selectFrom("file_items").selectAll().execute()).toHaveLength(0);
+  expect(toolResults[2]).toMatchObject({ saved: true });
+  const executor = modelRequests.find((body) => body.tools?.some((tool: any) => tool.function?.name === "file_create"));
+  const prompt = JSON.stringify(executor);
+  expect(prompt).toContain("默认 document_create 创建在线富文本文档");
+  expect(prompt).toContain("本轮已自动加载的文档编辑 skill：writing");
+  expect(prompt).not.toContain("研究报告或 Word/Excel/PDF/Markdown 文件用 file_create");
+  const saved = await readAIDocument(db, { actor: owner }, resources[0]!.id);
+  expect(JSON.stringify(saved.value)).toContain("隔离测试报告正文");
+  const deliveries = await db.selectFrom("ai_operations").selectAll()
+    .where("job_id", "=", sent.json().id).execute();
+  expect(deliveries.filter((operation) => JSON.parse(operation.result).id === resources[0]!.id)).toHaveLength(1);
+});
+
+it.each([1, 3])("replays approved Word creation %i times with one saved file and durable delivery", async (copies) => {
+  const args = { format: "word", name: "隔离调研报告", content: "# 调查报告\n\n隔离测试正文。" };
+  toolPlan = copies === 1
+    ? Array.from({ length: 3 }, () => ({ name: "file_create", args }))
+    : [{ name: "file_create", args, copies }];
+  const sessionId = await session();
+  const sent = await request("POST", `/ai/sessions/${sessionId}/messages`, {
+    id: randomUUID(), text: "帮我写一份 Word 调研报告", modelId: "test", scope: "all",
+  });
+  expect(sent.statusCode, sent.body).toBe(200);
+  const jobId = sent.json().id;
+  let approvalId: string;
+  await vi.waitFor(async () => {
+    const job = await db.selectFrom("ai_jobs").selectAll().where("id", "=", jobId).executeTakeFirstOrThrow();
+    expect(job.status, job.error).toBe("awaiting_approval");
+    const approvals = JSON.parse(job.result).progress.approvals;
+    expect(approvals).toHaveLength(1);
+    approvalId = approvals[0].id;
+    expect(await db.selectFrom("file_items").selectAll().execute()).toHaveLength(0);
+}, { timeout: 10000, interval: 25 });
+  expect((await request("POST", `/ai/jobs/${jobId}/approval`, { approvalId: approvalId!, approved: true })).statusCode).toBe(200);
+  await vi.waitFor(async () => {
+    const job = await db.selectFrom("ai_jobs").selectAll().where("id", "=", jobId).executeTakeFirstOrThrow();
+    expect(job.status, job.error).toBe("completed");
+  }, { timeout: 15000, interval: 25 });
+  const files = await db.selectFrom("file_items").selectAll().execute();
+  expect(files).toHaveLength(1);
+  expect(files[0]?.name).toBe("隔离调研报告.docx");
+  expect(toolResults).toHaveLength(3);
+  expect(toolResults.every((result) => result.ok && result.file.id === files[0]?.id)).toBe(true);
+  const deliveries = await db.selectFrom("ai_operations").selectAll().where("job_id", "=", jobId).execute();
+  expect(deliveries).toHaveLength(1);
+  expect(JSON.parse(deliveries[0]!.result)).toMatchObject({ kind: "file_item", id: files[0]?.id });
+  expect(JSON.stringify(modelRequests)).toContain("仅对尚未执行成功的操作重试原始工具调用");
+  expect((await request("GET", `/files/items/${files[0]!.id}/content`)).statusCode).toBe(200);
+});
+
+it("does not recreate a deleted export when the same creation is retried", async () => {
+  const args = { format: "word", name: "删除后的报告", content: "隔离测试正文" };
+  toolPlan = [
+    { name: "file_create", args },
+    { name: "file_create", args: async (results: any[]) => {
+      await db.updateTable("file_items").set({ deleted_at: new Date().toISOString(), delete_batch: randomUUID() })
+        .where("id", "=", results[0].file.id).execute();
+      return args;
+    } },
+  ];
+  await send(await session(), [], { text: "生成 Word 文件", skipApprovals: { create: true } });
+  const files = await db.selectFrom("file_items").selectAll().execute();
+  expect(files).toHaveLength(1);
+  expect(files[0]?.deleted_at).toBeTruthy();
+  expect(toolResults[1]).toMatchObject({ error: true });
+});
 async function fileForAsset(assetId: string) {
   return db
     .selectFrom("file_items")

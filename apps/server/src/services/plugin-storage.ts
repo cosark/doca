@@ -2,6 +2,7 @@ import { currentSchemaTables } from "@db/introspection.js";
 import { createHash, randomUUID } from "node:crypto";
 import { z } from "zod";
 import type { Kysely } from "kysely";
+import { sql } from "kysely";
 import type { DB } from "@db/index.js";
 import { transact } from "@db/transactions.js";
 import type {
@@ -22,29 +23,14 @@ import {
 } from "./plugin-credentials.js";
 import { createPluginStorageNamespace } from "./plugin-storage-namespaces.js";
 import type { HostFileStore } from "./host-file-store.js";
+import { pluginDatabases } from "./plugin-databases.js";
+import { registerDriver, databaseDriver } from "@db/transactions.js";
+import {
+  pluginStorageIdentifier as identifier,
+  pluginDatabaseSchemaParser as schemaParser,
+  pluginStorageDeclarationParser as declarationParser,
+} from "@db/plugin-storage-format.js";
 
-const identifier = z
-  .string()
-  .regex(/^[a-z][a-z0-9_]{0,47}$/)
-  .refine((v) => !Object.hasOwn(Object.prototype, v));
-const column = z
-  .object({ type: z.enum(["text", "integer", "real"]), nullable: z.boolean() })
-  .strict();
-const schemaParser = z
-  .object({
-    version: z.literal(1),
-    tables: z.record(
-      identifier,
-      z
-        .object({
-          columns: z.record(identifier, column),
-          primaryKey: z.array(identifier).min(1).max(16),
-          unique: z.array(z.array(identifier).min(1).max(16)).max(16),
-        })
-        .strict(),
-    ),
-  })
-  .strict();
 const valueParser = z.union([
   z.string().max(2_000_000),
   z.number().finite(),
@@ -77,8 +63,139 @@ const queryParser = z
   .strict();
 const hash = (value: string) =>
   createHash("sha256").update(value).digest("hex");
-const physicalTable = (id: string, generation: number, table: string) =>
-  "plugin_" + hash(JSON.stringify([id, generation, table])).slice(0, 56);
+const emptyDeclaration = () => canonical({ storageVersion: 2, schema: null });
+/** Old installed plugins must be uninstalled by the previous host before upgrading. */
+export function pluginStorageDeclaration(definition: string | null) {
+  try {
+    return declarationParser.parse(JSON.parse(definition ?? "null"));
+  } catch {
+    throw new Error(
+      "Plugin storage format is unsupported; uninstall plugins using the previous host, then upgrade and reinstall. No business data is migrated.",
+    );
+  }
+}
+const markerTable = "_doca_plugin_store";
+const databaseMarker = (
+  id: string,
+  generation: number,
+  dataVersion: string,
+  schema: PluginDatabaseSchema,
+) =>
+  canonical({
+    storageVersion: 2,
+    pluginId: id,
+    generation,
+    dataVersion,
+    schema,
+  });
+async function verifyDatabase(db: Kysely<any>, expected: string) {
+  const marker = await db.selectFrom(markerTable).selectAll().execute();
+  if (
+    marker.length !== 1 ||
+    marker[0]?.id !== "installation" ||
+    marker[0]?.definition !== expected
+  )
+    throw new PluginStorageError(
+      "unavailable",
+      "Plugin database installation differs from the host declaration",
+    );
+}
+async function verifyConstraints(
+  db: Kysely<any>,
+  schema: PluginDatabaseSchema,
+) {
+  const actual = new Map<string, string[]>();
+  const add = (name: string, type: string, columns: string[]) => {
+    const constraints = actual.get(name) ?? [];
+    constraints.push(canonical([type, columns]));
+    actual.set(name, constraints);
+  };
+  if (databaseDriver(db) === "postgres") {
+    const constraints = await sql<{
+      name: string;
+      type: string;
+      columns: string[];
+      deferred: boolean;
+    }>`
+      select t.relname as name, c.contype as type, c.condeferrable as deferred,
+        array(select a.attname::text from unnest(c.conkey) with ordinality k(attnum, ord)
+          join pg_attribute a on a.attrelid = t.oid and a.attnum = k.attnum order by k.ord) as columns
+      from pg_constraint c join pg_class t on t.oid = c.conrelid
+      join pg_namespace n on n.oid = t.relnamespace
+      where n.nspname = current_schema() and c.contype <> 'n'`.execute(db);
+    for (const c of constraints.rows) {
+      if (c.name === markerTable) continue;
+      if (c.deferred)
+        throw new PluginStorageError(
+          "unavailable",
+          "Plugin database structure is incomplete",
+        );
+      add(c.name, c.type, c.columns);
+    }
+    const indexes = await sql<{ extra: boolean }>`select exists(
+      select 1 from pg_index i join pg_class t on t.oid = i.indrelid
+      join pg_namespace n on n.oid = t.relnamespace
+      where n.nspname = current_schema() and not exists(select 1 from pg_constraint c where c.conindid = i.indexrelid)
+    ) as extra`.execute(db);
+    if (indexes.rows[0]!.extra)
+      throw new PluginStorageError(
+        "unavailable",
+        "Plugin database structure is incomplete",
+      );
+  } else {
+    for (const name of Object.keys(schema.tables)) {
+      const columns = await sql<{
+        name: string;
+        pk: number;
+      }>`select name, pk from pragma_table_info(${name}) where pk > 0 order by pk`.execute(
+        db,
+      );
+      add(
+        name,
+        "p",
+        columns.rows.map((c) => c.name),
+      );
+      const indexes = await sql<{
+        name: string;
+        origin: string;
+      }>`select name, origin from pragma_index_list(${name})`.execute(db);
+      for (const index of indexes.rows) {
+        if (index.origin === "pk") continue;
+        const fields = await sql<{
+          name: string;
+        }>`select name from pragma_index_info(${index.name}) order by seqno`.execute(
+          db,
+        );
+        add(
+          name,
+          index.origin === "u" ? "u" : "index",
+          fields.rows.map((c) => c.name),
+        );
+      }
+      const foreign = await sql<{
+        id: number;
+      }>`select id from pragma_foreign_key_list(${name})`.execute(db);
+      if (foreign.rows.length) add(name, "f", []);
+      const ddl = await sql<{
+        definition: string;
+      }>`select sql as definition from sqlite_schema where type = 'table' and name = ${name}`.execute(
+        db,
+      );
+      if (/\bcheck\s*\(/i.test(ddl.rows[0]!.definition)) add(name, "c", []);
+    }
+  }
+  for (const [name, table] of Object.entries(schema.tables)) {
+    const expected = [
+      canonical(["p", [...table.primaryKey]]),
+      ...table.unique.map((c) => canonical(["u", [...c]])),
+    ].sort();
+    if (canonical((actual.get(name) ?? []).sort()) !== canonical(expected))
+      throw new PluginStorageError(
+        "unavailable",
+        "Plugin database structure is incomplete",
+      );
+  }
+}
 const canonical = (value: unknown): string => {
   if (Array.isArray(value)) return `[${value.map(canonical).join(",")}]`;
   if (value && typeof value === "object")
@@ -144,7 +261,21 @@ export async function installPluginStorage(
       row.namespace !== namespace.database
     )
       throw new Error("Plugin data structure differs from installation");
+    pluginStorageDeclaration(row.definition);
     return;
+  }
+  if (row?.definition) {
+    // A removed old-format installation was already cleaned by the previous host.
+    const stored = JSON.parse(row.definition);
+    const declaration = declarationParser.safeParse(stored);
+    if (declaration.success)
+      throw new Error(
+        "Plugin database cleanup is pending; retry cleanup before reinstalling",
+      );
+    if (!schemaParser.safeParse(stored).success)
+      throw new Error(
+        "Removed plugin storage metadata is invalid; review it before reinstalling",
+      );
   }
   if (!row)
     await db
@@ -155,7 +286,7 @@ export async function installPluginStorage(
         data_version: dataVersion,
         generation: 1,
         state: "active",
-        definition: null,
+        definition: emptyDeclaration(),
         created_at: new Date().toISOString(),
       })
       .execute();
@@ -166,7 +297,7 @@ export async function installPluginStorage(
         generation: row.generation + 1,
         data_version: dataVersion,
         state: "active",
-        definition: null,
+        definition: emptyDeclaration(),
       })
       .where("plugin_id", "=", id)
       .where("generation", "=", row.generation)
@@ -184,13 +315,9 @@ export async function removePluginStorage(db: DB, id: string) {
     .executeTakeFirstOrThrow();
   if (row.namespace !== namespace.database)
     throw new Error("Plugin storage installation is unavailable");
-  if (row.definition) {
-    const definition = parse(schemaParser, JSON.parse(row.definition));
-    for (const name of Object.keys(definition.tables))
-      await db.schema
-        .dropTable(physicalTable(id, row.generation, name))
-        .execute();
-  }
+  pluginStorageDeclaration(row.definition);
+  // Keep the declaration as a durable cleanup intent. Business DDL runs after the
+  // registry commit, while this removed generation already rejects old handles.
   const objects = await db
     .selectFrom("plugin_private_objects")
     .selectAll()
@@ -220,6 +347,103 @@ export async function removePluginStorage(db: DB, id: string) {
     .where("namespace", "=", namespace.database)
     .where("generation", "=", row.generation)
     .execute();
+}
+/** Retryable cleanup, fenced by the core namespace lock; never a distributed transaction. */
+export async function cleanupPluginDatabases(db: DB) {
+  const pending = await db
+    .selectFrom("plugin_storage_namespaces")
+    .selectAll()
+    .where("state", "=", "removed")
+    .execute();
+  let failed = 0;
+  for (const row of pending) {
+    if (row.definition === null) continue;
+    let declaration: z.infer<typeof declarationParser>;
+    try {
+      const stored = JSON.parse(row.definition),
+        parsed = declarationParser.safeParse(stored);
+      if (!parsed.success) {
+        if (!schemaParser.safeParse(stored).success) failed++;
+        continue;
+      }
+      declaration = parsed.data;
+    } catch {
+      failed++;
+      continue;
+    }
+    // Historical removed rows contain no live old store; their tables were removed by the old host.
+    const schema = declaration.schema;
+    try {
+      await transact(db, async (core) => {
+        const locked = await core
+          .updateTable("plugin_storage_namespaces")
+          .set({ state: "removed" })
+          .where("plugin_id", "=", row.plugin_id)
+          .where("generation", "=", row.generation)
+          .where("state", "=", "removed")
+          .where("definition", "=", row.definition)
+          .executeTakeFirst();
+        if (!Number(locked.numUpdatedRows)) return;
+        const business = await pluginDatabases(db).existing(
+          row.plugin_id,
+          core,
+        );
+        if (schema && !business)
+          throw new Error(
+            "Plugin database is missing; cleanup requires review",
+          );
+        if (business)
+          await business.transaction().execute(async (tx) => {
+            registerDriver(tx, databaseDriver(business));
+            const tables = await currentSchemaTables(tx);
+            if (tables.length) {
+              let installedSchema = schema;
+              if (!installedSchema) {
+                const marker = await tx
+                  .selectFrom(markerTable)
+                  .select("definition")
+                  .where("id", "=", "installation")
+                  .executeTakeFirstOrThrow();
+                installedSchema = parse(
+                  schemaParser,
+                  JSON.parse(marker.definition).schema,
+                );
+              }
+              await verifyDatabase(
+                tx,
+                databaseMarker(
+                  row.plugin_id,
+                  row.generation,
+                  row.data_version,
+                  installedSchema,
+                ),
+              );
+              const names = new Set([
+                markerTable,
+                ...Object.keys(installedSchema.tables),
+              ]);
+              if (tables.some((t) => !names.has(t.name)))
+                throw new Error(
+                  "Unexpected plugin database tables; cleanup refused",
+                );
+              for (const name of Object.keys(installedSchema.tables))
+                await tx.schema.dropTable(name).execute();
+              await tx.schema.dropTable(markerTable).execute();
+            }
+          });
+        await core
+          .updateTable("plugin_storage_namespaces")
+          .set({ definition: null })
+          .where("plugin_id", "=", row.plugin_id)
+          .where("generation", "=", row.generation)
+          .where("state", "=", "removed")
+          .execute();
+      });
+    } catch {
+      failed++;
+    }
+  }
+  return { failed };
 }
 /** Durable garbage intents survive process crashes and storage outages. Archives never enter this collector. */
 export async function cleanupPluginObjects(db: DB, files: HostFileStore) {
@@ -282,6 +506,8 @@ export async function bindPluginStorage(
     installed.namespace !== namespace.database
   )
     throw new Error("Plugin storage installation is unavailable");
+  pluginStorageDeclaration(installed.definition);
+  const databases = pluginDatabases(db);
   const generation = installed.generation;
   async function current(tx: DB, lock = false) {
     // UPDATE locks the namespace for writes and schema declarations on every backend.
@@ -315,12 +541,13 @@ export async function bindPluginStorage(
   }
   async function structure(tx: DB) {
     const row = await current(tx);
-    if (!row.definition)
+    const declaration = pluginStorageDeclaration(row.definition);
+    if (!declaration.schema)
       throw new PluginStorageError(
         "unavailable",
         "Declare the plugin database schema first",
       );
-    return parse(schemaParser, JSON.parse(row.definition));
+    return declaration.schema;
   }
   const validateSchema = (input: PluginDatabaseSchema) => {
     const schema = parse(schemaParser, input);
@@ -348,7 +575,8 @@ export async function bindPluginStorage(
     return schema;
   };
   function transactionService(
-    tx: DB,
+    tx: Kysely<any>,
+    schema: PluginDatabaseSchema,
     active: () => boolean,
   ): PluginDatabaseTransaction {
     async function table(name: string) {
@@ -358,12 +586,11 @@ export async function bindPluginStorage(
           "Plugin transaction has ended",
         );
       parse(identifier, name);
-      const schema = await structure(tx);
       const definition = schema.tables[name];
       if (!definition) throw invalid();
       return {
         definition,
-        name: physicalTable(id, generation, name),
+        name,
         query: tx as Kysely<any>,
       };
     }
@@ -492,12 +719,22 @@ export async function bindPluginStorage(
     return safe(() =>
       db.transaction().execute(async (tx) => {
         await current(tx, true);
-        let active = true;
-        try {
-          return await run(transactionService(tx, () => active));
-        } finally {
-          active = false;
-        }
+        const schema = await structure(tx);
+        const business = await databases.open(id, true, tx);
+        return business.transaction().execute(async (businessTx) => {
+          await verifyDatabase(
+            businessTx,
+            databaseMarker(id, generation, dataVersion, schema),
+          );
+          let active = true;
+          try {
+            return await run(
+              transactionService(businessTx, schema, () => active),
+            );
+          } finally {
+            active = false;
+          }
+        });
       }),
     );
   }
@@ -505,74 +742,113 @@ export async function bindPluginStorage(
     Object.freeze<PluginDatabaseServiceV1>({
       defineSchema: (input: PluginDatabaseSchema) =>
         safe(async () => {
-          const definition = canonical(validateSchema(input));
+          const schema = validateSchema(input);
+          const definition = canonical({ storageVersion: 2, schema });
           await transact(db, async (tx) => {
             const row = await current(tx, true);
-            if (row.definition) {
+            const declared = pluginStorageDeclaration(row.definition);
+            if (declared.schema) {
               if (row.definition !== definition)
                 throw new PluginStorageError(
                   "conflict",
                   "Plugin database schema differs from its declaration",
                 );
               // Verify persisted physical tables as well; never recreate a missing table over lost business data.
-              const tables = await currentSchemaTables(tx);
-              for (const [name, t] of Object.entries(
-                JSON.parse(definition).tables,
-              ) as [string, PluginDatabaseSchema["tables"][string]][]) {
-                const physical = tables.find(
-                  (v) => v.name === physicalTable(id, generation, name),
+            }
+            const business = await databases.open(id, !!declared.schema, tx);
+            await business.transaction().execute(async (businessTx) => {
+              registerDriver(businessTx, databaseDriver(business));
+              const tables = await currentSchemaTables(businessTx);
+              if (tables.length) {
+                // An interrupted first declaration may have committed the business
+                // transaction. Adopt only its exact installation marker and schema.
+                await verifyDatabase(
+                  businessTx,
+                  databaseMarker(id, generation, dataVersion, schema),
                 );
-                if (
-                  !physical ||
-                  physical.columns.length !== Object.keys(t.columns).length ||
-                  Object.keys(t.columns).some(
-                    (c) =>
-                      !physical.columns.some((v) => {
-                        const column = t.columns[c]!;
-                        const type = v.dataType.toLowerCase();
-                        const expectedTypes =
-                          column.type === "integer"
-                            ? ["integer", "int4"]
-                            : column.type === "real"
-                              ? ["double precision", "float8"]
-                              : ["text"];
-                        return (
-                          v.name === c &&
-                          v.isNullable === column.nullable &&
-                          expectedTypes.includes(type)
-                        );
-                      }),
-                  )
-                )
+                if (tables.length !== Object.keys(schema.tables).length + 1)
                   throw new PluginStorageError(
                     "unavailable",
                     "Plugin database structure is incomplete",
                   );
+              } else if (declared.schema) {
+                throw new PluginStorageError(
+                  "unavailable",
+                  "Plugin database structure is incomplete",
+                );
               }
-              return;
-            }
-            const schema = JSON.parse(definition) as PluginDatabaseSchema;
-            for (const [name, t] of Object.entries(schema.tables)) {
-              let builder: any = tx.schema.createTable(
-                physicalTable(id, generation, name),
-              );
-              for (const [column, c] of Object.entries(t.columns))
-                builder = builder.addColumn(
-                  column,
-                  c.type === "real" ? "double precision" : c.type,
-                  (b: any) => (c.nullable ? b : b.notNull()),
+              if (tables.length)
+                for (const [name, t] of Object.entries(schema.tables)) {
+                  const physical = tables.find((v) => v.name === name);
+                  if (
+                    !physical ||
+                    physical.columns.length !== Object.keys(t.columns).length ||
+                    Object.keys(t.columns).some(
+                      (c) =>
+                        !physical.columns.some((v) => {
+                          const column = t.columns[c]!;
+                          const type = v.dataType.toLowerCase();
+                          const expectedTypes =
+                            column.type === "integer"
+                              ? ["integer", "int4"]
+                              : column.type === "real"
+                                ? ["double precision", "float8"]
+                                : ["text"];
+                          return (
+                            v.name === c &&
+                            v.isNullable === column.nullable &&
+                            !v.hasDefaultValue &&
+                            expectedTypes.includes(type)
+                          );
+                        }),
+                    )
+                  )
+                    throw new PluginStorageError(
+                      "unavailable",
+                      "Plugin database structure is incomplete",
+                    );
+                }
+              if (tables.length) {
+                await verifyConstraints(businessTx, schema);
+                return;
+              }
+              for (const [name, t] of Object.entries(schema.tables)) {
+                let builder: any = businessTx.schema.createTable(name);
+                for (const [column, c] of Object.entries(t.columns))
+                  builder = builder.addColumn(
+                    column,
+                    c.type === "real" ? "double precision" : c.type,
+                    (b: any) => (c.nullable ? b : b.notNull()),
+                  );
+                builder = builder.addPrimaryKeyConstraint(
+                  "_doca_" + hash(name).slice(0, 40) + "_pk",
+                  [...t.primaryKey],
                 );
-              builder = builder.addPrimaryKeyConstraint(
-                physicalTable(id, generation, name).slice(0, 52) + "_pk",
-                [...t.primaryKey],
-              );
-              for (let i = 0; i < t.unique.length; i++)
-                builder = builder.addUniqueConstraint(
-                  physicalTable(id, generation, name).slice(0, 50) + "_u" + i,
-                  [...t.unique[i]!],
-                );
-              await builder.execute();
-            }
+                for (let i = 0; i < t.unique.length; i++)
+                  builder = builder.addUniqueConstraint(
+                    "_doca_" + hash(name).slice(0, 40) + "_u" + i,
+                    [...t.unique[i]!],
+                  );
+                await builder.execute();
+              }
+              await businessTx.schema
+                .createTable(markerTable)
+                .addColumn("id", "text", (c) => c.notNull().primaryKey())
+                .addColumn("definition", "text", (c) => c.notNull())
+                .execute();
+              await businessTx
+                .insertInto(markerTable)
+                .values({
+                  id: "installation",
+                  definition: databaseMarker(
+                    id,
+                    generation,
+                    dataVersion,
+                    schema,
+                  ),
+                })
+                .execute();
+            });
             await tx
               .updateTable("plugin_storage_namespaces")
               .set({ definition })

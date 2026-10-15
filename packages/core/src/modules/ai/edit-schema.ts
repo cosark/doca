@@ -640,6 +640,11 @@ export function validateRichNode(
         `未知流程图节点形状 ${n.shape}`,
       );
       assert(
+        n.angle === undefined ||
+          (typeof n.angle === "number" && Number.isFinite(n.angle)),
+        "angle 必须为有限数值角度",
+      );
+      assert(
         n.arrowDirection === undefined ||
           ["right", "down", "left", "up"].includes(n.arrowDirection),
         "未知实心箭头方向",

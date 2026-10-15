@@ -7,6 +7,8 @@ import {
 
 it.each([
   ["帮我生成一个年会报告的文档模板", "writing"],
+  ["帮我写一篇关于调研日本校园霸凌的调查文档", "writing"],
+  ["帮我写一篇关于日本校园霸凌现状、成因、典型事件和治理建议的调研报告", "writing"],
   ["创建一个会议模板", "writing"],
   ["创建预算表格", "spreadsheet"],
   ["制作三页PPT", "presentation"],

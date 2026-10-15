@@ -2,7 +2,7 @@
 
 [English](deployment.md)
 
-一台服务器可以运行已发布镜像 `docker.io/smartdoca/doca:0.1.24`。单个容器使用 SQLite，不需要 PostgreSQL 或 Redis。只有运行多个应用副本时才需要它们。见 [单实例与水平扩展部署](horizontal-scaling.zh-CN.md)。
+一台服务器可以运行已发布镜像 `docker.io/smartdoca/doca:0.1.25`。单个容器使用 SQLite，不需要 PostgreSQL 或 Redis。只有运行多个应用副本时才需要它们。见 [单实例与水平扩展部署](horizontal-scaling.zh-CN.md)。
 
 ## 条件
 
@@ -26,7 +26,7 @@ cp docker.env.example .env
 
 文件存储还需要 `DOCA_FILE_STORE_ID` 和 `DOCA_FILE_STORES_JSON`，示例见 `docker.env.example`。后端路径和密钥通过环境变量提供，管理页只读展示。见[文件存储](storage.zh-CN.md)。
 
-0.1.24 使用数据库代际 `doca-2026-10-12-book-payload-storage-v1`。对已发布 0.1.22 的 `doca-2026-10-09-history-storage-v1`，启动时以最新 DDL 检查并对齐结构、记录新代际；旧 SQL 知识册成果等全部业务行原样保留，不增加正文转换、单独清理或旧正文适配。残留旧知识册记录可能需人工处理，已有 0.1.23 对象存储数据保留。见[数据库结构演进](database-schema-evolution.zh-CN.md)及[0.1.24 要求](releases/0.1.24.zh-CN.md)。0.1.13 的准确基线 `doca-2026-10-08-knowledge-books-v2` 仍需按下方步骤显式升级历史存储。保留原数据库、私有对象、配置和凭证主密钥。
+0.1.25 使用数据库代际 `doca-2026-10-12-book-payload-storage-v1`。对已发布 0.1.22 的 `doca-2026-10-09-history-storage-v1`，启动时以最新 DDL 检查并对齐结构、记录新代际；旧 SQL 知识册成果等全部业务行原样保留，不增加正文转换、单独清理或旧正文适配。残留旧知识册记录可能需人工处理，已有 0.1.23 对象存储数据保留。见[数据库结构演进](database-schema-evolution.zh-CN.md)及[0.1.25 要求](releases/0.1.25.zh-CN.md)。0.1.13 的准确基线 `doca-2026-10-08-knowledge-books-v2` 仍需按下方步骤显式升级历史存储。保留原数据库、私有对象、配置和凭证主密钥。
 
 `DOCA_ORIGIN` 是用户在浏览器里打开的地址。包括生产环境在内，均支持 HTTP 和 HTTPS。不要加子路径、查询参数或片段；根路径末尾斜杠会被规范化。
 
@@ -38,11 +38,13 @@ Docker 示例已经提供必填存储值；首次单机部署修改来源，并�
 
 ## 启动
 
-更新前停止全部旧宿主并备份数据库。0.1.24 首次启动自动对齐 0.1.22 结构并保留全部业务记录，无需手工知识册命令。旧 SQL 成果不适配新版对象格式，残留记录按需人工处理。若需把它们保留为可用成果，可在首次启动前执行既有可选[无损离线转换](knowledge-book-storage-verification.zh-CN.md)。更早支持代际先完成下方历史升级。所有宿主和 Web 构建一起更新。
+0.1.25 对插件存储有已确认的独立业务库变更：安装过外部业务插件时，必须先在旧宿主正常卸载全部外部业务插件，再停止宿主及更新。旧插件业务记录、凭证和私有对象会丢弃，重装后重新配置；核心数据保留，不迁移或自动删旧表。详见 [0.1.25 升级要求](releases/0.1.25.zh-CN.md)和[插件独立业务库](plugin-database-isolation.zh-CN.md)。
+
+更新前停止全部旧宿主并备份数据库。0.1.25 首次启动自动对齐 0.1.22 结构并保留全部业务记录，无需手工知识册命令。旧 SQL 成果不适配新版对象格式，残留记录按需人工处理。若需把它们保留为可用成果，可在首次启动前执行既有可选[无损离线转换](knowledge-book-storage-verification.zh-CN.md)。更早支持代际先完成下方历史升级。所有宿主和 Web 构建一起更新。
 
 ### 从 0.1.13 升级
 
-先停止全部 Doca 实例，完整备份数据库（SQLite 包括 WAL）、文件存储和配置，保留原 `DOCA_CREDENTIAL_MASTER_KEY`。检出 `v0.1.24` 并拉取镜像后，在原部署环境中执行一次离线维护容器：
+先停止全部 Doca 实例，完整备份数据库（SQLite 包括 WAL）、文件存储和配置，保留原 `DOCA_CREDENTIAL_MASTER_KEY`。检出 `v0.1.25` 并拉取镜像后，在原部署环境中执行一次离线维护容器：
 
 ```sh
 docker compose stop
@@ -59,7 +61,7 @@ docker compose pull
 docker compose up -d
 ```
 
-`docker compose up -d` 会拉取 `docker.io/smartdoca/doca:0.1.24`。只有要从当前检出构建镜像时才加 `--build`。
+`docker compose up -d` 会拉取 `docker.io/smartdoca/doca:0.1.25`。只有要从当前检出构建镜像时才加 `--build`。
 
 检查容器：
 
@@ -70,7 +72,7 @@ curl -fsS -H 'Host: docs.example.com' http://127.0.0.1:39120/health
 
 将 `docs.example.com` 替换为配置来源的主机名，非标准端口也需带上。镜像内置探针已经携带正确 Host，等待 `docker compose ps` 显示 `healthy`。直接以回环地址 curl 会返回 421。
 
-健康的进程返回 `{"status":"ok","version":"0.1.24"}`。
+健康的进程返回 `{"status":"ok","version":"0.1.25"}`。
 
 文档渲染还需实际部署检查：当前检出新增 LibreOffice 和启用沙箱的 Chromium，可选 SAM 另需可信 Linux 运行环境。组件边界、内置 Chromium seccomp 策略和显式 SAM 挂载见 [Docker 文档渲染器](docker-rendering.zh-CN.md)，服务健康不代表这些工具已经可用。
 
@@ -153,8 +155,8 @@ CloudFront 的 **Cache policy** 单独控制边缘缓存，建议静态哈希文
 自建 Nginx 静态 CDN 可按发布目录配置（服务器加载标准 `mime.types`）：
 
 ```nginx
-location /doca/0.1.24/assets/ {
-    alias /srv/doca/0.1.24/assets/;
+location /doca/0.1.25/assets/ {
+    alias /srv/doca/0.1.25/assets/;
     add_header Cache-Control "public, max-age=31536000, immutable";
     add_header Access-Control-Allow-Origin "https://doca.example.com";
 }
@@ -163,11 +165,11 @@ location /doca/0.1.24/assets/ {
 如 CDN 反代 Doca 已带 Cache-Control 的 `/assets/`，先用 `proxy_hide_header Cache-Control;` 隐藏源站该头，再添加新的头，避免重复。未找到文件的 404 不应得到一年缓存；示例故意没有使用 `always`。上线检查最终 CDN 响应：
 
 ```sh
-curl -I https://cdn.example.com/doca/0.1.24/assets/<实际带哈希的JS文件名>.js
+curl -I https://cdn.example.com/doca/0.1.25/assets/<实际带哈希的JS文件名>.js
 ```
 
 确认 Cache-Control、Content-Type 和跨域响应头；HTML 仍从 Doca 获取并重新验证。文档图片及受保护文件的缓存策略见[存储：图片的浏览器缓存与文件 CDN](storage.zh-CN.md#图片的浏览器缓存与文件-cdn)。
 
 ## 知识册正文转换
 
-0.1.24 对支持的旧代际沿用普通结构对比并保留全部业务记录，不自动清理知识册、不增加旧正文适配，已有目标代际对象原样保留。若旧 SQL 成果需继续可用，既有[可选无损转换](knowledge-book-storage-verification.zh-CN.md)须在首次启动前执行；转换中断仍需带原清单完成。恢复备份时保留全部数据和后续写入，所有宿主及 Web 构建一起更新。
+0.1.25 对支持的旧代际沿用普通结构对比并保留全部业务记录，不自动清理知识册、不增加旧正文适配，已有目标代际对象原样保留。若旧 SQL 成果需继续可用，既有[可选无损转换](knowledge-book-storage-verification.zh-CN.md)须在首次启动前执行；转换中断仍需带原清单完成。恢复备份时保留全部数据和后续写入，所有宿主及 Web 构建一起更新。

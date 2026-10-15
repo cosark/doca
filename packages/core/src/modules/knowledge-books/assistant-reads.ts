@@ -1,6 +1,7 @@
 import type { DB } from "@db/index.js";
 import type { Actor } from "../identity/passwords.js";
 import type { BookArtifact } from "./protocol.js";
+import { bookNodeInputs } from "./protocol.js";
 import {
   readKnowledgeBook,
   readBookRun,
@@ -31,6 +32,7 @@ export async function readBookForAssistant(db: DB, actor: Actor, id: string) {
   const book = await readKnowledgeBookSummary(db, actor, id);
   return {
     ...book,
+    workflowRules: { inputsByNodeType: bookNodeInputs, maxNodes: 40, maxEdges: 100, guidance: "All nodes must reach the single publish node. Writing/organization/acceptance batch internally; do not chain same-type nodes to work around a per-request budget. To create parallel writers, each synthesize consumes extract and feeds organize. To restrict branch evidence, select sourceIds on its sources node and use a separate extract node; sourceIds on a writer does not filter its inherited evidence. Writers must retain all distinct inherited claims. node.add only adds edges; configuration.save atomically replaces topology when existing edges must be removed." },
     sources: book.sources.map((source) => ({
       ...source,
       configuration: source.configuration

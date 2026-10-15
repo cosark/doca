@@ -481,7 +481,10 @@ export async function executeBookRun(db: DB, id: string, runtime: BookRuntime) {
   const coordinator = new AbortController();
   const signal = AbortSignal.any([
     coordinator.signal,
-    AbortSignal.timeout(120 * 60_000),
+    // Whole-book inspection and bounded evidence rechecks can contain hundreds
+    // of individually bounded calls. Keep a finite run deadline without
+    // cancelling a healthy long-form worker halfway through its final stage.
+    AbortSignal.timeout(240 * 60_000),
   ]);
   const heartbeat = setInterval(() => {
     void db
@@ -1050,16 +1053,6 @@ export async function executeBookRun(db: DB, id: string, runtime: BookRuntime) {
           const enabled = weightedEvidence.filter((item) => item.weight > 0);
           if (!enabled.length)
             fail(422, "Workflow has no positively weighted evidence");
-          if (
-            input.evidence.reduce(
-              (total, item) => total + item.text.length,
-              0,
-            ) > 120000
-          )
-            fail(
-              413,
-              "Combined sources exceed analysis limits; narrow source scope",
-            );
           const criteria = node.parameters.criterionIds.length
             ? configuration.criteria.filter((criterion) =>
                 node.parameters.criterionIds.includes(criterion.id),
@@ -1088,40 +1081,59 @@ export async function executeBookRun(db: DB, id: string, runtime: BookRuntime) {
             }))
             .filter((page) => page.paragraphs.length);
           output.pages = permittedPages;
+          const reviewedOutputs = await Promise.all(
+            rejectedReviews
+              .filter((review) => {
+                const parents = new Set([review.node_id]);
+                for (
+                  let pass = 0;
+                  pass < configuration.workflow.nodes.length;
+                  pass++
+                )
+                  for (const edge of configuration.workflow.edges)
+                    if (parents.has(edge.target)) parents.add(edge.source);
+                return parents.has(node.id);
+              })
+              .map(async (review) =>
+                review.output
+                  ? await readBookPayload<NodeOutput>(db, review.output)
+                  : undefined,
+              ),
+          );
           const result = await runtime.generate(
             node.type,
             {
               goal: configuration.goal,
               instructions: node.parameters.instructions,
               sourceInstructions: inheritedInstructions,
-              priorReviews: (
-                await Promise.all(
-                  rejectedReviews
-                    .filter((review) => {
-                      const parents = new Set([review.node_id]);
-                      for (
-                        let pass = 0;
-                        pass < configuration.workflow.nodes.length;
-                        pass++
+              priorReviews: reviewedOutputs.flatMap(
+                (review) => review?.checks ?? [],
+              ),
+              priorReviewPages:
+                node.type === "organize"
+                  ? reviewedOutputs
+                      .filter(
+                        (review) =>
+                          review &&
+                          review.evidence.every((item) =>
+                            enabled.some(
+                              (current) =>
+                                current.id === item.id &&
+                                current.sourceVersion === item.sourceVersion &&
+                                current.contentHash === item.contentHash,
+                            ),
+                          ),
                       )
-                        for (const edge of configuration.workflow.edges)
-                          if (parents.has(edge.target))
-                            parents.add(edge.source);
-                      return parents.has(node.id);
-                    })
-                    .map(async (review) =>
-                      review.output
-                        ? (await readBookPayload<NodeOutput>(db, review.output))
-                            .checks
-                        : [],
-                    ),
-                )
-              ).flat(),
+                      .flatMap((review) => review!.pages)
+                  : [],
               evidence: enabled,
               claims: permittedClaims,
               pages: permittedPages,
               criteria,
               maxDocumentDepth: configuration.maxDocumentDepth,
+              writingBranchCount: configuration.workflow.nodes.filter(
+                (node) => node.type === "synthesize",
+              ).length,
             },
             signal,
             report,

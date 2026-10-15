@@ -1811,7 +1811,7 @@ export function AIChat({ full = false }: { full?: boolean }) {
     }
   };
   const startSend = (choice?: string, queued = false) => {
-    if (ai.restoring || !ai.userId || !model || folderImport) return;
+    if (ai.restoring || ai.contextLoading || !ai.userId || !model || folderImport) return;
     const item = snapshotComposer(choice);
     if (!item) return;
     if ([...outgoing.current.values()].some(message => sendControllers.current.has(message.item.id) &&
@@ -3735,7 +3735,7 @@ export function AIChat({ full = false }: { full?: boolean }) {
                   for (const file of Array.from(items)) void upload(file);
                 }}
                 autoSize={{ minRows: 2, maxRows: 6 }}
-                disabled={ai.restoring}
+                disabled={ai.restoring || ai.contextLoading}
                 placeholder={
                   full ? t("chat.placeholder") : t("chat.documentPlaceholder")
                 }

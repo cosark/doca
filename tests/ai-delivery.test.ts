@@ -219,6 +219,30 @@ it("only treats same-sentence document persistence claims as delivery, and honor
   );
 });
 
+it("distinguishes saved images and optional document actions from actual document writes", () => {
+  for (const text of [
+    "三张图均为 2048×2048 高清 PNG，已保存到会话文件夹，可直接预览、下载或加入文档。如果还想要其他风格，随时告诉我！",
+    "图片已生成并保存成功，可加入当前文档。",
+    "图片已保存且可加入文档。",
+    "图片已生成并支持插入文档。",
+    "已把图片保存到会话文件夹；需要的话可以插入文档。",
+    "The images have been saved to the session folder, and can be added to a document.",
+    "I have saved the image, you can insert it into a document.",
+    "I have saved the image and you can insert it into a document.",
+  ])
+    expect(unverifiedDocumentDelivery(text, false), text).toBeNull();
+  for (const text of [
+    "图片已生成，并已加入当前文档。",
+    "图片已保存到会话文件夹，文档也已更新。",
+    "已将图片插入文档，可直接预览。",
+    "已将可爱的图片插入文档。",
+    "I have saved the image, and I have updated the document.",
+  ]) {
+    expect(unverifiedDocumentDelivery(text, false)?.verdict, text).toBe("revise");
+    expect(unverifiedDocumentDelivery(text, true), text).toBeNull();
+  }
+});
+
 it("rejects folder rename claims without a folder tool receipt", () => {
   expect(
     folderMutationRequested(

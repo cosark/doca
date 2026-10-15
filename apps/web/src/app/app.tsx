@@ -10,6 +10,7 @@ import { pluginRouteScope } from "./plugin-route-scope.js";
 
 import type { MessageKey } from "@doca/i18n";
 import { AIProvider } from "@web/features/ai/ai-context.js";
+import { publishNotificationUnread } from "@web/shared/notification-unread.js";
 import { useI18n } from "@web/shared/i18n.js";
 import { AIDocumentLayout } from "@web/features/ai/ai-document-layout.js";
 import { LazyContent } from "@web/shared/components/lazy-content.js";
@@ -1049,7 +1050,7 @@ function WorkspaceApp() {
     );
   return (
     <DocumentModeContext.Provider value={documentMode}>
-    <AIProvider userId={user?.id} resource={assistantResource} hash={hash} onResourcesChanged={() => setRefresh((n) => n + 1)}>
+    <AIProvider userId={user?.id} resource={assistantResource} hash={hash} contextLoading={!!bookContextId && !assistantResource} onResourcesChanged={() => setRefresh((n) => n + 1)}>
     <div
       className={`app-shell ${mobileShell ? "mobile-editor-shell" : ""} ${(!user && !currentLibraryId) || sharedPersonalView ? "public-view" : ""} ${personalDocumentPage ? "personal-document-view" : ""} ${resourceId ? "document-view" : ""} ${["spreadsheet", "canvas", "presentation"].includes(detail?.resource.format ?? "") ? "spreadsheet-view surface-view" : ""} ${navigationOpen ? "navigation-expanded" : ""} ${navigationCollapsed ? "navigation-collapsed" : ""}`}
     >
@@ -1849,6 +1850,10 @@ function Notifications() {
   async function load() {
     setData(await api("/notifications"));
   }
+  useEffect(() => {
+    publishNotificationUnread(data.unread);
+  }, [data.unread]);
+  useEffect(() => () => publishNotificationUnread(0), []);
   useEffect(() => {
     const action = (event: Event) => {
       if ((event as CustomEvent).detail !== "doca.notifications") return;

@@ -41,6 +41,7 @@ type AIContextValue = {
   resource?: Resource;
   open: boolean;
   restoring: boolean;
+  contextLoading: boolean;
   setOpen: (v: boolean) => void;
   sessionId: string | null;
   setSessionId: (v: string | null) => void;
@@ -68,12 +69,14 @@ export function AIProvider({
   userId,
   resource,
   hash,
+  contextLoading,
   onResourcesChanged,
   children,
 }: {
   userId?: string;
   resource?: Resource;
   hash: string;
+  contextLoading: boolean;
   onResourcesChanged?: () => void;
   children: ReactNode;
 }) {
@@ -304,6 +307,7 @@ export function AIProvider({
         resource,
         open,
         restoring,
+        contextLoading,
         setOpen,
         sessionId,
         setSessionId: selectSession,

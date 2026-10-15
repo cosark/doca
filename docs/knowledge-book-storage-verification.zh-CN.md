@@ -12,7 +12,7 @@
 
 下方既有维护命令保留为需将旧成果继续保留为可用原生格式时的可选无损方案，须在首次启动前执行，因为结构对齐会改变转换所需的源代际。下方历史验收证明可选无损转换，不代表自动适配残留旧 SQL JSON。
 
-自动结构对齐验收：实际 0.1.22 镜像的 SQLite、PostgreSQL 17/18 隔离样本均保留 114 张业务表的每一行及 20 份 SQL 正文，重复／并发启动后新原生对象可读。PostgreSQL 17/18 各通过 91 项回归，包括事务回滚和原生读取器拒绝旧正文。见[验证记录](../artifacts/book-schema-startup-2026-10-13/verification.json)。
+自动结构对齐验收：实际 0.1.22 镜像的 SQLite、PostgreSQL 17/18 隔离样本均保留 114 张业务表的每一行及 20 份 SQL 正文，重复／并发启动后新原生对象可读。PostgreSQL 17/18 各通过 91 项回归，包括事务回滚和原生读取器拒绝旧正文。见[验证记录](verification/book-schema-startup-2026-10-13/verification.json)。
 
 ## 执行步骤
 
@@ -42,7 +42,7 @@ pnpm knowledge-books:storage rollback --apply --hosts-stopped --manifest /secure
 
 实际来源镜像 `smartdoca/doca:0.1.22`，镜像 ID `sha256:a5316eb01bf25b0d89801139de85d34a35528be376699c4981ab8a09fd14f04c`。使用合成用户和来源，由旧版真实运行器生成成功、失败和待发布任务；未访问用户文档或生产数据库。
 
-SQLite、PostgreSQL 17 和 18 各有 20 份非空旧正文。全部执行显式升级、两次普通启动及显式回退；20/20 原始 JSON 字节与哈希一致，状态、错误、配置与人工待办保留。结果记录于仓库 `artifacts/knowledge-book-storage-plan-2026-10-12/actual-roundtrip*.json`。
+SQLite、PostgreSQL 17 和 18 各有 20 份非空旧正文。全部执行显式升级、两次普通启动及显式回退；20/20 原始 JSON 字节与哈希一致，状态、错误、配置与人工待办保留。结果记录于仓库 `docs/verification/knowledge-book-storage-plan-2026-10-12/actual-roundtrip*.json`。
 
 | 指标 | SQLite 样本 | PostgreSQL 17/18 样本 |
 | --- | ---: | ---: |
@@ -57,7 +57,7 @@ SQLite、PostgreSQL 17 和 18 各有 20 份非空旧正文。全部执行显式�
 
 回归覆盖分片边界、转义与 Unicode、同册去重/跨册隔离、并发竞争、租约中断与续转、损坏对象、未知格式无部分 DDL、新写入完整回退、SQL 摘要零对象读取、权限撤销及缓存、回收站与永久删除、迟到上传的持续清理。CI 的数据库矩阵加入知识册与正文存储测试。
 
-浏览器验证记录于 `lazy-candidate.json`：展开前读取 0 次、展开后 1 次、再展开复用缓存，权限撤销移除正文，无浏览器异常。流程图稳定性另见 `artifacts/knowledge-book-reliability-2026-10-12/preview-result.json`。
+浏览器验证记录于 `lazy-candidate.json`：展开前读取 0 次、展开后 1 次、再展开复用缓存，权限撤销移除正文，无浏览器异常。流程图稳定性另见 `docs/verification/knowledge-book-reliability-2026-10-12/preview-result.json`。
 
 ## 运维边界
 
@@ -65,4 +65,4 @@ SQLite、PostgreSQL 17 和 18 各有 20 份非空旧正文。全部执行显式�
 
 清理只删除不可达对象。回收站保留引用，永久删除释放引用；活跃上传依赖受保护，失败和迟到上传保留持久化键以便重试。操作记录不存正文，完成后只保留竞争产生的多余上传键，已安装依赖由对象与边表记录。没有新增历史 TTL。
 
-最终检查：SQLite 相关全套 126 项通过；补充接口及最终权限检查的知识册/存储 60 项通过。PostgreSQL 17/18 各 68 项相关全套通过，最终存储接口套件各 11 项通过。类型检查、Web 构建、文档链接及差异空白检查通过。完整记录为 `artifacts/knowledge-book-storage-plan-2026-10-12/verification.json`。心跳与对象清理使用独立调度，云请求不会占用心跳扫描。
+最终检查：SQLite 相关全套 126 项通过；补充接口及最终权限检查的知识册/存储 60 项通过。PostgreSQL 17/18 各 68 项相关全套通过，最终存储接口套件各 11 项通过。类型检查、Web 构建、文档链接及差异空白检查通过。完整记录为 `docs/verification/knowledge-book-storage-plan-2026-10-12/verification.json`。心跳与对象清理使用独立调度，云请求不会占用心跳扫描。

@@ -48,6 +48,8 @@ Serve the contents of `.cache/docs-site/` to publish elsewhere. Hash routing sup
 
 ## Assets and updates
 
+Reviewed verification summaries and documentation attachments are kept in [`docs/verification/`](verification/README.md), grouped by acceptance case or release. Reusable script inputs belong in `tests/fixtures/`. Generated logs, screenshots, reports and caches go in `artifacts/`, which is entirely ignored by Git; retaining new evidence requires no ignore-rule changes.
+
 The Docsify runtime, search plugin, light/dark styles, and MIT license are vendored under `docs/site/assets/vendor/docsify/`. `README.txt` records the version and verified upstream npm tarball integrity. These resources load from the documentation site itself. Mermaid diagrams lazily load the pinned Mermaid ESM version in `site.js`; they require access to that CDN.
 
 When adding a public page, create both languages, add the page to `navigation.json`, and run `pnpm docs:check`. Keep code examples and version requirements aligned. When updating a contract, follow the relevant repository skill and update its packaged references as required. Runtime assets and additional plugins require explicit version selection and browser verification.

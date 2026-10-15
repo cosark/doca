@@ -6,6 +6,7 @@ import { verifyCredentialKey } from "../services/plugin-credentials.js";
 import {
   bindPluginStorage,
   cleanupPluginObjects,
+  cleanupPluginDatabases,
 } from "../services/plugin-storage.js";
 import {
   pluginDatabaseToken,
@@ -398,13 +399,16 @@ export async function composeServerPlugins(
     let cleanupInFlight: Promise<void> | undefined;
     const cleanup = () => {
       if (cleanupInFlight) return cleanupInFlight;
-      cleanupInFlight = cleanupPluginObjects(runtime.db, manager.archiveStore)
-        .then((result) => {
-          if (result.failed)
-            runtime.api.log.warn(result, "Plugin object cleanup pending");
+      cleanupInFlight = Promise.all([
+        cleanupPluginObjects(runtime.db, manager.archiveStore),
+        cleanupPluginDatabases(runtime.db),
+      ])
+        .then(([objects, databases]) => {
+          if (objects.failed || databases.failed)
+            runtime.api.log.warn({ objects, databases }, "Plugin storage cleanup pending");
         })
         .catch((error) =>
-          runtime.api.log.error(error, "Plugin object cleanup failed"),
+          runtime.api.log.error(error, "Plugin storage cleanup failed"),
         )
         .finally(() => {
           cleanupInFlight = undefined;

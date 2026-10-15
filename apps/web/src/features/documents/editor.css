@@ -35,7 +35,7 @@
   flex: 1;
   background: #fff;
 }
-.editor-panel-toggle {
+.editor-panel-toggle.comment-control {
   position: sticky;
   top: 16px;
   float: right;
@@ -43,9 +43,12 @@
   z-index: 9;
   background: #fff;
   border: 1px solid #e4e7ed;
-  border-radius: 8px;
+  border-radius: 10px;
   box-shadow: 0 2px 6px #1f232908;
   gap: 4px;
+  min-width: 36px;
+  height: 36px;
+  padding: 0 10px;
 }
 .editor-panel-toggle small {
   font-size: 11px;
@@ -211,15 +214,7 @@
   font-weight: 400;
 }
 .content-comments > header > .icon {
-  display: inline-flex;
-  align-items: center;
-  justify-content: center;
-  flex: 0 0 28px;
-  width: 28px;
-  height: 28px;
-  padding: 0;
   margin: 0;
-  border-radius: 6px;
 }
 .content-comments > header > .icon > svg {
   display: block;
@@ -368,6 +363,7 @@
   position: absolute;
   width: 0 !important;
   border-left: 2px solid;
+  min-height: 14px;
 }
 .remote-caret > span {
   position: absolute;

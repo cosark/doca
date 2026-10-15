@@ -1,5 +1,7 @@
 # 插件安装与部署
 
+2026-10-14 工作区变更：[插件独立业务库](plugin-database-isolation.zh-CN.md)取代原同库 SQL 布局和私有表原子卸载描述。升级须在旧宿主正常卸载，再重装，不迁移业务数据；尚未发布或部署。
+
 [English](plugin-deployment.md)
 
 已确认的[托管存储规范](plugin-horizontal-scaling.zh-CN.md)要求 `doca.storage: "host"`，持久化归宿主。静态拒绝、托管 SQL 与内部对象已实现；托管凭证已在 SDK 源码 0.1.8 实现；临时工作区与集群业务任务排空仍待实现。插件不选择本地/远端后端，也不接收业务数据目录。
@@ -25,7 +27,7 @@ docker compose restart doca
 
 ## 已实现存储修订（2026-10-03，SDK 源码 0.1.8）
 
-`@smartdoca/plugin-sdk/storage` 已导出安装身份绑定的 `pluginDatabaseToken`（`storage.sql.v1`）和 `pluginObjectStorageToken`（`storage.objects.v1`）。关系库支持显式 version 1 结构声明、text/int32/双精度列、主键/唯一约束、结构化查询/写入/删除，以及回调只执行一次的事务。SDK 源码 0.1.8 另导出 `pluginCredentialToken`（`storage.credentials.v1`），提供服务端加密凭证 CRUD、元数据与修订号检查，见[凭证接口](plugin-credentials.md)。联表、外键、通用 SQL、upsert 和临时工作区尚未导出。当前 SDK 通过宿主编译的查询和宿主连接中的命名空间表隔离；独立 PostgreSQL 角色与进程隔离是更强的待实现边界。
+`@smartdoca/plugin-sdk/storage` 已导出安装身份绑定的 `pluginDatabaseToken`（`storage.sql.v1`）和 `pluginObjectStorageToken`（`storage.objects.v1`）。关系库支持显式 version 1 结构声明、text/int32/双精度列、主键/唯一约束、结构化查询/写入/删除，以及回调只执行一次的事务。SDK 源码 0.1.8 另导出 `pluginCredentialToken`（`storage.credentials.v1`），提供服务端加密凭证 CRUD、元数据与修订号检查，见[凭证接口](plugin-credentials.md)。联表、外键、通用 SQL、upsert 和临时工作区尚未导出。业务 SQL 使用宿主管理的每插件独立数据库：SQLite 独立文件，或显式配置的 PostgreSQL 独立库及受限角色。进程隔离仍未实现，见[存储配置与先卸载再升级约定](plugin-database-isolation.zh-CN.md)。
 
 逻辑库为 `plugin:<pluginId>`，用户文件归属及私有对象使用 `plugins/<pluginId>`，发行包使用 `host/plugin-releases/<sha256>.zip`。ZIP 字节进入环境变量配置的文件存储，共享数据库只保存 version 2 清单、归档引用和可信文件哈希索引。有效缓存无需重新下载 ZIP。全部实例由运维逐个重启。新宿主基线拒绝旧数据库/格式/SDK 包，原数据保留，不提供迁移或 fallback。详见[准确实现与限制](unified-storage-implementation.md)。
 
@@ -48,7 +50,7 @@ docker compose restart doca
 
 ## 升级、卸载与故障
 
-安装包的 `doca.storage` 必须为 `"host"`，缺失/其他值于导入代码前拒绝；已安装升级要求 `doca.dataVersion` 相同，并验证实际结构，不自动迁移。当前卸载先调用必需的业务清理钩子，成功后清结构标记；失败保持安装。钩子不能删除磁盘目录。托管私有状态清理由宿主负责，集群协调器尚未实现。禁用/停机不删持久数据；用户附件、文档载荷、其他业务引用与文件回执不自动删除。旧缓存和归档为运行实例保留，首版不自动回收。 当前私有库/对象卸载已在清单事务中执行 generation 隔离与持久化对象清理；业务任务集群排空仍未实现，所有实例需人工重启。
+安装包的 `doca.storage` 必须为 `"host"`，缺失/其他值于导入代码前拒绝；已安装升级要求 `doca.dataVersion` 相同，并验证实际结构，不自动迁移。当前卸载先调用必需的业务清理钩子，成功后清结构标记；失败保持安装。钩子不能删除磁盘目录。托管私有状态清理由宿主负责，集群协调器尚未实现。禁用/停机不删持久数据；用户附件、文档载荷、其他业务引用与文件回执不自动删除。旧缓存和归档为运行实例保留，首版不自动回收。 当前清单事务执行 generation 隔离并记录私有库/对象清理意图，业务表在提交后清理并支持重试；业务任务集群排空仍未实现，所有实例需人工重启。
 
 所有写操作检查清单修订号，避免多个管理员互相覆盖；操作记录进入安全审计。取消待应用变更会以响应实例的启动配置更新全站目标，并不会立即回滚其他实例。
 

@@ -160,7 +160,9 @@ const { t } = useI18n();
       >
         {action === "rename" ? (
           <label>
-            {resource.kind === "library"
+            {resource.knowledgeBook
+              ? t("books.name")
+              : resource.kind === "library"
               ? t("library.libraryName")
               : t("library.documentName")}
             <input

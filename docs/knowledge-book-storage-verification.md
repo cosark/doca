@@ -12,7 +12,7 @@ All structure/generation changes roll back on failure. Repeated/concurrent start
 
 The existing maintenance commands below remain optional if old generated outcomes must be preserved in a usable native format. Execute the upgrade before first startup; schema alignment changes the source generation. The historical verification below establishes that optional conversion, not automatic adaptation of leftover SQL JSON.
 
-Automatic alignment evidence: actual released 0.1.22 fixtures on SQLite/PostgreSQL 17/18 retained every row of 114 business tables and all 20 SQL bodies; new native objects remained readable after repeated/concurrent startup. PostgreSQL 17/18 each passed 91 regression cases, including rollback and strict legacy-body rejection. See [verification](../artifacts/book-schema-startup-2026-10-13/verification.json).
+Automatic alignment evidence: actual released 0.1.22 fixtures on SQLite/PostgreSQL 17/18 retained every row of 114 business tables and all 20 SQL bodies; new native objects remained readable after repeated/concurrent startup. PostgreSQL 17/18 each passed 91 regression cases, including rollback and strict legacy-body rejection. See [verification](verification/book-schema-startup-2026-10-13/verification.json).
 
 ## Maintenance commands
 
@@ -42,7 +42,7 @@ Interrupted rollback resumes with its original manifest. After all JSON is resto
 
 The actual source image was `smartdoca/doca:0.1.22`, image ID `sha256:a5316eb01bf25b0d89801139de85d34a35528be376699c4981ab8a09fd14f04c`. Its real runner generated published, failed and awaiting-publication synthetic tasks. No production database or user document was accessed.
 
-Each SQLite/PostgreSQL 17/PostgreSQL 18 fixture contained 20 nonempty original bodies. Explicit upgrade, two ordinary startups and explicit rollback verified all 20 original JSON byte sequences and hashes, preserving states, errors, configuration and human tasks. Records are in `artifacts/knowledge-book-storage-plan-2026-10-12/actual-roundtrip*.json`.
+Each SQLite/PostgreSQL 17/PostgreSQL 18 fixture contained 20 nonempty original bodies. Explicit upgrade, two ordinary startups and explicit rollback verified all 20 original JSON byte sequences and hashes, preserving states, errors, configuration and human tasks. Records are in `docs/verification/knowledge-book-storage-plan-2026-10-12/actual-roundtrip*.json`.
 
 | Metric | SQLite | PostgreSQL 17/18 |
 | --- | ---: | ---: |
@@ -57,7 +57,7 @@ Metadata figures serialize objects, references, operations and dependency edges;
 
 Regression cases cover bounded chunks, escaping/Unicode, within-book sharing and cross-book isolation, competing uploads, interruption/resume, corruption, unknown-format rejection without partial DDL, rollback of newer writes, SQL-only summaries, cache permission revocation, trash/purge and late-upload cleanup. The CI PostgreSQL matrix includes knowledge-book and payload tests.
 
-Browser evidence in `lazy-candidate.json` shows zero eager body reads, one read on expansion, reuse on reopening, body removal after revocation and no browser errors. Mermaid stability is recorded separately in `artifacts/knowledge-book-reliability-2026-10-12/preview-result.json`.
+Browser evidence in `lazy-candidate.json` shows zero eager body reads, one read on expansion, reuse on reopening, body removal after revocation and no browser errors. Mermaid stability is recorded separately in `docs/verification/knowledge-book-reliability-2026-10-12/preview-result.json`.
 
 ## Operational boundaries
 
@@ -65,4 +65,4 @@ The host private local/S3 configuration is reused without public body URLs or mo
 
 Cleanup deletes only unreachable objects. Trash retains references; permanent purge releases them. Live upload dependencies are protected and failed/late uploads retain durable keys for retries. Completed journals keep only losing concurrent physical uploads, while installed dependencies remain in objects/edges. No historical TTL is added.
 
-Final checks: the 126-case SQLite relevant suite passed, followed by the 60-case books/payload suite after final endpoint/permission checks. Both PostgreSQL 17/18 relevant 68-case suites passed, and final 11-case payload suites passed on both engines. Type checking, Web build, documentation links and diff whitespace checks passed. See `artifacts/knowledge-book-storage-plan-2026-10-12/verification.json`. Heartbeat and object cleanup use independent scheduling so cloud requests do not occupy heartbeat reconciliation.
+Final checks: the 126-case SQLite relevant suite passed, followed by the 60-case books/payload suite after final endpoint/permission checks. Both PostgreSQL 17/18 relevant 68-case suites passed, and final 11-case payload suites passed on both engines. Type checking, Web build, documentation links and diff whitespace checks passed. See `docs/verification/knowledge-book-storage-plan-2026-10-12/verification.json`. Heartbeat and object cleanup use independent scheduling so cloud requests do not occupy heartbeat reconciliation.

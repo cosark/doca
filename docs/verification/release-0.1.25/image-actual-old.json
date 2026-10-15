@@ -1,0 +1,16 @@
+{
+  "sourceImage": "smartdoca/doca:0.1.22",
+  "database": "sqlite",
+  "retainedSqlBodies": 20,
+  "businessTablesPreserved": 114,
+  "businessRowsByteExact": true,
+  "automaticConversion": false,
+  "automaticCleanup": false,
+  "repeatedConcurrentStartup": true,
+  "newNativeObjectReadable": true,
+  "targetGeneration": "doca-2026-10-12-book-payload-storage-v1",
+  "businessSnapshotSha256": "aa340931814344c3adf2aa5b4fb824c4b9aa29d164755ad0ce0bb1d47f9ea597",
+  "targetImage": "smartdoca/doca:0.1.25-candidate",
+  "network": "none",
+  "runtimeSourceFiles": 415
+}
