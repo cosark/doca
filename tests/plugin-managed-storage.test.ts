@@ -32,6 +32,7 @@ import {
 } from "@server/services/plugin-storage.js";
 import {
   pluginDatabases,
+  pluginDatabaseTables,
   configurePluginDatabases,
   pluginDatabaseConfig,
 } from "@server/services/plugin-databases.js";
@@ -405,7 +406,7 @@ it("shares relational data between independent database connections", async () =
   ]);
 });
 
-it("keeps readable business tables outside the core and outside every other plugin database", async () => {
+it("keeps business tables outside the core and isolates each plugin within the shared database", async () => {
   const { db, a, b } = await fixture();
   const original = (await currentSchemaTables(db)).map((t) => t.name);
   await a.database.defineSchema(schema);
@@ -414,7 +415,7 @@ it("keeps readable business tables outside the core and outside every other plug
     right = await pluginDatabases(db).open("example.a.b", true);
   expect(left).not.toBe(right);
   expect((await currentSchemaTables(db)).map((t) => t.name)).toEqual(original);
-  expect((await currentSchemaTables(left)).map((t) => t.name).sort()).toEqual([
+  expect((await pluginDatabaseTables(left)).map((t) => t.name).sort()).toEqual([
     "_doca_plugin_store",
     "notes",
   ]);
@@ -430,7 +431,12 @@ it("keeps readable business tables outside the core and outside every other plug
   await createSchema(db);
 });
 
-it.each([null, JSON.stringify(schema)])(
+it.each([
+  null,
+  JSON.stringify(schema),
+  JSON.stringify({ storageVersion: 2, schema: null }),
+  JSON.stringify({ storageVersion: 2, schema }),
+])(
   "rejects old installation declarations without resetting them: %s",
   async (definition) => {
     const { db, files } = await fixture();
@@ -630,7 +636,7 @@ it("rejects altered physical column types and nullability without recreating dat
   await expect(a.database.defineSchema(schema)).rejects.toThrow(
     "structure is incomplete",
   );
-  const changed = (await currentSchemaTables(business)).find(
+  const changed = (await pluginDatabaseTables(business)).find(
     (t) => t.name === "notes",
   )!;
   expect(

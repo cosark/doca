@@ -38,7 +38,7 @@ The Docker example already supplies the required file-store values. For a fresh 
 
 ## Start
 
-0.1.25 includes the approved independent plugin database change. If external business plugins are installed, normally uninstall all of them on the old host before stopping and updating it. Old private plugin records, credentials and objects are discarded; reinstall and reconfigure afterwards. Core data remains, with no migration or automatic old-table deletion. See [0.1.25 upgrade requirements](releases/0.1.25.md) and [independent plugin databases](plugin-database-isolation.md).
+0.1.26 changes plugin storage to one [shared business database](plugin-database-isolation.md), separate from core. On 0.1.25, normally uninstall every external business plugin before stopping all instances. Private business records, credentials and objects are discarded without migration; core data and ordinary files remain. Remove obsolete per-plugin settings, configure one PostgreSQL database/account once (SQLite is automatic), then reinstall and reconfigure plugins. See [0.1.26 upgrade requirements](releases/0.1.26.md).
 
 Stop all old hosts and back up the database before updating. Released 0.1.22 schema aligns automatically on 0.1.25 startup with all existing business rows retained. No manual book command is required. Retained SQL book outcomes are not adapted to the native object format; handle residual records manually as needed. To preserve them as usable outcomes, run the existing optional [lossless conversion](knowledge-book-storage-verification.md) before first startup. Earlier supported generations first complete the history upgrade below. Update all host and web instances together.
 

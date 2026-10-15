@@ -32,7 +32,7 @@ export const pluginDatabaseSchemaParser = z
   .strict();
 export const pluginStorageDeclarationParser = z
   .object({
-    storageVersion: z.literal(2),
+    storageVersion: z.literal(3),
     schema: pluginDatabaseSchemaParser.nullable(),
   })
   .strict();

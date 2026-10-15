@@ -19,7 +19,7 @@ import { storageRuntime } from "@server/adapters/storage.js";
 // DOCA_TEST_POSTGRES is a dedicated test server, never a deployment database.
 const exec = promisify(execFile),
   driver = process.argv[2] ?? "sqlite",
-  image = process.argv[3] ?? "smartdoca/doca:0.1.24";
+  image = process.argv[3] ?? "smartdoca/doca:0.1.25";
 if (!["sqlite", "postgres"].includes(driver))
   throw new Error("Expected sqlite or postgres");
 if (driver === "postgres" && !process.env.DOCA_TEST_POSTGRES)
@@ -74,10 +74,12 @@ const root = await mkdtemp(join(tmpdir(), "doca-plugin-upgrade-")),
 let admin: Pool | undefined,
   coreName: string | undefined,
   businessName: string | undefined,
+  oldBusinessName: string | undefined,
   role: string | undefined,
   main: DatabaseConfig;
 const owned: string[] = [];
 const oldSource = `
+import assert from 'node:assert/strict';
 import { readFile, writeFile } from 'node:fs/promises';
 import { openDatabase } from '@db/index.js';
 import { currentSchemaTables } from '@db/introspection.js';
@@ -86,9 +88,12 @@ import { createContent } from '@core/workflows/resources.js';
 import { createServerFilesCapability } from '@server/plugins/files-capability-adapter.js';
 import { PluginManager } from '@server/plugins/manager.js';
 import { bindPluginStorage } from '@server/services/plugin-storage.js';
+import { pluginDatabases } from '@server/services/plugin-databases.js';
+import { createCredentialCipher } from '@server/services/credential-cipher.js';
 import { createHostFileStore } from '@server/services/host-file-store.js';
 import { storageRuntime } from '@server/adapters/storage.js';
 const db=await openDatabase(process.env.DOCA_DATABASE==='postgres'?{driver:'postgres',url:process.env.DOCA_DATABASE_URL}:{driver:'sqlite',path:'/fixture/core.db'});
+const encryption=createCredentialCipher(process.env.DOCA_CREDENTIAL_MASTER_KEY);
 const runtime=storageRuntime(), files=createHostFileStore(runtime), manager=new PluginManager('/fixture/plugins',[],db,undefined,files);
 try {
  if(process.env.DOCA_FIXTURE_ACTION==='create') {
@@ -96,21 +101,32 @@ try {
   await createContent(db).create(user,{kind:'document',format:'markdown',title:'Retained core document',markdown:'# Retained core document\\nSynthetic retained text'});
   await createServerFilesCapability(db,runtime).folders.create({principalId:user.id},{name:'Retained user folder',parentId:null});
   await manager.install(new Uint8Array(await readFile('/fixture/plugin.zip')),'local');
-  const storage=await bindPluginStorage(db,files,'${id}','1');
+  const storage=await bindPluginStorage(db,files,'${id}','1',encryption);
   await storage.database.defineSchema(${JSON.stringify(schema)});
   await storage.database.insert('notes',[{id:'old',text:'discarded business data'}]);
-  const tables=await currentSchemaTables(db);
-  if(!tables.some(t=>/^plugin_[a-f0-9]{56}$/.test(t.name))) throw Error('Released host did not create an old business table');
+  const business=await pluginDatabases(db).open('${id}',true);
+  if(!(await currentSchemaTables(business)).some(t=>t.name==='notes')) throw Error('Released host did not create an independent business table');
+  await storage.credentials.create({value:'discarded synthetic credential'});
+  await storage.objects.put({data:new TextEncoder().encode('discarded synthetic object'),mime:'text/plain'});
+  await writeFile('/fixture/old-namespace.json',JSON.stringify(await db.selectFrom('plugin_storage_namespaces').selectAll().execute()));
   const snapshot={};
   for(const name of ['users','resources','document_states','grants','settings','file_folders']) snapshot[name]=await db.selectFrom(name).selectAll().execute();
   await writeFile('/fixture/core-snapshot.json',JSON.stringify(snapshot));
-  console.log('Released 0.1.24 created retained core data and old plugin business rows');
+  console.log('Released 0.1.25 created retained core data and independent plugin business rows');
+ } else if(process.env.DOCA_FIXTURE_ACTION==='verify') {
+  const snapshot=JSON.parse(await readFile('/fixture/core-snapshot.json','utf8'));
+  for(const [name,rows] of Object.entries(snapshot)) assert.deepEqual(await db.selectFrom(name).selectAll().execute(),rows);
+  assert.deepEqual(await db.selectFrom('plugin_storage_namespaces').selectAll().execute(),JSON.parse(await readFile('/fixture/old-namespace.json','utf8')));
+  console.log('Rejected startup preserved the released core rows and old installation declaration');
  } else {
   await manager.change('${id}','remove');
-  if((await currentSchemaTables(db)).some(t=>/^plugin_[a-f0-9]{56}$/.test(t.name))) throw Error('Old normal uninstall left business tables');
-  console.log('Released 0.1.24 normal uninstall removed the old private business tables');
+  const business=await pluginDatabases(db).open('${id}',false);
+  if((await currentSchemaTables(business)).length) throw Error('Old normal uninstall left business tables');
+  for(const name of ['plugin_credentials','plugin_private_objects','plugin_object_garbage'])
+    if((await db.selectFrom(name).selectAll().execute()).length) throw Error('Old normal uninstall left private data: '+name);
+  console.log('Released 0.1.25 normal uninstall removed private business tables, credentials and objects');
  }
-} finally {await db.destroy()}
+} finally {await db.destroy();encryption.dispose()}
 `;
 try {
   await writeFile(join(root, "old-fixture.ts"), oldSource);
@@ -129,18 +145,29 @@ try {
     admin = new Pool({ connectionString: url.href, max: 1 });
     coreName = "doca_upgrade_" + randomUUID().replaceAll("-", "");
     businessName = "doca_upgrade_" + randomUUID().replaceAll("-", "");
+    oldBusinessName = "doca_upgrade_" + randomUUID().replaceAll("-", "");
     role = businessName + "_role";
     await admin.query(`create database ${coreName}`);
     owned.push(coreName);
     await admin.query(`create role ${role} login password '${key}'`);
     await admin.query(`create database ${businessName} owner ${role}`);
     owned.push(businessName);
+    await admin.query(`create database ${oldBusinessName} owner ${role}`);
+    owned.push(oldBusinessName);
     url.pathname = "/" + coreName;
     main = { driver: "postgres", url: url.href };
     const containerUrl = new URL(url);
     if (["127.0.0.1", "localhost"].includes(containerUrl.hostname))
       containerUrl.hostname = "host.docker.internal";
     env.DOCA_DATABASE_URL = containerUrl.href;
+    const oldUrl = new URL(containerUrl);
+    oldUrl.pathname = "/" + oldBusinessName;
+    oldUrl.username = role;
+    oldUrl.password = key;
+    env.DOCA_PLUGIN_DATABASES_JSON = JSON.stringify({
+      version: 1,
+      databases: { [id]: { url: oldUrl.href, poolMax: 2 } },
+    });
   } else main = { driver: "sqlite", path: join(root, "core.db") };
   await writeFile(
     join(root, "old.env"),
@@ -149,7 +176,7 @@ try {
       .join("\n"),
     { mode: 0o600 },
   );
-  const old = async (action: "create" | "uninstall") => {
+  const old = async (action: "create" | "verify" | "uninstall") => {
     const result = await exec(
       "docker",
       [
@@ -178,8 +205,9 @@ try {
   await old("create");
   await assert.rejects(openDatabase(main), /schema changes require review/);
   console.log(
-    "Working tree rejected residual old business tables without deleting them",
+    "Working tree rejected residual 0.1.25 installations without changing their declarations or core data",
   );
+  await old("verify");
   await old("uninstall");
   const db = await openDatabase(main);
   try {
@@ -206,12 +234,13 @@ try {
       url.password = key;
       configurePluginDatabases(db, {
         driver: "postgres",
-        databases: { [id]: { url: url.href, poolMax: 2 } },
+        url: url.href,
+        poolMax: 2,
       });
     } else
       configurePluginDatabases(db, {
         driver: "sqlite",
-        directory: join(root, "plugin-databases"),
+        path: join(root, "shared-plugins.db"),
       });
     const runtime = storageRuntime({
         DOCA_FILE_STORE_ID: "local",
@@ -233,7 +262,7 @@ try {
     await storage.database.defineSchema(schema);
     assert.deepEqual(await storage.database.select("notes"), []);
     await storage.database.insert("notes", [
-      { id: "new", text: "new independent business data" },
+      { id: "new", text: "new shared business data" },
     ]);
     assert.equal((await storage.database.select("notes")).length, 1);
     assert(
