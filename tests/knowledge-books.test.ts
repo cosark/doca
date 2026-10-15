@@ -13,7 +13,7 @@ import {
 } from "@server/services/ai/continuations.js";
 import { afterEach, beforeEach, expect, it } from "vitest";
 import { randomUUID } from "node:crypto";
-import { openTestDatabase } from "./database.js";
+import { openTestDatabase, testTableColumns } from "./database.js";
 import type { DB } from "@db/index.js";
 import { createUser, type Actor } from "@core/modules/identity/passwords.js";
 import { createContent } from "@core/workflows/resources.js";
@@ -866,7 +866,7 @@ it("retains native grouped source subscriptions without recreating curation rows
   expect((await content.detail(owner, first.id)).resource.title).toBe(
     initialTitle,
   );
-  const tables = await db.introspection.getTables();
+  const tables = await testTableColumns(db);
   expect(tables.some((table) => table.name === "knowledge_entries")).toBe(
     false,
   );

@@ -1,12 +1,47 @@
 import { testBookPayloadStore } from "./book-payload-store.js";
 import { Pool } from "pg";
 import { randomUUID } from "node:crypto";
-import { openDatabase, type DatabaseConfig } from "@db/connection.js";
+import { sql } from "kysely";
+import {
+  databaseConfig,
+  openDatabase,
+  type DatabaseConfig,
+} from "@db/connection.js";
 import {
   configurePluginDatabases,
   pluginDatabases,
   pluginDatabaseConfig,
 } from "@server/services/plugin-databases.js";
+
+/** Inspect the fixture's own columns without resolving other fixtures' relations. */
+export async function testTableColumns(
+  db: Awaited<ReturnType<typeof openDatabase>>,
+): Promise<{ name: string; columns: { name: string }[] }[]> {
+  if (databaseConfig(db).driver === "sqlite")
+    return db.introspection.getTables();
+  // Kysely's global PostgreSQL introspector calls pg_get_serial_sequence on
+  // every visible schema. Parallel fixtures can drop those unrelated schemas
+  // during that query. These assertions only need this fixture's names.
+  const { rows } = await sql<{ table_name: string; column_name: string }>`
+    select table_name, column_name
+    from information_schema.columns
+    where table_schema = current_schema()
+    order by table_name, ordinal_position
+  `.execute(db);
+  const tables = new Map<
+    string,
+    { name: string; columns: { name: string }[] }
+  >();
+  for (const row of rows) {
+    let table = tables.get(row.table_name);
+    if (!table) {
+      table = { name: row.table_name, columns: [] };
+      tables.set(row.table_name, table);
+    }
+    table.columns.push({ name: row.column_name });
+  }
+  return [...tables.values()];
+}
 
 /** Dedicated databases and restricted roles for plugin fixtures, never user databases. */
 function testPluginDatabases(
