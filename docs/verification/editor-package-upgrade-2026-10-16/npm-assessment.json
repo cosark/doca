@@ -1,0 +1,37 @@
+{
+  "hostPrivate": true,
+  "publishRequired": false,
+  "reason": "Public workspace package source and manifests are unchanged from v0.1.26; editor packages were already published upstream.",
+  "publicPackages": [
+    {
+      "name": "@smartdoca/knowledge-capability",
+      "version": "0.1.1",
+      "path": "packages/knowledge-capability/package.json"
+    },
+    {
+      "name": "@smartdoca/files-capability",
+      "version": "0.1.1",
+      "path": "packages/files-capability/package.json"
+    },
+    {
+      "name": "@smartdoca/plugin-sdk",
+      "version": "0.1.11",
+      "path": "packages/plugin-sdk/package.json"
+    },
+    {
+      "name": "@smartdoca/search-host",
+      "version": "0.1.1",
+      "path": "packages/search-host/package.json"
+    },
+    {
+      "name": "@smartdoca/plugin-contracts",
+      "version": "0.1.7",
+      "path": "packages/plugin-contracts/package.json"
+    },
+    {
+      "name": "@smartdoca/web-plugin-registry",
+      "version": "0.1.3",
+      "path": "packages/web-plugin-registry/package.json"
+    }
+  ]
+}

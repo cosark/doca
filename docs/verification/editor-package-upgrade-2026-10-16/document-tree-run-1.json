@@ -1,0 +1,17 @@
+{
+  "result": "passed",
+  "checks": [
+    "clicking a parent document highlights exactly its row",
+    "nested document stays highlighted after the pointer leaves",
+    "refresh expands ancestors and restores the current document highlight",
+    "switching document types moves the highlight to the spreadsheet only",
+    "browser back restores the previous document highlight",
+    "hover keeps the selected background without a vertical marker",
+    "no uncaught browser errors"
+  ],
+  "errors": [],
+  "screenshots": [
+    "selected-nested.png",
+    "selected-sidebar-200.png"
+  ]
+}

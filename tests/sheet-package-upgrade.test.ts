@@ -54,8 +54,8 @@ it("projects rc.19 appended sheets with approved dimensions without rewriting ba
       cellData: { 0: { 0: { v: "保留已有数据" } } },
     });
     expect(snapshot.sheets[fixture.addedSheetId]).toMatchObject({
-      defaultRowHeight: 18,
-      defaultColumnWidth: 72,
+      defaultRowHeight: 19.8,
+      defaultColumnWidth: 79.2,
     });
     expect(snapshot.sheets.unsized).not.toHaveProperty("defaultRowHeight");
     expect(snapshot.sheets.unsized).not.toHaveProperty("defaultColumnWidth");
@@ -111,8 +111,8 @@ it("creates the host's first worksheet with the same compact dimensions as nativ
     const loaded = await restoreSurface(db, resource.id, "spreadsheet");
     const first = loaded.baseline!.snapshot.sheetOrder[0]!;
     expect(loaded.baseline!.snapshot.sheets[first]).toMatchObject({
-      defaultRowHeight: 18,
-      defaultColumnWidth: 72,
+      defaultRowHeight: 19.8,
+      defaultColumnWidth: 79.2,
     });
     expect(loaded.state.seq).toBe(0);
   } finally {

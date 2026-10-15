@@ -50,7 +50,9 @@ const web = await createServer({
     proxy: { "/api": { target: `http://127.0.0.1:${address.port}`, ws: true } },
   },
 });
-const output = resolve("artifacts/editor-package-upgrade-2026-10-14");
+const output = resolve(
+  process.env.DOCA_QA_OUTPUT ?? "artifacts/editor-package-upgrade-2026-10-16",
+);
 await mkdir(output, { recursive: true });
 const checks: string[] = [],
   errors: string[] = [];
@@ -161,13 +163,11 @@ try {
   await node.click();
   const nodeId = await node.getAttribute("data-cell-id");
   assert(nodeId);
+  await dialog.getByRole("tab", { name: "排列", exact: true }).click();
   await dialog.getByLabel("旋转角度（°）", { exact: true }).fill("30");
-  await dialog.getByLabel("旋转角度（°）", { exact: true }).press("Enter");
+  await dialog.getByLabel("旋转角度（°）", { exact: true }).press("Control+s");
   await a.page.screenshot({ path: join(output, "rotation-editor.png") });
-  await dialog
-    .getByRole("button", { name: "保存并返回文档", exact: true })
-    .click();
-  console.log("Submitted native diagram rotation");
+  console.log("Saved a focused native rotation draft with Control+S");
   await a.page.bringToFront();
   await dialog.waitFor({ state: "hidden" });
   await until(
@@ -191,6 +191,7 @@ try {
   await peerDialog
     .locator(`.sk-x6-canvas .x6-node[data-cell-id="${nodeId}"]`)
     .click();
+  await peerDialog.getByRole("tab", { name: "排列", exact: true }).click();
   assert.equal(
     await peerDialog.getByLabel("旋转角度（°）", { exact: true }).inputValue(),
     "30",
@@ -214,15 +215,40 @@ try {
   await dialog
     .locator(`.sk-x6-canvas .x6-node[data-cell-id="${nodeId}"]`)
     .click();
+  await dialog.getByRole("tab", { name: "排列", exact: true }).click();
   assert.equal(
     await dialog.getByLabel("旋转角度（°）", { exact: true }).inputValue(),
     "30",
   );
-  await dialog
-    .getByRole("button", { name: "关闭图示编辑器", exact: true })
-    .click();
+  const paperWidth = await dialog
+    .locator(".sk-draw-paper")
+    .evaluate((el) => el.getBoundingClientRect().width);
+  await dialog.getByLabel("左", { exact: true }).fill("2000");
+  await dialog.getByLabel("左", { exact: true }).press("Enter");
+  await until(
+    async () =>
+      (await dialog
+        .locator(".sk-draw-paper")
+        .evaluate((el) => el.getBoundingClientRect().width)) > paperWidth,
+    "native paper expands with moved node",
+  );
+  await dialog.getByLabel("旋转角度（°）", { exact: true }).fill("45");
+  await dialog.getByLabel("旋转角度（°）", { exact: true }).press("Meta+s");
   await dialog.waitFor({ state: "detached" });
-  pass("rotation remains native and editable after reload");
+  await until(
+    async () =>
+      (await preview(rich.id)).value.some(
+        (block: any) =>
+          block.type === "flowchart" &&
+          block.nodes.some(
+            (n: any) => n.id === nodeId && n.angle === 45 && n.x === 2000,
+          ),
+      ),
+    "Meta+S commits the focused draft",
+  );
+  pass(
+    "reload retains rotation; native paper expands and Meta+S commits focused drafts",
+  );
 
   await editor.locator(".sk-block-paragraph").last().click();
   await a.page.keyboard.press("End");
@@ -278,8 +304,8 @@ try {
   await corner.waitFor();
   const original = await preview(sheet.id),
     first = original.value.sheetOrder[0];
-  assert.equal(original.value.sheets[first].defaultRowHeight, 18);
-  assert.equal(original.value.sheets[first].defaultColumnWidth, 72);
+  assert.equal(original.value.sheets[first].defaultRowHeight, 19.8);
+  assert.equal(original.value.sheets[first].defaultColumnWidth, 79.2);
   const box = await corner.boundingBox();
   assert(box);
   await s.page.mouse.dblclick(box.x + box.width + 36, box.y + box.height + 9);
@@ -318,7 +344,7 @@ try {
   await s.page.reload();
   await corner.waitFor();
   assert.deepEqual((await preview(sheet.id)).value, sheetBefore.value);
-  pass("new 18/72 dimensions and edited cells survive host reload");
+  pass("new 19.8/79.2 dimensions and edited cells survive host reload");
   const richBefore = await preview(rich.id),
     idleSheet = await preview(sheet.id);
   const counts = [a.updates.length, peer.updates.length, s.updates.length];

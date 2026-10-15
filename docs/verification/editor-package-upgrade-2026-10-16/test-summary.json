@@ -1,0 +1,39 @@
+{
+  "result": "passed",
+  "version": "0.1.27",
+  "unitIntegrationTests": {
+    "passed": 2883,
+    "skipped": 8,
+    "filesPassed": 280
+  },
+  "postgres17": {
+    "passed": 199
+  },
+  "postgres18": {
+    "passed": 199
+  },
+  "released026RetainedDataUpgrade": [
+    "sqlite",
+    "postgres17",
+    "postgres18"
+  ],
+  "browser": {
+    "editorUpgrade": 6,
+    "editorInteractions": 29,
+    "sheetHyperlinks": 8,
+    "documentTree": {
+      "consecutiveRuns": 3,
+      "checksPerRun": 7
+    },
+    "idleSecondsEach": 60
+  },
+  "upstreamSlateFocusedTests": 42,
+  "typecheck": "passed",
+  "webBuild": "passed",
+  "docs": "68 bilingual pages verified and built",
+  "notes": [
+    "PostgreSQL 18 first matrix run timed out in an unrelated knowledge-book pipeline case under concurrent full-test/build load; isolated rerun passed all 199 tests.",
+    "First interaction run overlapped a CSS HMR update and timed out waiting for a presence caret; clean rerun passed all 29 checks.",
+    "Docker build registry metadata EOF retried successfully."
+  ]
+}

@@ -1,0 +1,16 @@
+{
+  "result": "passed",
+  "sheetVersion": "0.2.2",
+  "checks": [
+    "cancel closes the hyperlink dialog without a content write or peer echo",
+    "close closes the hyperlink dialog without a content write or peer echo",
+    "escape closes the hyperlink dialog without a content write or peer echo",
+    "outside closes the hyperlink dialog without a content write or peer echo",
+    "confirmed hyperlink saves through the host durable ACK without remote echo",
+    "hyperlink insertion supports native undo and redo",
+    "saved hyperlink survives host reload",
+    "readonly, selection, resize and 60 seconds idle produce zero content updates"
+  ],
+  "errors": [],
+  "idleSeconds": 60
+}

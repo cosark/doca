@@ -518,6 +518,7 @@ const fields: Record<string, string[]> = {
     "aspectRatio",
     "nodes",
     "edges",
+    "canvasSettings",
     "contentWidth",
     "contentHeight",
     "previewSvg",
@@ -533,6 +534,58 @@ const fields: Record<string, string[]> = {
     "previewVersion",
   ],
 };
+const diagramTextStyle = {
+  fontFamily: z.string().optional(),
+  bold: z.boolean().optional(),
+  italic: z.boolean().optional(),
+  underline: z.boolean().optional(),
+};
+const diagramNodeStyle = z.object({
+  ...diagramTextStyle,
+  aspectRatioLocked: z.boolean().optional(),
+  rounded: z.boolean().optional(),
+  shadow: z.boolean().optional(),
+  textAlign: z.enum(["left", "center", "right"]).optional(),
+});
+const diagramMarker = z.enum([
+  "none",
+  "classic",
+  "block",
+  "open",
+  "diamond",
+  "circle",
+]);
+const diagramEdgeStyle = z.object({
+  ...diagramTextStyle,
+  textColor: z.string().optional(),
+  parentId: id.optional(),
+  lineJoin: z.enum(["miter", "round", "bevel"]).optional(),
+  lineJump: z.enum(["none", "arc", "gap", "cubic"]).optional(),
+  jumpSize: z.number().nonnegative().optional(),
+  arrowSize: z.number().nonnegative().optional(),
+  sourceArrowSize: z.number().nonnegative().optional(),
+  targetArrowSize: z.number().nonnegative().optional(),
+  sourceOffset: z.number().optional(),
+  targetOffset: z.number().optional(),
+  sourceArrow: diagramMarker.optional(),
+  targetArrow: diagramMarker.optional(),
+  labelPosition: z.number().optional(),
+});
+const diagramCanvasSettings = z.strictObject({
+  view: z
+    .strictObject({ zoom: z.number().positive(), x: z.number(), y: z.number() })
+    .optional(),
+  grid: z.boolean().optional(),
+  gridSize: z.number().positive().optional(),
+  pageView: z.boolean().optional(),
+  paper: z.enum(["a4", "a3", "letter"]).optional(),
+  landscape: z.boolean().optional(),
+  backgroundColor: z.string().optional(),
+  connectionArrows: z.boolean().optional(),
+  connectionPoints: z.boolean().optional(),
+  guides: z.boolean().optional(),
+  minimap: z.boolean().optional(),
+});
 const assert = (ok: unknown, message: string) => {
   if (!ok) fail(400, message);
 };
@@ -618,13 +671,22 @@ export function validateRichNode(
       Array.isArray(node.nodes) && Array.isArray(node.edges),
       "流程图必须提供 nodes 和 edges",
     );
+    assert(
+      node.canvasSettings === undefined ||
+        diagramCanvasSettings.safeParse(node.canvasSettings).success,
+      "流程图 canvasSettings 必须使用原生画布设置",
+    );
     const shapes = new Set(
-      "circle ellipse triangle hexagon pentagon octagon star cross cloud server browser swimlane rectangle block-arrow process decision terminator database document multiple-documents data subprocess manual-input preparation delay display storage connector off-page-connector merge card paper-tape actor use-case class object interface component package state activity lifeline boundary control entity group note text mind-topic".split(
+      "cube chevron trapezoid callout folder crescent circle ellipse triangle hexagon pentagon octagon star cross cloud server browser swimlane rectangle block-arrow process decision terminator database document multiple-documents data subprocess manual-input preparation delay display storage connector off-page-connector merge card paper-tape actor use-case class object interface component package state activity lifeline boundary control entity group note text mind-topic".split(
         " ",
       ),
     );
     const nodeIds = new Set<string>();
     for (const n of node.nodes) {
+      assert(
+        diagramNodeStyle.safeParse(n).success,
+        "流程图节点样式必须使用原生字段值",
+      );
       assert(
         n &&
           typeof n.id === "string" &&
@@ -710,6 +772,10 @@ export function validateRichNode(
       );
     };
     for (const e of node.edges) {
+      assert(
+        diagramEdgeStyle.safeParse(e).success,
+        "流程图连线样式必须使用原生字段值",
+      );
       assert(
         e &&
           typeof e.id === "string" &&

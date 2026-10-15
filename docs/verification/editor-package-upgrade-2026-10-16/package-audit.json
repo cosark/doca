@@ -1,0 +1,79 @@
+{
+  "sheet": {
+    "from": "0.2.2",
+    "to": "0.2.3",
+    "integrity": "sha512-zroUR4xwX95I4YDorc23i4cATjMlCfZsVkOA+IDAkgscaRHGqPQUpI/cDKwkMpsvkyzxzDmL4GOsIOKzmzC6KQ==",
+    "exportsUnchanged": true,
+    "dependenciesUnchanged": true,
+    "peersUnchanged": true,
+    "criticalEntries": {
+      "dist/model.cjs": "changed",
+      "dist/model.d.ts": "unchanged",
+      "dist/model.js": "changed",
+      "dist/xlsx.cjs": "unchanged",
+      "dist/xlsx.d.ts": "unchanged",
+      "dist/xlsx.js": "unchanged",
+      "dist/yjs.cjs": "changed",
+      "dist/yjs.d.ts": "unchanged",
+      "dist/yjs.js": "changed"
+    },
+    "changedDeclarations": [],
+    "changedFiles": [
+      "dist/index.cjs",
+      "dist/index.cjs.map",
+      "dist/index.js",
+      "dist/index.js.map",
+      "dist/model.cjs",
+      "dist/model.cjs.map",
+      "dist/model.js",
+      "dist/model.js.map",
+      "dist/yjs.cjs",
+      "dist/yjs.cjs.map",
+      "dist/yjs.js",
+      "dist/yjs.js.map",
+      "package.json"
+    ]
+  },
+  "slate": {
+    "from": "0.4.15",
+    "to": "0.4.18",
+    "integrity": "sha512-uJflgYI96gxWTmCCeWZVaJCHYwxQEULBilQ3FyQZlKsySBhDaFjsgblobQCQcjQoGrBMYJXy3+V02VRsv5rmjw==",
+    "exportsUnchanged": true,
+    "dependenciesUnchanged": true,
+    "peersUnchanged": true,
+    "criticalEntries": {
+      "dist/codec.cjs": "unchanged",
+      "dist/codec.d.ts": "unchanged",
+      "dist/codec.js": "unchanged",
+      "dist/conversion.cjs": "unchanged",
+      "dist/conversion.js": "unchanged",
+      "dist/headless.cjs": "unchanged",
+      "dist/headless.d.ts": "unchanged",
+      "dist/headless.js": "unchanged",
+      "dist/yjs.cjs": "unchanged",
+      "dist/yjs.d.ts": "unchanged",
+      "dist/yjs.js": "unchanged"
+    },
+    "changedDeclarations": [
+      "dist/components/DiagramBlock.d.ts",
+      "dist/types.d.ts"
+    ],
+    "changedFiles": [
+      "dist/components/DiagramBlock.d.ts",
+      "dist/components/DiagramBlock.d.ts.map",
+      "dist/components/ElementRenderer.d.ts.map",
+      "dist/components/FloatingToolbar.d.ts.map",
+      "dist/diagramShapes.d.ts.map",
+      "dist/index.cjs",
+      "dist/index.js",
+      "dist/languageMessages.d.ts.map",
+      "dist/languages.cjs",
+      "dist/languages.js",
+      "dist/style.css",
+      "dist/types.d.ts",
+      "dist/types.d.ts.map",
+      "docs/DIAGRAM_EDITING.md",
+      "package.json"
+    ]
+  }
+}

@@ -1,0 +1,123 @@
+{
+  "result": "passed",
+  "checks": [
+    {
+      "name": "rich-text loading picker consumes ArrowUp/Enter without moving or splitting text",
+      "passed": true
+    },
+    {
+      "name": "rich-text ArrowUp keeps mention picker open",
+      "passed": true
+    },
+    {
+      "name": "rich-text ArrowUp selects the last candidate",
+      "passed": true
+    },
+    {
+      "name": "rich-text Enter inserts one atomic mention",
+      "passed": true
+    },
+    {
+      "name": "rich-text mention persists after reload",
+      "passed": true
+    },
+    {
+      "name": "rich-text comment controls reopen and close the sidebar",
+      "passed": true
+    },
+    {
+      "name": "rich-text empty results do not turn Enter into a newline",
+      "passed": true
+    },
+    {
+      "name": "rich-text Escape closes the picker",
+      "passed": true
+    },
+    {
+      "name": "empty nickname cursor uses the existing public ID and a visible caret",
+      "passed": true
+    },
+    {
+      "name": "remote rich-text replay produces no echo",
+      "passed": true
+    },
+    {
+      "name": "readonly clears remote editing cursors",
+      "passed": true
+    },
+    {
+      "name": "spreadsheet loading picker consumes ArrowUp/Enter without ending the draft",
+      "passed": true
+    },
+    {
+      "name": "spreadsheet ArrowUp keeps mention picker open",
+      "passed": true
+    },
+    {
+      "name": "spreadsheet ArrowUp selects the last candidate",
+      "passed": true
+    },
+    {
+      "name": "spreadsheet Enter closes the picker",
+      "passed": true
+    },
+    {
+      "name": "spreadsheet commits the chosen atomic user rather than a raw @",
+      "passed": true
+    },
+    {
+      "name": "spreadsheet mention persists after reload",
+      "passed": true
+    },
+    {
+      "name": "comment and visibility buttons share one compact control group",
+      "passed": true
+    },
+    {
+      "name": "hide comments changes the pressed state",
+      "passed": true
+    },
+    {
+      "name": "comment panel has aligned visibility and close controls",
+      "passed": true
+    },
+    {
+      "name": "comment drawer stays within the viewport",
+      "passed": true
+    },
+    {
+      "name": "comment panel closes",
+      "passed": true
+    },
+    {
+      "name": "canvas uses the same grouped comment controls and visibility state",
+      "passed": true
+    },
+    {
+      "name": "spreadsheet ArrowDown selects the next user",
+      "passed": true
+    },
+    {
+      "name": "Escape closes the picker while preserving the draft",
+      "passed": true
+    },
+    {
+      "name": "comment controls remain within a narrow viewport",
+      "passed": true
+    },
+    {
+      "name": "60s idle, resize, selection and comment visibility produce no content writes",
+      "passed": true
+    },
+    {
+      "name": "idle leaves both document projections unchanged",
+      "passed": true
+    },
+    {
+      "name": "no uncaught browser errors",
+      "passed": true
+    }
+  ],
+  "errors": [],
+  "idleSeconds": 60
+}
