@@ -31,7 +31,7 @@
 | 画板 | PNG/JPEG/WebP/SVG 素材 | PNG/SVG | 导入为图片素材；不恢复原生图层，不承诺编辑数据往返 |
 | 演示文稿 | PPTX，最大 30 MB | PPTX | 基础文字、图形、表格和图片；复杂母版/动画可能简化，不支持旧 PPT |
 
-当前安装包：`@smartdoca/slate` 0.4.15、`@smartdoca/sheet` 0.2.1、`@smartdoca/markdown` 0.4.3、`@smartdoca/canvas` 0.4.3、`@smartdoca/slides` 0.3.0-alpha.2。导入分派见 `apps/web/src/features/documents/file-transfer.tsx`，导出见各宿主编辑器适配器。PDF 导入经过识别/转换与素材重新上传，不承诺保留原始页布局。复用版本号时以 hash 命名包并更新 lockfile；独立外部应用和复杂文件仍需逐项验收。
+当前安装包：`@smartdoca/slate` 0.4.15、`@smartdoca/sheet` 0.2.2、`@smartdoca/markdown` 0.4.3、`@smartdoca/canvas` 0.4.3、`@smartdoca/slides` 0.3.0-alpha.2。导入分派见 `apps/web/src/features/documents/file-transfer.tsx`，导出见各宿主编辑器适配器。PDF 导入经过识别/转换与素材重新上传，不承诺保留原始页布局。复用版本号时以 hash 命名包并更新 lockfile；独立外部应用和复杂文件仍需逐项验收。
 
 ## 按在线样式导出 PDF 与可编辑导入
 

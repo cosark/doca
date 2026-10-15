@@ -4,7 +4,7 @@ import { tmpdir } from "node:os";
 import { join } from "node:path";
 import { createServer } from "node:http";
 import { zipSync, strToU8 } from "fflate";
-import { openTestDatabase } from "./database.js";
+import { openTestDatabase, testTableColumns } from "./database.js";
 import { PluginManager } from "@server/plugins/manager.js";
 import { PluginStore } from "@server/plugins/store.js";
 import { digest, unpack, archiveFileIndex } from "@server/plugins/archive.js";
@@ -648,7 +648,7 @@ it("protects management endpoints and removes notes from new deployments", async
         })
       ).statusCode,
     ).toBe(404);
-    const tables = await db.introspection.getTables();
+    const tables = await testTableColumns(db);
     expect(
       tables.some(
         (t) => t.name === "quick_notes" || t.name === "quick_note_compilations",
