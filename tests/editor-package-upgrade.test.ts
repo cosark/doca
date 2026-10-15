@@ -14,6 +14,12 @@ import {
 import { openTestDatabase } from "./database.js";
 
 const diagram = () => ({
+  canvasSettings: {
+    grid: true,
+    gridSize: 12,
+    paper: "a3" as const,
+    view: { zoom: 1.25, x: -80, y: 30 },
+  },
   id: "new-diagram",
   type: "flowchart" as const,
   children: [{ text: "" }],
@@ -25,6 +31,14 @@ const diagram = () => ({
       x: 20,
       y: 40,
       angle: 30,
+      rounded: true,
+      shadow: true,
+      fontFamily: "Arial",
+      bold: true,
+      italic: false,
+      underline: true,
+      textAlign: "left" as const,
+      aspectRatioLocked: true,
       width: 180,
       height: 120,
       arrowDirection: "down" as const,
@@ -33,6 +47,7 @@ const diagram = () => ({
       arrowHeadSize: 42,
       arrowBend: 65,
     },
+    { id: "group", label: "Group", shape: "group" as const, x: 0, y: 0 },
     { id: "browser", label: "页面", shape: "browser" as const, x: 300, y: 40 },
   ],
   edges: [
@@ -48,12 +63,28 @@ const diagram = () => ({
         args: { dx: "100%", dy: "50%", rotate: true },
       },
       targetAnchor: "left",
+      parentId: "group",
+      sourceArrow: "diamond" as const,
+      targetArrow: "classic" as const,
+      sourceArrowSize: 9,
+      targetArrowSize: 12,
+      sourceOffset: 4,
+      targetOffset: 6,
+      lineJoin: "round" as const,
+      lineJump: "arc" as const,
+      jumpSize: 7,
+      labelPosition: 0.35,
+      fontFamily: "Arial",
+      textColor: "#334455",
+      bold: true,
+      italic: true,
+      underline: false,
     },
   ],
 });
 
 it.each(
-  "circle ellipse triangle hexagon pentagon octagon star cross cloud server browser swimlane rectangle block-arrow".split(
+  "cube chevron trapezoid callout folder crescent circle ellipse triangle hexagon pentagon octagon star cross cloud server browser swimlane rectangle block-arrow".split(
     " ",
   ),
 )("accepts the shipped %s flowchart shape through AI commands", (shape) => {
@@ -64,7 +95,7 @@ it.each(
         type: "insertBlock",
         block: {
           ...block,
-          nodes: [{ ...block.nodes[0], shape }, block.nodes[1]],
+          nodes: [{ ...block.nodes[0], shape }, ...block.nodes.slice(1)],
         },
       },
     ]),
@@ -80,6 +111,9 @@ it.each([
   { arrowThickness: -1 },
   { arrowHeadSize: Infinity },
   { arrowBend: 101 },
+  { aspectRatioLocked: "yes" },
+  { textAlign: "justify" },
+  { shadow: 1 },
 ])("rejects invalid native arrow geometry %j", (patch) => {
   const block = diagram();
   expect(() =>
@@ -88,7 +122,7 @@ it.each([
         type: "insertBlock",
         block: {
           ...block,
-          nodes: [{ ...block.nodes[0], ...patch }, block.nodes[1]],
+          nodes: [{ ...block.nodes[0], ...patch }, ...block.nodes.slice(1)],
         },
       },
     ]),
@@ -97,6 +131,13 @@ it.each([
 
 it.each([
   { routeMode: "unknown" },
+  { sourceArrow: "invalid" },
+  { targetArrowSize: -1 },
+  { lineJoin: "invalid" },
+  { lineJump: "invalid" },
+  { jumpSize: -1 },
+  { labelPosition: Infinity },
+  { bold: "yes" },
   { vertices: [{ x: "240", y: 180 }] },
   { sourceAnchor: { name: "topLeft", args: { dx: { unsafe: true } } } },
 ])("rejects invalid manual routes and anchor arguments %j", (patch) => {
@@ -107,6 +148,21 @@ it.each([
         type: "insertBlock",
         block: { ...block, edges: [{ ...block.edges[0], ...patch }] },
       },
+    ]),
+  ).toThrow();
+});
+
+it.each([
+  { paper: "a5" },
+  { gridSize: 0 },
+  { view: { zoom: 0 } },
+  { view: { x: Infinity } },
+  { minimap: "yes" },
+  { unknown: true },
+])("rejects invalid native canvas settings %j", (canvasSettings) => {
+  expect(() =>
+    validateEditOperations("rich_text", [
+      { type: "insertBlock", block: { ...diagram(), canvasSettings } },
     ]),
   ).toThrow();
 });

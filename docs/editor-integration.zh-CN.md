@@ -8,9 +8,9 @@
 
 | 格式 | 当前安装包 | 宿主入口 |
 | --- | --- | --- |
-| 富文本 | @smartdoca/slate 0.4.15 | document-editor.tsx |
+| 富文本 | @smartdoca/slate 0.4.18 | document-editor.tsx |
 | Markdown | @smartdoca/markdown 0.4.3 | markdown-editor.tsx |
-| 表格 | @smartdoca/sheet 0.2.2 | spreadsheet-editor.tsx |
+| 表格 | @smartdoca/sheet 0.2.3 | spreadsheet-editor.tsx |
 | 画布 | @smartdoca/canvas 0.4.3 | canvas-editor.tsx |
 | 幻灯片 | @smartdoca/slides 0.3.0-alpha.2 | presentation-editor.tsx |
 
@@ -81,3 +81,11 @@ Canvas 0.4.3 还包含用户已明确同意的视图规则：0.8 到 3 的数值
 ## 表格超链接补丁 — 2026-10-15
 
 宿主 0.1.25 锁定实际 npm 制品 `@smartdoca/sheet` 0.2.2。与 0.2.1 相比，公开入口、依赖契约和类型声明不变，Yjs／model／XLSX 运行 JavaScript 字节相同（部分 source map 有差异）。超链接弹窗取消后正确恢复原生草稿，原生移除链接命令沿用 inlineLink 能力及只读检查。宿主继续使用稳定编辑器／会话、资源回调、原生操作和持久 ACK 队列。本补丁不改变 schema 6、不可变 baseline、epoch、checkpoint 或待确认更新身份，不增加数据转换或兼容适配；回退保留原依赖锁定及 lockfile。制品审计和隔离验证记录见 `docs/verification/sheet-package-upgrade-2026-10-15/`。
+
+## 原生编辑器升级 — 2026-10-16
+
+宿主 0.1.27 锁定实际 npm 制品 `@smartdoca/slate` 0.4.18 和 `@smartdoca/sheet` 0.2.3。入口及依赖契约不变，Slate codec/Yjs/headless/conversion 字节与 0.4.15 相同；原 DOCX 补丁内容不变，绑定到 0.4.18。宿主接收新增原生图形、节点／连线样式及可选 `canvasSettings`，AI 命令校验并保留这些字段。原生图示编辑采用新版工作区、纸张自动扩展、焦点草稿 Ctrl/Cmd+S 保存及浮动工具栏选择修复。
+
+用户已明确同意新版 19.8／79.2 默认尺寸和图形行为。新建宿主文档、CRDT 追加工作表（含历史追加表）及虚拟恢复表采用行高 19.8／列宽 79.2 像素。不可变 baseline 原字段及其缺省状态保留，显式行列尺寸保留；不转换 baseline、seed、checkpoint、epoch、序号、待确认消息身份及单元格数据。打开旧图不改写原字段，缺省画布设置仅影响原生视图，明确保存图示才写入新版图形字段／设置。预览重绘仅更新视图。富文本 schema 3、表格 schema 6 和持久 ACK／outbox 语义不变；已有历史读取器及规范化器保留，不重新设计。
+
+回退保留原依赖、lockfile、补丁和部署。旧编辑器可能显示不同默认尺寸／样式或忽略新增字段，不新增历史流程图兼容承诺。恢复时保留后续写入；恢复旧备份会丢失升级后编辑。包含真实已发布 0.1.26 数据库的隔离验证见 `docs/verification/editor-package-upgrade-2026-10-16/`。

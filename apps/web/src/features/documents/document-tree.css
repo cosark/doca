@@ -41,6 +41,10 @@
 .sidebar .document-tree .tree-row.selected:has(.tree-more[aria-expanded="true"]) {
   background: var(--selected);
 }
+.sidebar.library-sidebar {
+  --selected: #dfe6fa;
+  --selected-text: var(--brand);
+}
 .sidebar .document-tree .tree-row .tree-link {
   min-height: 32px;
   gap: 6px;

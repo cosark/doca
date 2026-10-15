@@ -1,0 +1,13 @@
+{
+  "result": "passed",
+  "checks": [
+    "native rotation persists through host ACK and reaches a same-user peer without echo",
+    "reload retains rotation; native paper expands and Meta+S commits focused drafts",
+    "host-authorized image selects first, previews second and resets selection after an outside click",
+    "native select-all remains responsive in edit/readonly mode and keeps worksheet content unchanged",
+    "new 19.8/79.2 dimensions and edited cells survive host reload",
+    "60 seconds of idle, selection and resize produces zero rich-text/spreadsheet writes or peer echo"
+  ],
+  "errors": [],
+  "idleSeconds": 60
+}
