@@ -1,0 +1,490 @@
+$ vite build --config apps/web/vite.config.ts
+(!) Your Vite config uses features that are unsupported by `configLoader: 'native'`, which is planned to become the default in a future major version of Vite:
+  - import "./prismjs-language-esm" without a file extension (apps/web/vite.config.ts:6:36). Add the file extension
+Set `VITE_CONFIG_NATIVE_IGNORE_WARNING=true` to suppress this warning.
+vite v8.2.2 building client environment for production...
+transforming...
+✓ 15964 modules transformed.
+rendering chunks...
+computing gzip size...
+apps/web/dist/index.html                                           3.51 kB │ gzip:     0.92 kB
+apps/web/dist/assets/KaTeX_Size3-Regular-CTq5MqoE.woff             4.42 kB
+apps/web/dist/assets/KaTeX_Size4-Regular-Dl5lxZxV.woff2            4.92 kB
+apps/web/dist/assets/KaTeX_Size2-Regular-Dy4dx90m.woff2            5.20 kB
+apps/web/dist/assets/KaTeX_Size1-Regular-mCD8mA8B.woff2            5.46 kB
+apps/web/dist/assets/KaTeX_Size4-Regular-BF-4gkZK.woff             5.98 kB
+apps/web/dist/assets/KaTeX_Size2-Regular-oD1tc_U0.woff             6.18 kB
+apps/web/dist/assets/KaTeX_Size1-Regular-C195tn64.woff             6.49 kB
+apps/web/dist/assets/KaTeX_Caligraphic-Regular-Di6jR-x-.woff2      6.90 kB
+apps/web/dist/assets/KaTeX_Caligraphic-Bold-Dq_IR9rO.woff2         6.91 kB
+apps/web/dist/assets/KaTeX_Size3-Regular-DgpXs0kz.ttf              7.58 kB
+apps/web/dist/assets/KaTeX_Caligraphic-Regular-CTRA-rTL.woff       7.65 kB
+apps/web/dist/assets/KaTeX_Caligraphic-Bold-BEiXGLvX.woff          7.71 kB
+apps/web/dist/assets/KaTeX_Script-Regular-D3wIWfF6.woff2           9.64 kB
+apps/web/dist/assets/KaTeX_SansSerif-Regular-DDBCnlJ7.woff2       10.34 kB
+apps/web/dist/assets/KaTeX_Size4-Regular-DWFBv043.ttf             10.36 kB
+apps/web/dist/assets/KaTeX_Script-Regular-D5yQViql.woff           10.58 kB
+apps/web/dist/assets/KaTeX_Fraktur-Regular-CTYiF6lA.woff2         11.31 kB
+apps/web/dist/assets/KaTeX_Fraktur-Bold-CL6g_b3V.woff2            11.34 kB
+apps/web/dist/assets/KaTeX_Size2-Regular-B7gKUWhC.ttf             11.50 kB
+apps/web/dist/assets/KaTeX_SansSerif-Italic-C3H0VqGB.woff2        12.02 kB
+apps/web/dist/assets/KaTeX_SansSerif-Bold-D1sUS0GD.woff2          12.21 kB
+apps/web/dist/assets/KaTeX_Size1-Regular-Dbsnue_I.ttf             12.22 kB
+apps/web/dist/assets/KaTeX_SansSerif-Regular-CS6fqUqJ.woff        12.31 kB
+apps/web/dist/assets/KaTeX_Caligraphic-Regular-wX97UBjC.ttf       12.34 kB
+apps/web/dist/assets/KaTeX_Caligraphic-Bold-ATXxdsX0.ttf          12.36 kB
+apps/web/dist/assets/KaTeX_Fraktur-Regular-Dxdc4cR9.woff          13.20 kB
+apps/web/dist/assets/KaTeX_Fraktur-Bold-BsDP51OF.woff             13.29 kB
+apps/web/dist/assets/KaTeX_Typewriter-Regular-CO6r4hn1.woff2      13.56 kB
+apps/web/dist/assets/KaTeX_SansSerif-Italic-DN2j7dab.woff         14.11 kB
+apps/web/dist/assets/KaTeX_SansSerif-Bold-DbIhKOiC.woff           14.40 kB
+apps/web/dist/assets/KaTeX_Typewriter-Regular-C0xS9mPB.woff       16.02 kB
+apps/web/dist/assets/KaTeX_Math-BoldItalic-CZnvNsCZ.woff2         16.40 kB
+apps/web/dist/assets/KaTeX_Math-Italic-t53AETM-.woff2             16.44 kB
+apps/web/dist/assets/KaTeX_Script-Regular-C5JkGWo-.ttf            16.64 kB
+apps/web/dist/assets/KaTeX_Main-BoldItalic-DxDJ3AOS.woff2         16.78 kB
+apps/web/dist/assets/KaTeX_Main-Italic-NWA7e6Wa.woff2             16.98 kB
+apps/web/dist/assets/KaTeX_Math-BoldItalic-iY-2wyZ7.woff          18.66 kB
+apps/web/dist/assets/KaTeX_Math-Italic-DA0__PXp.woff              18.74 kB
+apps/web/dist/assets/KaTeX_Main-BoldItalic-SpSLRI95.woff          19.41 kB
+apps/web/dist/assets/KaTeX_SansSerif-Regular-BNo7hRIc.ttf         19.43 kB
+apps/web/dist/assets/KaTeX_Fraktur-Regular-CB_wures.ttf           19.57 kB
+apps/web/dist/assets/KaTeX_Fraktur-Bold-BdnERNNW.ttf              19.58 kB
+apps/web/dist/assets/KaTeX_Main-Italic-BMLOBm91.woff              19.67 kB
+apps/web/dist/assets/KaTeX_SansSerif-Italic-YYjJ1zSn.ttf          22.36 kB
+apps/web/dist/assets/KaTeX_SansSerif-Bold-CFMepnvq.ttf            24.50 kB
+apps/web/dist/assets/KaTeX_Main-Bold-Cx986IdX.woff2               25.32 kB
+apps/web/dist/assets/KaTeX_Main-Regular-B22Nviop.woff2            26.27 kB
+apps/web/dist/assets/KaTeX_Typewriter-Regular-D3Ib7_Hf.ttf        27.55 kB
+apps/web/dist/assets/KaTeX_AMS-Regular-BQhdFMY1.woff2             28.07 kB
+apps/web/dist/assets/KaTeX_Main-Bold-Jm3AIy58.woff                29.91 kB
+apps/web/dist/assets/KaTeX_Main-Regular-Dr94JaBh.woff             30.77 kB
+apps/web/dist/assets/KaTeX_Math-BoldItalic-B3XSjfu4.ttf           31.19 kB
+apps/web/dist/assets/KaTeX_Math-Italic-flOr_0UB.ttf               31.30 kB
+apps/web/dist/assets/KaTeX_Main-BoldItalic-DzxPMmG6.ttf           32.96 kB
+apps/web/dist/assets/KaTeX_AMS-Regular-DMm9YOAa.woff              33.51 kB
+apps/web/dist/assets/KaTeX_Main-Italic-3WenGoN9.ttf               33.58 kB
+apps/web/dist/assets/google-g-CpxN0HWb.png                        33.66 kB
+apps/web/dist/assets/KaTeX_Main-Bold-waoOVXN0.ttf                 51.33 kB
+apps/web/dist/assets/KaTeX_Main-Regular-ypZvNtVU.ttf              53.58 kB
+apps/web/dist/assets/KaTeX_AMS-Regular-DRggAlZN.ttf               63.63 kB
+apps/web/dist/cad/libredwg-parser-worker.js                      201.46 kB
+apps/web/dist/cad/mtext-renderer-worker.js                     1,192.82 kB
+apps/web/dist/assets/pdf.worker.min-iDqQPrd3.mjs               1,232.30 kB
+apps/web/dist/assets/NotoSansSC-Regular-IiqkIpFG.woff2         3,985.67 kB
+apps/web/dist/cad/libredwg-web.wasm                            9,496.80 kB │ gzip: 2,217.43 kB
+apps/web/dist/assets/plugin-elements-CET0eDXw.css                  0.61 kB │ gzip:     0.32 kB
+apps/web/dist/assets/document-controls-Ds3oedl8.css                1.05 kB │ gzip:     0.40 kB
+apps/web/dist/assets/discovery-DaXAkz7i.css                        1.13 kB │ gzip:     0.50 kB
+apps/web/dist/assets/attachment-preview-Db4BPgLX.css               1.31 kB │ gzip:     0.56 kB
+apps/web/dist/assets/file-transfer-CLfaNDaM.css                    1.45 kB │ gzip:     0.57 kB
+apps/web/dist/assets/ai-chat-Cu1xhN90.css                          1.63 kB │ gzip:     0.56 kB
+apps/web/dist/assets/feedback-cq11E-I-.css                         1.69 kB │ gzip:     0.64 kB
+apps/web/dist/assets/document-editor-C4mYjywu.css                  2.31 kB │ gzip:     0.85 kB
+apps/web/dist/assets/navigation-BduKi16E.css                       6.80 kB │ gzip:     1.71 kB
+apps/web/dist/assets/surface-BKolEmlw.css                         10.28 kB │ gzip:     2.72 kB
+apps/web/dist/assets/editor-BdigiXmG.css                          11.89 kB │ gzip:     3.04 kB
+apps/web/dist/assets/markdown-MBjrQFDk.css                        12.35 kB │ gzip:     3.28 kB
+apps/web/dist/assets/knowledge-books-xfvd9UzM.css                 25.23 kB │ gzip:     5.44 kB
+apps/web/dist/assets/dist-KT7BwFst.css                            29.15 kB │ gzip:     5.93 kB
+apps/web/dist/assets/katex-D1Bj3pDB.css                           29.79 kB │ gzip:     7.97 kB
+apps/web/dist/assets/styles-wy11QvGx.css                          31.45 kB │ gzip:     7.07 kB
+apps/web/dist/assets/ai-C253IuG2.css                              35.91 kB │ gzip:     7.93 kB
+apps/web/dist/assets/ai-markdown-U6_NwQUu.css                     40.17 kB │ gzip:    10.55 kB
+apps/web/dist/assets/admin-Cr4YGQ4C.css                           40.87 kB │ gzip:     7.97 kB
+apps/web/dist/assets/extensions-DVfUBNf-.css                      99.74 kB │ gzip:    18.45 kB
+apps/web/dist/assets/open-file-viewer-preview-CdHRPGaj.css       113.81 kB │ gzip:    18.78 kB
+apps/web/dist/assets/dist-61MfMxLr.css                           115.79 kB │ gzip:    19.37 kB
+apps/web/dist/assets/rich-plugin-elements-B_csW-4t.css           142.98 kB │ gzip:    26.13 kB
+apps/web/dist/assets/index-CyMl9wsC.css                          147.58 kB │ gzip:    27.54 kB
+apps/web/dist/assets/button-Bf-WXUbp.js                            0.05 kB │ gzip:     0.07 kB
+apps/web/dist/assets/cpp-EDJNJWGR-BNK7GzbI.js                      0.06 kB │ gzip:     0.06 kB
+apps/web/dist/assets/esm-CYIW8opM.js                               0.06 kB │ gzip:     0.08 kB
+apps/web/dist/assets/pdf.worker.min-C5102xSr.js                    0.06 kB │ gzip:     0.08 kB
+apps/web/dist/assets/core-DNg0oQ64.js                              0.06 kB │ gzip:     0.07 kB
+apps/web/dist/assets/scala-V5QQ35QA-DdGVJV0q.js                    0.06 kB │ gzip:     0.07 kB
+apps/web/dist/assets/katex.min-BrQRRmaO.js                         0.07 kB │ gzip:     0.09 kB
+apps/web/dist/assets/php-TTFBGZ5Q-C35cnlOX.js                      0.07 kB │ gzip:     0.08 kB
+apps/web/dist/assets/napi-canvas-vXY-6DeJ.js                       0.08 kB │ gzip:     0.09 kB
+apps/web/dist/assets/__vite-browser-external-DpH90L5b.js           0.09 kB │ gzip:     0.10 kB
+apps/web/dist/assets/tsx-A26VGWUK-RVojlo4r.js                      0.10 kB │ gzip:     0.08 kB
+apps/web/dist/assets/io-z6Zl8L1u.js                                0.11 kB │ gzip:     0.11 kB
+apps/web/dist/assets/channel-Df-xLpar.js                           0.11 kB │ gzip:     0.12 kB
+apps/web/dist/assets/pie-WAS4IAKB-BkSTK6KM.js                      0.12 kB │ gzip:     0.13 kB
+apps/web/dist/assets/info-A6RAGUB7-DNiM6MW6.js                     0.12 kB │ gzip:     0.13 kB
+apps/web/dist/assets/radar-RG4KPBEZ-ymOfNW7I.js                    0.12 kB │ gzip:     0.13 kB
+apps/web/dist/assets/packet-AYTQ26CC-C4EHUAzU.js                   0.12 kB │ gzip:     0.13 kB
+apps/web/dist/assets/pptx-Bug2mULi.js                              0.12 kB │ gzip:     0.11 kB
+apps/web/dist/assets/cynefin-OW5HDTMX-B7JP5WcM.js                  0.12 kB │ gzip:     0.13 kB
+apps/web/dist/assets/treemap-WGGIJYW6-L1FedAzz.js                  0.12 kB │ gzip:     0.13 kB
+apps/web/dist/assets/wardley-WFR3VGLG-BU-g6L7U.js                  0.12 kB │ gzip:     0.13 kB
+apps/web/dist/assets/gitGraph-4MIJSDKK-De5ASUSY.js                 0.12 kB │ gzip:     0.13 kB
+apps/web/dist/assets/railroad-74A4TZTK-CwWB40du.js                 0.12 kB │ gzip:     0.13 kB
+apps/web/dist/assets/treeView-Q6P3EWNA-CkV-8YWk.js                 0.12 kB │ gzip:     0.13 kB
+apps/web/dist/assets/railroad-peg-WCYAUIDC-Qz11I2dz.js             0.13 kB │ gzip:     0.13 kB
+apps/web/dist/assets/architecture-7GRP2DOG-iqZodW6v.js             0.13 kB │ gzip:     0.13 kB
+apps/web/dist/assets/railroad-abnf-HS5TGJTU-DGUx-UBP.js            0.13 kB │ gzip:     0.13 kB
+apps/web/dist/assets/railroad-ebnf-LZEXJU2U-isA18bJo.js            0.13 kB │ gzip:     0.13 kB
+apps/web/dist/assets/asset-path-0fxtMbyH.js                        0.13 kB │ gzip:     0.13 kB
+apps/web/dist/assets/eventmodeling-NTZA5JFV-C4d4RnR4.js            0.13 kB │ gzip:     0.13 kB
+apps/web/dist/assets/init-C-OQMol4.js                              0.14 kB │ gzip:     0.12 kB
+apps/web/dist/assets/chunk-Y2CYZVJY-DsF7k-Jl.js                    0.15 kB │ gzip:     0.14 kB
+apps/web/dist/assets/chevron-right-CW4ZO1CD.js                     0.17 kB │ gzip:     0.16 kB
+apps/web/dist/assets/range-EplFIxc7.js                             0.17 kB │ gzip:     0.16 kB
+apps/web/dist/assets/Tableau10-C-q0Q2RN.js                         0.18 kB │ gzip:     0.17 kB
+apps/web/dist/assets/callSuper-BDzRTJUh.js                         0.18 kB │ gzip:     0.16 kB
+apps/web/dist/assets/chunk-2Q5K7J3B-C1jixKkw.js                    0.19 kB │ gzip:     0.16 kB
+apps/web/dist/assets/chunk-JWPE2WC7-DVXcaiue.js                    0.22 kB │ gzip:     0.17 kB
+apps/web/dist/assets/extends-CvVTau-c.js                           0.23 kB │ gzip:     0.18 kB
+apps/web/dist/assets/headless-upsPpJ20.js                          0.23 kB │ gzip:     0.20 kB
+apps/web/dist/assets/chunk-XXDRQBXY-C5Ep7MuP.js                    0.26 kB │ gzip:     0.22 kB
+apps/web/dist/assets/download-D-_S5yK6.js                          0.27 kB │ gzip:     0.22 kB
+apps/web/dist/assets/paperclip-DjYHxVZ6.js                         0.27 kB │ gzip:     0.22 kB
+apps/web/dist/assets/panel-right-close-Cf5yjNmV.js                 0.27 kB │ gzip:     0.22 kB
+apps/web/dist/assets/settings-2-CSJRt9uH.js                        0.29 kB │ gzip:     0.22 kB
+apps/web/dist/assets/list-tree-Dyd9aLjE.js                         0.33 kB │ gzip:     0.22 kB
+apps/web/dist/assets/policies-BpxGbscj.js                          0.35 kB │ gzip:     0.24 kB
+apps/web/dist/assets/chunk-5VM5RSS4-ZNzvKenW.js                    0.36 kB │ gzip:     0.27 kB
+apps/web/dist/assets/clsx-DB0hHKMi.js                              0.36 kB │ gzip:     0.23 kB
+apps/web/dist/assets/objectWithoutProperties-COKjVg74.js           0.38 kB │ gzip:     0.25 kB
+apps/web/dist/assets/workflow-uDfym9eS.js                          0.39 kB │ gzip:     0.26 kB
+apps/web/dist/assets/prism-tsx-Dy4JnuVi.js                         0.40 kB │ gzip:     0.28 kB
+apps/web/dist/assets/prism-properties-UjVDzC-Q.js                  0.40 kB │ gzip:     0.28 kB
+apps/web/dist/assets/math-DKewXP6Y.js                              0.42 kB │ gzip:     0.20 kB
+apps/web/dist/assets/quote-81ffPdH0.js                             0.42 kB │ gzip:     0.22 kB
+apps/web/dist/assets/prism-ignore--glCcbOI.js                      0.43 kB │ gzip:     0.28 kB
+apps/web/dist/assets/prism-editorconfig-Bh0p7Vpr.js                0.45 kB │ gzip:     0.31 kB
+apps/web/dist/assets/rotate-ccw-C5hg_bnR.js                        0.46 kB │ gzip:     0.29 kB
+apps/web/dist/assets/ai-upload-errors-DBVJ9RUd.js                  0.50 kB │ gzip:     0.24 kB
+apps/web/dist/assets/ai-CuXVosdf.js                                0.52 kB │ gzip:     0.28 kB
+apps/web/dist/assets/pa-C54UG8eN-Bj-XExX_.js                       0.52 kB │ gzip:     0.22 kB
+apps/web/dist/assets/json5-EAGAEIPM-CTwaRWiw.js                    0.53 kB │ gzip:     0.38 kB
+apps/web/dist/assets/or-50rxpoq4-Cf5-bcl5.js                       0.56 kB │ gzip:     0.23 kB
+apps/web/dist/assets/chunk-POPQ4Y6H-Cffv94lo.js                    0.57 kB │ gzip:     0.40 kB
+apps/web/dist/assets/flowDiagram-HODETNUW-DfPRiRiM.js              0.57 kB │ gzip:     0.31 kB
+apps/web/dist/assets/gu-Bjl0l-cf-COW9d1dt.js                       0.57 kB │ gzip:     0.23 kB
+apps/web/dist/assets/ordinal-v-7IHRQf.js                           0.59 kB │ gzip:     0.34 kB
+apps/web/dist/assets/now-fdb1ev71.js                               0.59 kB │ gzip:     0.38 kB
+apps/web/dist/assets/prism-json-DmHHfAGy.js                        0.59 kB │ gzip:     0.37 kB
+apps/web/dist/assets/hi-DsAaTPCC-CiihDo6Q.js                       0.60 kB │ gzip:     0.24 kB
+apps/web/dist/assets/mr-CjWJPVmH-DGtESPcG.js                       0.60 kB │ gzip:     0.24 kB
+apps/web/dist/assets/as-BPtSu6VN-F6qyW8uH.js                       0.62 kB │ gzip:     0.25 kB
+apps/web/dist/assets/bn-NCLZcWHi-BGS6_hxH.js                       0.62 kB │ gzip:     0.25 kB
+apps/web/dist/assets/te-B5Spl2Jk-BjTOzs5s.js                       0.62 kB │ gzip:     0.24 kB
+apps/web/dist/assets/ids-DTJ1wilq-DdjxhbXO.js                      0.62 kB │ gzip:     0.34 kB
+apps/web/dist/assets/kn-C6Lov-DP-BuXzi7S-.js                       0.63 kB │ gzip:     0.25 kB
+apps/web/dist/assets/src-DQbRWuki.js                               0.63 kB │ gzip:     0.30 kB
+apps/web/dist/assets/infoDiagram-27XIBGKW-DU7RDUKd.js              0.65 kB │ gzip:     0.41 kB
+apps/web/dist/assets/user-round-C5Fel1Ks.js                        0.65 kB │ gzip:     0.36 kB
+apps/web/dist/assets/version-preview-Ejx5U_E6.js                   0.66 kB │ gzip:     0.44 kB
+apps/web/dist/assets/prism-r-gV0du0ts.js                           0.66 kB │ gzip:     0.49 kB
+apps/web/dist/assets/markdown-preview-C_O0YkTY.js                  0.70 kB │ gzip:     0.45 kB
+apps/web/dist/assets/ta-BcghgTbD-B5_ztYXp.js                       0.70 kB │ gzip:     0.24 kB
+apps/web/dist/assets/prism-ini-C_KIxN1s.js                         0.71 kB │ gzip:     0.35 kB
+apps/web/dist/assets/document-search-navigation-BnjHQKPJ.js        0.71 kB │ gzip:     0.46 kB
+apps/web/dist/assets/prism-lua-CxMV3_Cq.js                         0.73 kB │ gzip:     0.50 kB
+apps/web/dist/assets/classDiagram-ZZMXUADV-C8IlcfQh.js             0.77 kB │ gzip:     0.45 kB
+apps/web/dist/assets/classDiagram-v2-VYDZK3BY-C8IlcfQh.js          0.77 kB │ gzip:     0.45 kB
+apps/web/dist/assets/stateDiagram-v2-MP3YSRHH-BLlCaCqn.js          0.78 kB │ gzip:     0.45 kB
+apps/web/dist/assets/pick-C43jECME.js                              0.78 kB │ gzip:     0.47 kB
+apps/web/dist/assets/prism-less-wX4KdwhS.js                        0.79 kB │ gzip:     0.44 kB
+apps/web/dist/assets/ml-2xLVYkVY-Ct0js8Am.js                       0.80 kB │ gzip:     0.29 kB
+apps/web/dist/assets/prism-nginx-CYwcXVJa.js                       0.82 kB │ gzip:     0.46 kB
+apps/web/dist/assets/isObject-BNleAbAq.js                          0.83 kB │ gzip:     0.41 kB
+apps/web/dist/assets/swimlanesDiagram-VR7AAH4N-eBGKvDRH.js         0.83 kB │ gzip:     0.48 kB
+apps/web/dist/assets/pi-B9cgjyG1-o9084kBf.js                       0.85 kB │ gzip:     0.35 kB
+apps/web/dist/assets/prism-erlang-W-WEEsId.js                      0.86 kB │ gzip:     0.54 kB
+apps/web/dist/assets/sizeCapture-INFHLROL-B0uUizjq.js              0.87 kB │ gzip:     0.51 kB
+apps/web/dist/assets/debounce-BQF8WH3p.js                          1.02 kB │ gzip:     0.54 kB
+apps/web/dist/assets/prism-makefile-BtLMXKXu.js                    1.04 kB │ gzip:     0.63 kB
+apps/web/dist/assets/prism-toml--HtOJOxY.js                        1.05 kB │ gzip:     0.57 kB
+apps/web/dist/assets/prism-protobuf-7Y1RXuF_.js                    1.07 kB │ gzip:     0.58 kB
+apps/web/dist/assets/prism-elm-COQTr8D8.js                         1.11 kB │ gzip:     0.68 kB
+apps/web/dist/assets/prism-latex-D0pp18zl.js                       1.11 kB │ gzip:     0.55 kB
+apps/web/dist/assets/prism-go-DLJ3dIcA.js                          1.12 kB │ gzip:     0.71 kB
+apps/web/dist/assets/preload-helper-Czpn1I53.js                    1.19 kB │ gzip:     0.67 kB
+apps/web/dist/assets/prism-markup-templating-oDgP0hvx.js           1.20 kB │ gzip:     0.64 kB
+apps/web/dist/assets/dist-DMuQfuhn.js                              1.26 kB │ gzip:     0.70 kB
+apps/web/dist/assets/zh-latn-pinyin-BdYb-Ey_-CW52gdb_.js           1.27 kB │ gzip:     0.21 kB
+apps/web/dist/assets/prism-dot-B-lU5w5r.js                         1.28 kB │ gzip:     0.68 kB
+apps/web/dist/assets/rolldown-runtime-C0FnF6B9.js                  1.29 kB │ gzip:     0.71 kB
+apps/web/dist/assets/chunk-GVQU2GXP-1TYiRu03.js                    1.41 kB │ gzip:     0.78 kB
+apps/web/dist/assets/prism-typescript-BwDhgBLn.js                  1.42 kB │ gzip:     0.67 kB
+apps/web/dist/assets/base64-js-cqevimvB.js                         1.44 kB │ gzip:     0.78 kB
+apps/web/dist/assets/prism-scss-Bye_gVy-.js                        1.46 kB │ gzip:     0.71 kB
+apps/web/dist/assets/defineProperty-Cburl96d.js                    1.47 kB │ gzip:     0.74 kB
+apps/web/dist/assets/prism-hcl-BlsRM9P1.js                         1.49 kB │ gzip:     0.67 kB
+apps/web/dist/assets/prism-scala-B3upZuBD.js                       1.49 kB │ gzip:     0.79 kB
+apps/web/dist/assets/eu-Ctv_kq9Z-D1jw9zt8.js                       1.51 kB │ gzip:     0.21 kB
+apps/web/dist/assets/lazy-content-CoG3KUtD.js                      1.53 kB │ gzip:     0.83 kB
+apps/web/dist/assets/railroadDiagram-O6MQD6OU-BShT18Ux.js          1.66 kB │ gzip:     0.77 kB
+apps/web/dist/assets/prism-docker-C_vT-7rs.js                      1.67 kB │ gzip:     0.81 kB
+apps/web/dist/assets/prism-groovy-09hwOWGr.js                      1.70 kB │ gzip:     0.95 kB
+apps/web/dist/assets/prism-dart-BD-Ul2jn.js                        1.71 kB │ gzip:     0.91 kB
+apps/web/dist/assets/ticks-BwZhNCX8.js                             1.76 kB │ gzip:     0.79 kB
+apps/web/dist/assets/prism-batch-Bh0UWpWP.js                       1.77 kB │ gzip:     0.73 kB
+apps/web/dist/assets/abnfDiagram-VCTEODGH-BE5ggqSz.js              1.85 kB │ gzip:     0.89 kB
+apps/web/dist/assets/dist-B7OHp69Q.js                              1.87 kB │ gzip:     0.83 kB
+apps/web/dist/assets/chunk-P2QGCYS3-DIUDkRFa.js                    1.94 kB │ gzip:     0.95 kB
+apps/web/dist/assets/prism-elixir-DeNZ7lf4.js                      1.95 kB │ gzip:     0.94 kB
+apps/web/dist/assets/chunk-F27PBJKO-Au2iLCrJ.js                    1.97 kB │ gzip:     0.88 kB
+apps/web/dist/assets/prism-http-DhBtWkaa.js                        1.97 kB │ gzip:     0.95 kB
+apps/web/dist/assets/undo-2-CgmxiTXM.js                            2.00 kB │ gzip:     1.04 kB
+apps/web/dist/assets/pegDiagram-XKGWAZYB-M0yWwiuq.js               2.01 kB │ gzip:     0.93 kB
+apps/web/dist/assets/prism-kotlin-CFmD6Sh8.js                      2.05 kB │ gzip:     1.03 kB
+apps/web/dist/assets/prism-c-CEQw2htk.js                           2.06 kB │ gzip:     1.05 kB
+apps/web/dist/assets/ebnfDiagram-PWID7BFC-IhrgG7XB.js              2.06 kB │ gzip:     0.89 kB
+apps/web/dist/assets/prism-yaml-BAvk6YvJ.js                        2.11 kB │ gzip:     0.95 kB
+apps/web/dist/assets/surface-preview-Dbegm5Pm.js                   2.18 kB │ gzip:     1.19 kB
+apps/web/dist/assets/document-controls-LM-Iu3kE.js                 2.20 kB │ gzip:     1.00 kB
+apps/web/dist/assets/prism-powershell-DSOG2Ps-.js                  2.23 kB │ gzip:     1.34 kB
+apps/web/dist/assets/prism-fsharp-B8d2whU1.js                      2.24 kB │ gzip:     1.20 kB
+apps/web/dist/assets/prism-python-Cz2itNEE.js                      2.26 kB │ gzip:     1.18 kB
+apps/web/dist/assets/pt-Cum2_NUC-CrkeeQaZ.js                       2.28 kB │ gzip:     0.30 kB
+apps/web/dist/assets/id-DifDyWg9-C3Hzl2m4.js                       2.43 kB │ gzip:     0.63 kB
+apps/web/dist/assets/feedback-Cp782iVW.js                          2.44 kB │ gzip:     1.16 kB
+apps/web/dist/assets/prism-jsx-DT5OH3pL.js                         2.54 kB │ gzip:     1.07 kB
+apps/web/dist/assets/oc-P_i3-xLA-W5_I63nO.js                       2.55 kB │ gzip:     0.66 kB
+apps/web/dist/assets/prism-rust-DciSCNSj.js                        2.61 kB │ gzip:     1.27 kB
+apps/web/dist/assets/prism-graphql-MHeOTiEz.js                     2.67 kB │ gzip:     1.25 kB
+apps/web/dist/assets/possibleConstructorReturn-CrNIe3rQ.js         2.69 kB │ gzip:     1.16 kB
+apps/web/dist/assets/prism-cpp-BGO-bNgk.js                         2.69 kB │ gzip:     1.28 kB
+apps/web/dist/assets/kmr-Cfwhwuff-DfPyPgkK.js                      2.72 kB │ gzip:     0.80 kB
+apps/web/dist/assets/prism-java-C9TG-TIC.js                        2.90 kB │ gzip:     1.31 kB
+apps/web/dist/assets/STLLoader-B5XXmkGH.js                         2.92 kB │ gzip:     1.40 kB
+apps/web/dist/assets/plugin-elements-BNs3xlhl.js                   2.94 kB │ gzip:     1.45 kB
+apps/web/dist/assets/prism-haskell-v3pWfWeq.js                     3.08 kB │ gzip:     1.62 kB
+apps/web/dist/assets/prism-swift-BJAfA0ct.js                       3.09 kB │ gzip:     1.41 kB
+apps/web/dist/assets/createLucideIcon-C84aaOyl.js                  3.13 kB │ gzip:     1.50 kB
+apps/web/dist/assets/prism-clojure-DOP9-S-R.js                     3.14 kB │ gzip:     1.58 kB
+apps/web/dist/assets/fi-RW5VB8Yp-mParSSSy.js                       3.18 kB │ gzip:     0.77 kB
+apps/web/dist/assets/la-DuvHjUWw-Bwiuou7l.js                       3.18 kB │ gzip:     0.62 kB
+apps/web/dist/assets/pms-BRGfm5gS-DfOt2RSi.js                      3.37 kB │ gzip:     0.92 kB
+apps/web/dist/assets/prism-sql-CPMaoZYC.js                         3.39 kB │ gzip:     1.96 kB
+apps/web/dist/assets/arc-C4K1nZhv.js                               3.44 kB │ gzip:     1.44 kB
+apps/web/dist/assets/dist-dut-wRGd.js                              3.59 kB │ gzip:     1.58 kB
+apps/web/dist/assets/it-Bt_Meacx-HiFRunf5.js                       3.62 kB │ gzip:     0.88 kB
+apps/web/dist/assets/rm-C0MIK9N4-CNhvXnnG.js                       3.66 kB │ gzip:     0.95 kB
+apps/web/dist/assets/mul-ethi-D_CMSMEq-D6ioGuYP.js                 3.68 kB │ gzip:     1.07 kB
+apps/web/dist/assets/prism-ruby-CFo4O6Tj.js                        3.69 kB │ gzip:     1.57 kB
+apps/web/dist/assets/fur-AC12wySk-tJv2icDr.js                      3.89 kB │ gzip:     1.03 kB
+apps/web/dist/assets/jsx-runtime-DZ5gdoTW.js                       3.95 kB │ gzip:     1.52 kB
+apps/web/dist/assets/tr-CIHIuzqc-DvQDK0dA.js                       3.96 kB │ gzip:     0.33 kB
+apps/web/dist/assets/surface-sync-CXn2sXnr.js                      4.04 kB │ gzip:     2.01 kB
+apps/web/dist/assets/linear-CFqi6LFl.js                            4.05 kB │ gzip:     1.69 kB
+apps/web/dist/assets/diagram-Z3DM3KII-DPlX9ljD.js                  4.28 kB │ gzip:     1.84 kB
+apps/web/dist/assets/discovery-CuUVyyjE.js                         4.38 kB │ gzip:     1.78 kB
+apps/web/dist/assets/defaultLocale-BFoDCU3G.js                     4.63 kB │ gzip:     2.12 kB
+apps/web/dist/assets/mn-cyrl-x-lmc-3aetruI8-BJqn49ay.js            4.82 kB │ gzip:     1.20 kB
+apps/web/dist/assets/treemap-C5HqZvI3.js                           4.84 kB │ gzip:     1.88 kB
+apps/web/dist/assets/el-monoton-D3aKqTz2-CuqNQIvE.js               4.86 kB │ gzip:     0.88 kB
+apps/web/dist/assets/tslib.es6--pjuVNBv.js                         4.88 kB │ gzip:     1.91 kB
+apps/web/dist/assets/select-BRQ2STgy.js                            5.44 kB │ gzip:     2.35 kB
+apps/web/dist/assets/fflate.module-DXbirBWY.js                     5.56 kB │ gzip:     2.78 kB
+apps/web/dist/assets/chunk-PWAF6VOD-DP1sPNhU.js                    5.83 kB │ gzip:     2.68 kB
+apps/web/dist/assets/diagram-UQ7AKVKN-XtTcVVbf.js                  6.06 kB │ gzip:     2.55 kB
+apps/web/dist/assets/pieDiagram-E7YTZNPT-BySGDiLY.js               6.15 kB │ gzip:     2.57 kB
+apps/web/dist/assets/prism-bash-CBr84cu9.js                        6.27 kB │ gzip:     3.13 kB
+apps/web/dist/assets/graphlib-fCQr0TUY.js                          6.34 kB │ gzip:     2.00 kB
+apps/web/dist/assets/pdf-import-Nmdt92Pc.js                        6.40 kB │ gzip:     3.15 kB
+apps/web/dist/assets/prism-php-C1ofPs72.js                         6.41 kB │ gzip:     2.07 kB
+apps/web/dist/assets/ia-Cr4TJH0c-B1i9kDPT.js                       6.48 kB │ gzip:     1.84 kB
+apps/web/dist/assets/prism-csharp-DvyqFMi-.js                      6.49 kB │ gzip:     2.58 kB
+apps/web/dist/assets/canvas-editor-D4_J4AvX.js                     6.55 kB │ gzip:     3.07 kB
+apps/web/dist/assets/PLYLoader-GBa3jUw3.js                         6.66 kB │ gzip:     2.51 kB
+apps/web/dist/assets/togeojson-Bv_LOTTZ.js                         6.73 kB │ gzip:     2.68 kB
+apps/web/dist/assets/src-CL4Hiily.js                               6.86 kB │ gzip:     2.43 kB
+apps/web/dist/assets/cop-C3sk0IUo-Dw82IjCr.js                      6.88 kB │ gzip:     0.69 kB
+apps/web/dist/assets/open-file-viewer-preview-FJDA_6Qb.js          7.03 kB │ gzip:     2.89 kB
+apps/web/dist/assets/presentation-editor-CRYW2uVH.js               7.16 kB │ gzip:     3.33 kB
+apps/web/dist/assets/ro-0fmdH0HA-Bov_DAVD.js                       7.26 kB │ gzip:     2.15 kB
+apps/web/dist/assets/react-C21x__mS.js                             7.53 kB │ gzip:     2.88 kB
+apps/web/dist/assets/ca-SUf6Y2Om-DrduLk3W.js                       7.81 kB │ gzip:     1.14 kB
+apps/web/dist/assets/TDSLoader-Bo7XEWJu.js                         8.01 kB │ gzip:     2.61 kB
+apps/web/dist/assets/Middleware-BUfA2B5V.js                        8.11 kB │ gzip:     3.48 kB
+apps/web/dist/assets/diagram-S7CK7UJ4-DiS22lIy.js                  8.19 kB │ gzip:     3.65 kB
+apps/web/dist/assets/sortBy-rSaIM7tn.js                            8.32 kB │ gzip:     3.43 kB
+apps/web/dist/assets/model-find-B9kyhQ1N.js                        8.52 kB │ gzip:     3.50 kB
+apps/web/dist/assets/OBJLoader-WHmdaFPU.js                         8.74 kB │ gzip:     2.89 kB
+apps/web/dist/assets/navigation-C5OalvK-.js                        8.74 kB │ gzip:     3.73 kB
+apps/web/dist/assets/la-x-classic-yTyAOQEt-aO_2QO0y.js             8.92 kB │ gzip:     2.34 kB
+apps/web/dist/assets/region-comments-3dnmbvMz.js                   8.94 kB │ gzip:     3.37 kB
+apps/web/dist/assets/segmented-DolGxzem.js                         9.26 kB │ gzip:     3.54 kB
+apps/web/dist/assets/rendered-pdf-c_NE8-G9.js                      9.54 kB │ gzip:     4.00 kB
+apps/web/dist/assets/chunk-L3NEJ4N5-D4Qt_n_M.js                    9.68 kB │ gzip:     2.97 kB
+apps/web/dist/assets/sa-CKY9c_Vq-CvBCyoRG.js                       9.70 kB │ gzip:     1.66 kB
+apps/web/dist/assets/cynefinDiagram-5FMLGOSQ-Buet1l1H.js           9.93 kB │ gzip:     3.50 kB
+apps/web/dist/assets/stateDiagram-D77RDMKH-BhGGr2ql.js            10.63 kB │ gzip:     3.74 kB
+apps/web/dist/assets/diagram-VSXAHHWV-DQMPIlEc.js                 10.65 kB │ gzip:     4.12 kB
+apps/web/dist/assets/dagre-GXQ25YYZ-CHpC7hdt.js                   10.97 kB │ gzip:     4.15 kB
+apps/web/dist/assets/diagram-VX7I27RA-DpM8duSk.js                 11.06 kB │ gzip:     3.84 kB
+apps/web/dist/assets/lib-LWWbZfYg.js                              11.14 kB │ gzip:     5.22 kB
+apps/web/dist/assets/hr-DT1SBBes-D_vEJhf2.js                      11.36 kB │ gzip:     0.96 kB
+apps/web/dist/assets/hy-e995ysyO-Cjfrs2ZM.js                      11.93 kB │ gzip:     0.30 kB
+apps/web/dist/assets/mn-cyrl-lHM4n0oC-DN6sz9R4.js                 12.14 kB │ gzip:     2.14 kB
+apps/web/dist/assets/sl-DpiklF-D-B8FnrXi1.js                      12.59 kB │ gzip:     3.43 kB
+apps/web/dist/assets/da-CCDXfXtG-BWliw5hZ.js                      12.71 kB │ gzip:     3.49 kB
+apps/web/dist/assets/spreadsheet-xlsx-D--fRqYj.js                 12.76 kB │ gzip:     5.45 kB
+apps/web/dist/assets/book-graph-BYQ3Z142.js                       13.48 kB │ gzip:     5.00 kB
+apps/web/dist/assets/3MFLoader-_vVNcLzk.js                        13.63 kB │ gzip:     4.53 kB
+apps/web/dist/assets/hsb-DC_ITc1e-kb5QeNH1.js                     13.95 kB │ gzip:     1.96 kB
+apps/web/dist/assets/markdown-editor-CPVwFDt0.js                  14.39 kB │ gzip:     5.87 kB
+apps/web/dist/assets/lt-BBe8DlDF-B3cgXplB.js                      14.76 kB │ gzip:     3.63 kB
+apps/web/dist/assets/chunk-SVP7TREG-Cpf2araV.js                   15.64 kB │ gzip:     4.36 kB
+apps/web/dist/assets/spin-BGC9ENMW.js                             15.91 kB │ gzip:     6.09 kB
+apps/web/dist/assets/tableCommands-BJaD9rP7-DY_zbVwD.js           16.07 kB │ gzip:     5.45 kB
+apps/web/dist/assets/mermaid-parser.core-DK0kgowR.js              16.59 kB │ gzip:     3.93 kB
+apps/web/dist/assets/i18n-BSJ7vgf5.js                             16.65 kB │ gzip:     5.36 kB
+apps/web/dist/assets/union-BueUScNI.js                            16.94 kB │ gzip:     6.38 kB
+apps/web/dist/assets/tk-BMbKB10q-UHPz-lif.js                      16.95 kB │ gzip:     0.92 kB
+apps/web/dist/assets/ishikawaDiagram-5VMMS53U-BVbt48Uu.js         17.31 kB │ gzip:     6.53 kB
+apps/web/dist/assets/file-transfer-gYkjUW-G.js                    17.33 kB │ gzip:     6.81 kB
+apps/web/dist/assets/el-polyton-ogVWcTzh-B5J5pGHR.js              17.62 kB │ gzip:     2.83 kB
+apps/web/dist/assets/prism-eM1LCGcz.js                            18.85 kB │ gzip:     7.13 kB
+apps/web/dist/assets/OrbitControls-CSm9erb9.js                    19.71 kB │ gzip:     4.39 kB
+apps/web/dist/assets/xz-decompress-BlOG-Mkh.js                    20.08 kB │ gzip:     9.38 kB
+apps/web/dist/assets/kanban-definition-UXKFOSKX-CVJ4j99g.js       20.26 kB │ gzip:     7.15 kB
+apps/web/dist/assets/spreadsheet-editor-C6s0mCmo.js               20.79 kB │ gzip:     8.29 kB
+apps/web/dist/assets/chunk-75Z2AOVW-MdaViwnL.js                   22.55 kB │ gzip:     7.54 kB
+apps/web/dist/assets/sankeyDiagram-P5KCCOFB-DOQc0Jbk.js           22.66 kB │ gzip:     8.16 kB
+apps/web/dist/assets/la-x-liturgic-CXeQb4FY-BpDOy20C.js           22.81 kB │ gzip:     5.80 kB
+apps/web/dist/assets/step-CDxrZEEG.js                             23.04 kB │ gzip:     7.62 kB
+apps/web/dist/assets/journeyDiagram-3NMN7TZE-jVqhdbwh.js          23.15 kB │ gzip:     8.15 kB
+apps/web/dist/assets/mindmap-definition-YA3MSWOX-DdiZEGdA.js      23.44 kB │ gzip:     7.99 kB
+apps/web/dist/assets/fr-BC2onEz9-Dc1KqFHa.js                      24.13 kB │ gzip:     4.24 kB
+apps/web/dist/assets/wardleyDiagram-VM6X3IG4-QsFaDrlO.js          25.19 kB │ gzip:     6.53 kB
+apps/web/dist/assets/ka-jyoLzyDE-BU45urC7.js                      26.18 kB │ gzip:     4.39 kB
+apps/web/dist/assets/purify.es-DlWJHwqr.js                        27.00 kB │ gzip:    10.74 kB
+apps/web/dist/assets/rough.esm-Dy-Kn_BL.js                        27.10 kB │ gzip:     8.85 kB
+apps/web/dist/assets/dagre-MxFwdUDN.js                            27.79 kB │ gzip:     9.86 kB
+apps/web/dist/assets/be-CrQ0smca-BYVdQd18.js                      27.82 kB │ gzip:     2.22 kB
+apps/web/dist/assets/switch-DT6MJLC2.js                           28.29 kB │ gzip:     9.59 kB
+apps/web/dist/assets/gitGraphDiagram-WWUBYQGX-DRWfxQw-.js         29.00 kB │ gzip:     8.54 kB
+apps/web/dist/assets/sh-latn-sRy4Tuaj-De-tA-2J.js                 29.56 kB │ gzip:     5.35 kB
+apps/web/dist/assets/timeline-definition-24CTP7MA-BeiY7KL6.js     30.36 kB │ gzip:     9.95 kB
+apps/web/dist/assets/erDiagram-RLTQ6QDP-DH22f15o.js               30.69 kB │ gzip:    10.56 kB
+apps/web/dist/assets/requirementDiagram-BXWQKSXE-DOZjo5dq.js      31.00 kB │ gzip:     9.78 kB
+apps/web/dist/assets/sr-cyrl-Dpzrbd0W-yGc0Jz1j.js                 31.34 kB │ gzip:     5.58 kB
+apps/web/dist/assets/sk-_iOeDNrQ-DC8Al4lF.js                      31.69 kB │ gzip:     6.84 kB
+apps/web/dist/assets/sh-cyrl-BpCRFOmq-UY09gie6.js                 32.27 kB │ gzip:     5.45 kB
+apps/web/dist/assets/quadrantDiagram-AXDQQJYC-CymdMy_G.js         33.51 kB │ gzip:     9.73 kB
+apps/web/dist/assets/gl-DZGc-K_G-D9_oxkqv.js                      33.63 kB │ gzip:     4.23 kB
+apps/web/dist/assets/src-CzEymsAa.js                              35.11 kB │ gzip:    11.73 kB
+apps/web/dist/assets/index.esm-BrWyMbmy.js                        35.84 kB │ gzip:    11.48 kB
+apps/web/dist/assets/chunk-OSK3NFVY-D3G1ATGT.js                   36.45 kB │ gzip:     7.96 kB
+apps/web/dist/assets/chunk-IMKFNOWR-Y8Y8YSpw.js                   37.66 kB │ gzip:    12.28 kB
+apps/web/dist/assets/UTIF-CDhEjvms.js                             38.49 kB │ gzip:    15.19 kB
+apps/web/dist/assets/cs-CmAteokq-BI5q4aVA.js                      39.75 kB │ gzip:    10.03 kB
+apps/web/dist/assets/vennDiagram-4TSXK5OY-CVt427dm.js             41.15 kB │ gzip:    15.11 kB
+apps/web/dist/assets/blockDiagram-I7D4REHJ-C1re9yCo.js            41.44 kB │ gzip:    13.35 kB
+apps/web/dist/assets/xychartDiagram-S5SC5T6Z-uzc3kP9d.js          44.02 kB │ gzip:    12.15 kB
+apps/web/dist/assets/es-DcaaHPU_-CnHE1eri.js                      44.12 kB │ gzip:     6.25 kB
+apps/web/dist/assets/marked.esm-D7dwggTa.js                       44.32 kB │ gzip:    13.19 kB
+apps/web/dist/assets/GLTFLoader-CVw7HcGk.js                       44.97 kB │ gzip:    13.34 kB
+apps/web/dist/assets/pako-C-VMkwyK.js                             45.13 kB │ gzip:    14.37 kB
+apps/web/dist/assets/FBXLoader-BJnLfDXG.js                        45.62 kB │ gzip:    14.46 kB
+apps/web/dist/assets/pl-9fg-ESVt-Bv_p-a9x.js                      46.08 kB │ gzip:     7.76 kB
+apps/web/dist/assets/et-B_spaleu-H7jVbiHv.js                      47.20 kB │ gzip:    11.55 kB
+apps/web/dist/assets/is-BT8UVRze-DWEBuJpb.js                      48.40 kB │ gzip:    12.89 kB
+apps/web/dist/assets/chunk-TICWLB2K-0l07-n8_.js                   48.81 kB │ gzip:    15.75 kB
+apps/web/dist/assets/lib--TwNbGfw.js                              48.91 kB │ gzip:    13.87 kB
+apps/web/dist/assets/template-surfaces-D79QbxHu.js                51.21 kB │ gzip:    17.79 kB
+apps/web/dist/assets/chunk-GMAD6QVW-BDze1wWn.js                   51.84 kB │ gzip:    16.69 kB
+apps/web/dist/assets/export.esm.min-B0LJ-t1i.js                   52.75 kB │ gzip:    18.11 kB
+apps/web/dist/assets/ColladaLoader-nTVwiJ7N.js                    54.45 kB │ gzip:    14.53 kB
+apps/web/dist/assets/src-D-3Vva6p.js                              54.49 kB │ gzip:    16.69 kB
+apps/web/dist/assets/io-t7GrYory-irLCy54E.js                      56.74 kB │ gzip:    21.56 kB
+apps/web/dist/assets/sv-CFm5y56M-DeQDoAsB.js                      56.80 kB │ gzip:    14.56 kB
+apps/web/dist/assets/bg-CrQqGwni-B5xv6TfF.js                      56.92 kB │ gzip:     4.68 kB
+apps/web/dist/assets/TextArea-D6tL-hLc.js                         60.44 kB │ gzip:    18.72 kB
+apps/web/dist/assets/chunk-SHT3W25Y-dexSE3tB.js                   61.23 kB │ gzip:    19.85 kB
+apps/web/dist/assets/lib-ChxHCEFV.js                              62.75 kB │ gzip:    23.84 kB
+apps/web/dist/assets/tag-D2Y-6S9v.js                              63.82 kB │ gzip:    20.94 kB
+apps/web/dist/assets/uk-Dir3oxLs-DGVpthWV.js                      63.99 kB │ gzip:     8.55 kB
+apps/web/dist/assets/postal-mime-BzMcGF_y.js                      64.38 kB │ gzip:    22.08 kB
+apps/web/dist/assets/c4Diagram-7LVT6UL2-DMv_lYGq.js               64.73 kB │ gzip:    18.53 kB
+apps/web/dist/assets/dist-BD08FCrl.js                             65.16 kB │ gzip:    19.81 kB
+apps/web/dist/assets/USDLoader-BQQyrioy.js                        65.90 kB │ gzip:    19.29 kB
+apps/web/dist/assets/document-editor-tmJj4RW_.js                  66.02 kB │ gzip:    22.34 kB
+apps/web/dist/assets/th-DWX5iPSo-CFfNau1h.js                      68.62 kB │ gzip:    13.08 kB
+apps/web/dist/assets/ganttDiagram-EL5Y4UJY-B9C7gfhP.js            69.10 kB │ gzip:    22.76 kB
+apps/web/dist/assets/grc-DOlGgO8T-DANBReIg.js                     71.61 kB │ gzip:     8.78 kB
+apps/web/dist/assets/cy-BBPa6z2x-Cag4snSk.js                      80.19 kB │ gzip:    19.18 kB
+apps/web/dist/assets/cose-bilkent-JH36ORCC-BprARHBa.js            81.25 kB │ gzip:    21.54 kB
+apps/web/dist/assets/ga-Cn6LkudM-CDuqe3gr.js                      82.06 kB │ gzip:    20.21 kB
+apps/web/dist/assets/ru-v4l-ayaq-DLdM0nWP.js                      84.95 kB │ gzip:    17.06 kB
+apps/web/dist/assets/yjs-BMKuCloL.js                              86.63 kB │ gzip:    26.36 kB
+apps/web/dist/assets/mermaid.core-DTbL80dX.js                     91.02 kB │ gzip:    31.04 kB
+apps/web/dist/assets/attachment-preview-CWhnkXxH.js               93.15 kB │ gzip:    28.54 kB
+apps/web/dist/assets/jszip.min-B7Fa2WXl.js                        95.95 kB │ gzip:    28.50 kB
+apps/web/dist/assets/index.es-DxttYSGq.js                         98.67 kB │ gzip:    28.80 kB
+apps/web/dist/assets/chunk-4HAMMTFA-CfCnwPgz.js                  104.85 kB │ gzip:    25.68 kB
+apps/web/dist/assets/en-gb-B7Al27b_-COWGBqwJ.js                  105.37 kB │ gzip:    26.36 kB
+apps/web/dist/assets/schemas-DVq7z7ZE.js                         105.41 kB │ gzip:    30.74 kB
+apps/web/dist/assets/swimlanes-42K2YHIH-CUFzHb7p.js              111.11 kB │ gzip:    38.00 kB
+apps/web/dist/assets/lv-Q2BBHnzp-CLjYDJHB.js                     112.67 kB │ gzip:    15.93 kB
+apps/web/dist/assets/sequenceDiagram-WJ2MYXX4-D802afc2.js        115.73 kB │ gzip:    30.56 kB
+apps/web/dist/assets/antd-locale-CjOn6wVH.js                     132.58 kB │ gzip:    42.84 kB
+apps/web/dist/assets/nl-BHQJ6Gvn-8_OIBsy0.js                     138.43 kB │ gzip:    36.50 kB
+apps/web/dist/assets/lib-DH0u1Q1B.js                             140.06 kB │ gzip:    47.11 kB
+apps/web/dist/assets/knowledge-books-bx5IY4HZ.js                 147.69 kB │ gzip:    45.08 kB
+apps/web/dist/assets/leaflet-src-Ce72Rvpq.js                     148.74 kB │ gzip:    43.39 kB
+apps/web/dist/assets/architectureDiagram-5GKGNRK7-DESfDO9r.js    148.90 kB │ gzip:    41.12 kB
+apps/web/dist/assets/cu-CBUlrW6Y-BRCy0UAr.js                     168.79 kB │ gzip:    26.44 kB
+apps/web/dist/assets/admin-Bjscx8Yz.js                           174.28 kB │ gzip:    50.46 kB
+apps/web/dist/assets/client-_-LRBew4.js                          178.30 kB │ gzip:    56.30 kB
+apps/web/dist/assets/VRMLLoader-CLfBF5XH.js                      178.82 kB │ gzip:    44.63 kB
+apps/web/dist/assets/af-DK_CjRn6-CZxsvT2y.js                     179.53 kB │ gzip:    38.70 kB
+apps/web/dist/assets/dist-BdDFYL6w.js                            184.18 kB │ gzip:    53.01 kB
+apps/web/dist/assets/plus-BTVwG4nw.js                            192.49 kB │ gzip:    67.03 kB
+apps/web/dist/assets/conversion-BkzPRGU-.js                      194.50 kB │ gzip:    65.03 kB
+apps/web/dist/assets/chunk-DU6HZSFF-BJfXvwSd.js                  208.77 kB │ gzip:    27.59 kB
+apps/web/dist/assets/web.esm.min-DOnmMIy5.js                     210.27 kB │ gzip:    68.53 kB
+apps/web/dist/assets/index-cH1KdJqX.js                           211.29 kB │ gzip:    64.13 kB
+apps/web/dist/assets/katex-DfgTfVzX.js                           259.13 kB │ gzip:    77.72 kB
+apps/web/dist/assets/de-ch-1901-hVThVHVb-_Xg3_np3.js             264.33 kB │ gzip:    71.31 kB
+apps/web/dist/assets/de-1996-BL6awyxG-BjfWxQKM.js                266.93 kB │ gzip:    71.93 kB
+apps/web/dist/assets/index.esm-CDYKL0pt.js                       268.39 kB │ gzip:    78.03 kB
+apps/web/dist/assets/de-1901-CWoAOigE-BlgpCKr2.js                270.03 kB │ gzip:    72.67 kB
+apps/web/dist/assets/katex-CLsE52k0.js                           283.07 kB │ gzip:    85.92 kB
+apps/web/dist/assets/dist-D4SOUg_z.js                            310.49 kB │ gzip:    92.19 kB
+apps/web/dist/assets/lib-CNA0nuD-.js                             339.39 kB │ gzip:    73.59 kB
+apps/web/dist/assets/no-B8ItS0F3-Cjg1mxae.js                     341.69 kB │ gzip:    89.00 kB
+apps/web/dist/assets/nb-DI8u59ch-BfDSp4tN.js                     341.70 kB │ gzip:    89.01 kB
+apps/web/dist/assets/nn-ntZvarUK-BWT83oy8.js                     341.70 kB │ gzip:    89.01 kB
+apps/web/dist/assets/lib-B6p3bgVY.js                             353.13 kB │ gzip:   175.16 kB
+apps/web/dist/assets/ai-chat-Cv54CJ82.js                         355.44 kB │ gzip:   110.98 kB
+apps/web/dist/assets/chunk-DIYZ6E3S-Ch24MXFX.js                  360.16 kB │ gzip:   126.15 kB
+apps/web/dist/assets/styles-ABikyMKw.js                          363.46 kB │ gzip:   111.63 kB
+apps/web/dist/assets/translate-B-zKV5ox.js                       370.49 kB │ gzip:   111.00 kB
+apps/web/dist/assets/pdf-cpVybMXF.js                             409.77 kB │ gzip:   121.72 kB
+apps/web/dist/assets/es-DizeVYtd.js                              417.60 kB │ gzip:   119.10 kB
+apps/web/dist/assets/extensions-DntcBRUW.js                      428.66 kB │ gzip:   124.36 kB
+apps/web/dist/assets/cytoscape.esm-B-1iW2ft.js                   434.85 kB │ gzip:   137.78 kB
+apps/web/dist/assets/pdf-Ba1kNkvt.js                             468.18 kB │ gzip:   141.48 kB
+apps/web/dist/assets/xlsx-D6lO6xz3.js                            494.40 kB │ gzip:   161.26 kB
+apps/web/dist/assets/rich-plugin-elements-C_PWA9nQ.js            506.22 kB │ gzip:   145.91 kB
+apps/web/dist/assets/es-DF3fvBY-.js                              518.55 kB │ gzip:   163.41 kB
+apps/web/dist/assets/hls-Bsw5L549.js                             574.74 kB │ gzip:   178.99 kB
+apps/web/dist/assets/chunk-FOHPRMQF-CoA4358r.js                  662.09 kB │ gzip:   143.16 kB
+apps/web/dist/assets/dist-C_s83mbk.js                            717.06 kB │ gzip:   223.95 kB
+apps/web/dist/assets/three.module-DSpsqjQF.js                    722.50 kB │ gzip:   184.37 kB
+apps/web/dist/assets/ai-markdown-BZClIp6G.js                     728.06 kB │ gzip:   257.75 kB
+apps/web/dist/assets/hu-DVk7Y_ka-Ct1fysVO.js                     765.40 kB │ gzip:   172.44 kB
+apps/web/dist/assets/exceljs.min-C1j2HQXe.js                     929.56 kB │ gzip:   256.44 kB
+apps/web/dist/assets/esm-BD8fPjvC.js                             998.57 kB │ gzip:   293.73 kB
+apps/web/dist/assets/pdf-conversion-BGkUQeWJ-B3edC_23.js       1,106.90 kB │ gzip:   499.08 kB
+apps/web/dist/assets/dist-__elNw2H.js                          1,122.63 kB │ gzip:   371.55 kB
+apps/web/dist/assets/aiden0z-pptx-renderer.es-CxduXVvR.js      1,128.87 kB │ gzip:   346.34 kB
+apps/web/dist/assets/pdf.worker-BSLZFJE3.js                    1,210.78 kB │ gzip:   378.41 kB
+apps/web/dist/assets/lib-DW8R4QZv.js                           1,271.56 kB │ gzip:   276.96 kB
+apps/web/dist/assets/heic2any-Bvf9yKW0.js                      1,352.14 kB │ gzip:   344.72 kB
+apps/web/dist/assets/cad-simple-viewer-Vm_JQbX2.js             2,668.32 kB │ gzip:   775.60 kB
+apps/web/dist/assets/dist-C_7oFBc1.js                          6,735.32 kB │ gzip: 1,809.15 kB
+
+✓ built in 3.53s
+[plugin builtin:vite-reporter] 
+(!) Some chunks are larger than 500 kB after minification. Consider:
+- Using dynamic import() to code-split the application
+- Use build.rolldownOptions.output.codeSplitting to improve chunking: https://rolldown.rs/reference/OutputOptions.codeSplitting
+- Adjust chunk size limit for this warning via build.chunkSizeWarningLimit.

@@ -1,0 +1,11 @@
+
+ RUN  v4.1.11 /Users/zhangsiwen/.codex/worktrees/release-0-1-30/doca
+
+(node:34057) ExperimentalWarning: localStorage is not available because --localstorage-file was not provided.
+(Use `node --trace-warnings ...` to show where the warning was created)
+
+ Test Files  5 passed (5)
+      Tests  58 passed (58)
+   Start at  22:49:20
+   Duration  22.28s (transform 2.77s, setup 88ms, import 6.20s, tests 36.58s, environment 0ms)
+
