@@ -26,6 +26,7 @@ import {
   pluginDatabases,
   pluginDatabaseTables,
   pluginPhysicalTable,
+  PluginDatabaseConfigurationError,
 } from "./plugin-databases.js";
 import { registerDriver, databaseDriver } from "@db/transactions.js";
 import {
@@ -232,6 +233,8 @@ async function safe<T>(run: () => Promise<T>): Promise<T> {
     return await run();
   } catch (error) {
     if (error instanceof PluginStorageError) throw error;
+    if (error instanceof PluginDatabaseConfigurationError)
+      throw new PluginStorageError("unavailable", error.message);
     const code = (error as { code?: string }).code;
     throw new PluginStorageError(
       [

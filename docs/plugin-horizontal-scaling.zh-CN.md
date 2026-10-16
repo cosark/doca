@@ -8,7 +8,7 @@
 
 ## 已实现存储修订（2026-10-03，SDK 源码 0.1.7）
 
-`@smartdoca/plugin-sdk/storage` 已导出安装身份绑定的 `pluginDatabaseToken`（`storage.sql.v1`）和 `pluginObjectStorageToken`（`storage.objects.v1`）。关系库支持显式 version 1 结构声明、text/int32/双精度列、主键/唯一约束、结构化查询/写入/删除，以及回调只执行一次的事务。SDK 源码 0.1.8 另导出 `pluginCredentialToken`（`storage.credentials.v1`），提供服务端加密凭证、元数据、修订号更新与删除。联表、外键、通用 SQL、upsert 和临时工作区尚未导出。见[凭证接口](plugin-credentials.md)。业务 SQL 使用与核心库分开的宿主管理共享数据库：SQLite 一个文件、按插件加表名前缀；PostgreSQL 一个 URL／受限角色、自动创建插件 schema，共用连接池。进程隔离仍未实现，见[存储配置与先卸载再升级约定](plugin-database-isolation.zh-CN.md)。
+`@smartdoca/plugin-sdk/storage` 已导出安装身份绑定的 `pluginDatabaseToken`（`storage.sql.v1`）和 `pluginObjectStorageToken`（`storage.objects.v1`）。关系库支持显式 version 1 结构声明、text/int32/双精度列、主键/唯一约束、结构化查询/写入/删除，以及回调只执行一次的事务。SDK 源码 0.1.8 另导出 `pluginCredentialToken`（`storage.credentials.v1`），提供服务端加密凭证、元数据、修订号更新与删除。联表、外键、通用 SQL、upsert 和临时工作区尚未导出。见[凭证接口](plugin-credentials.md)。业务 SQL 使用与核心库分开的宿主管理共享数据库：SQLite 一个文件、按插件加表名前缀；PostgreSQL 一个 URL／账号、自动创建插件 schema，共用连接池。进程隔离仍未实现，见[存储配置与先卸载再升级约定](plugin-database-isolation.zh-CN.md)。
 
 逻辑库为 `plugin:<pluginId>`，用户文件归属及私有对象使用 `plugins/<pluginId>`，发行包使用 `host/plugin-releases/<sha256>.zip`。ZIP 字节进入环境变量配置的文件存储，共享数据库只保存 version 2 清单、归档引用和可信文件哈希索引。有效缓存无需重新下载 ZIP。全部实例由运维逐个重启。新宿主基线拒绝旧数据库/格式/SDK 包，原数据保留，不提供迁移或 fallback。详见[准确实现与限制](unified-storage-implementation.md)。
 
@@ -54,7 +54,7 @@ flowchart LR
 
 逻辑库名不必是物理数据库名。插件 ID 可含点号，数据库标识符还有长度和大小写规则；宿主持久登记无冲突的映射并正确引用标识符，不能简单替换符号或截断。数据库、schema 或物理文件的位置由宿主选择，插件只使用自己的逻辑表名。
 
-仅限制库名不能隔离任意 SQL。托管关系服务提供受限的关系查询、建表定义和事务 API，由宿主编译成 SQL，不暴露原始连接、任意 SQL 字符串、跨库表名、任意函数或驱动命令。PostgreSQL 还应使用受限角色和 schema 权限，禁止访问宿主表、其他插件表及服务器文件，禁止提权和改变角色。不能仅靠表名前缀、`search_path` 或正则过滤；schema 本身不是权限隔离。见 [PostgreSQL schema 与权限说明](https://www.postgresql.org/docs/current/ddl-schemas.html)和[标识符规则](https://www.postgresql.org/docs/current/sql-syntax-lexical.html)。
+仅限制库名不能隔离任意 SQL。托管关系服务提供受限的关系查询、建表定义和事务 API，由宿主编译成 SQL，不暴露原始连接、任意 SQL 字符串、跨库表名、任意函数或驱动命令。PostgreSQL 账号权限及角色成员关系由部署者决定。宿主接受普通账号及超级用户等管理员账号，不检查高权限属性或账号对核心表的访问权限；部署者可自行通过 PostgreSQL 授权限制账号。配置的业务库仍须与核心库分离。不能仅靠表名前缀、`search_path` 或正则过滤；schema 本身不是权限隔离。见 [PostgreSQL schema 与权限说明](https://www.postgresql.org/docs/current/ddl-schemas.html)和[标识符规则](https://www.postgresql.org/docs/current/sql-syntax-lexical.html)。
 
 插件当前运行于受信任的 Node.js 进程。这些规则约束 SDK 访问，不构成恶意代码沙箱。真正限制恶意插件访问进程文件或环境，需要单独的进程与操作系统隔离。
 

@@ -1,0 +1,2 @@
+$ node scripts/docs-site.mjs check
+Documentation verified: 71 pages × 2 languages; all local link targets and public heading anchors exist.

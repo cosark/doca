@@ -1,0 +1,11 @@
+{
+  "runtimeSourceFileCount": 415,
+  "sources": {
+    "arm64": true,
+    "amd64": true
+  },
+  "assets": {
+    "arm64": 470,
+    "amd64": 470
+  }
+}

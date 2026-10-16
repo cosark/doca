@@ -156,9 +156,14 @@ it("rolls transactions back, invokes user callbacks once and expires retained ha
       calls++;
       retained = tx;
       await tx.insert("notes", [{ id: "one", text: "A", score: null }]);
-      throw new Error("business failure");
+      throw Object.assign(new Error("business failure with secret SQL text"), {
+        code: "42501",
+      });
     }),
-  ).rejects.toMatchObject({ code: "unavailable" });
+  ).rejects.toMatchObject({
+    code: "unavailable",
+    message: "Plugin storage operation failed",
+  });
   expect(calls).toBe(1);
   expect(await a.database.select("notes")).toEqual([]);
   await expect(retained.select("notes")).rejects.toMatchObject({
