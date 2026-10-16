@@ -31,7 +31,7 @@ afterEach(async () => {
   );
 });
 it.skipIf(!process.env.DOCA_TEST_POSTGRES)(
-  "rejects core-database targets and roles with core-table privileges",
+  "rejects core-database targets and accepts operator-selected account privileges",
   async () => {
     const db = await openTestDatabase({ driver: "sqlite", path: ":memory:" });
     dbs.push(db);
@@ -58,14 +58,56 @@ it.skipIf(!process.env.DOCA_TEST_POSTGRES)(
     if (!/^doca_test_plugin_[a-f0-9]+_role$/.test(role))
       throw new Error("Expected a fixture-owned role");
     const control = new Pool({ connectionString: main.url, max: 1 });
-    const unsafe = new PluginDatabases(db, host.config);
+    const group = role + "_group";
+    let groupCreated = false;
+    const accepts = async () => {
+      const connection = new PluginDatabases(db, host.config);
+      try {
+        await expect(
+          connection.open("example.restricted", false),
+        ).resolves.toBeDefined();
+      } finally {
+        await connection.close();
+      }
+    };
     try {
       await control.query(`grant select on users to ${role}`);
-      await expect(unsafe.open("example.restricted", false)).rejects.toThrow(
-        "must not have access to core tables",
-      );
+      await accepts();
+      await control.query(`create role ${group}`);
+      groupCreated = true;
+      await control.query(`grant ${group} to ${role}`);
+      await accepts();
+      for (const attribute of [
+        "superuser",
+        "createdb",
+        "createrole",
+        "bypassrls",
+      ]) {
+        await control.query(`alter role ${role} ${attribute}`);
+        try {
+          await accepts();
+          // Even a superuser cannot select the core database as the business store.
+          const sameCore = new PluginDatabases(db, {
+            driver: "postgres",
+            url: coreTarget.href,
+            poolMax: 1,
+          });
+          try {
+            await expect(
+              sameCore.open("example.restricted", false),
+            ).rejects.toThrow("separate from the core");
+          } finally {
+            await sameCore.close();
+          }
+        } finally {
+          await control.query(`alter role ${role} no${attribute}`);
+        }
+      }
     } finally {
-      await unsafe.close();
+      if (groupCreated) {
+        await control.query(`revoke ${group} from ${role}`);
+        await control.query(`drop role ${group}`);
+      }
       await control.query(`revoke select on users from ${role}`);
       await control.end();
     }
