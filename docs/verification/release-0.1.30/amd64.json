@@ -1,0 +1,33 @@
+[
+  {
+    "arch": "amd64",
+    "driver": "sqlite",
+    "version": "0.1.30",
+    "health": true,
+    "hostValidation": true,
+    "compression": [
+      "gzip",
+      "br"
+    ],
+    "accountRestrictionsAbsent": true,
+    "administratorBootstrapAndLogin": true,
+    "gracefulShutdown": true
+  },
+  {
+    "arch": "amd64",
+    "driver": "postgres",
+    "version": "0.1.30",
+    "health": true,
+    "hostValidation": true,
+    "compression": [
+      "gzip",
+      "br"
+    ],
+    "accountRestrictionsAbsent": true,
+    "administratorBootstrapAndLogin": true,
+    "sameSuperuserForSeparateDatabases": true,
+    "realResourcesPlugin": "0.1.4",
+    "preferenceRetainedAfterRestart": true,
+    "gracefulShutdown": true
+  }
+]
