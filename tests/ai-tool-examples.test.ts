@@ -84,7 +84,7 @@ it("covers the fields that usually fail on the first edit/file/image call", () =
   });
   expect(sheet.operations[0]!.cells).toEqual(
     expect.arrayContaining([
-      { row: 0, column: 0, v: "费用类别" },
+      expect.objectContaining({ row: 0, column: 0, v: "费用类别" }),
       { row: 2, column: 1, f: "=B2" },
     ]),
   );

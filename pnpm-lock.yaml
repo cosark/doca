@@ -62,7 +62,7 @@ overrides:
 patchedDependencies:
   '@mastra/memory@1.29.0': 60d56858970164a4f0b90b5f380282484f93fef17d89ee36db8a8a4d2ceb02ab
   '@smartdoca/markdown@0.4.3': ef72ffab67d6316303352f1f55effff258b20adbababfc9e4857ea222fefe81a
-  '@smartdoca/slate@0.4.20': 9524bc2f432ac385217164e95fc7021301fe7fc711240fed4809281ce3d55cd6
+  '@smartdoca/slate@0.4.22': 9524bc2f432ac385217164e95fc7021301fe7fc711240fed4809281ce3d55cd6
 
 importers:
 
@@ -156,8 +156,8 @@ importers:
         specifier: ^0.34.52
         version: 0.34.52
       '@smartdoca/canvas':
-        specifier: 0.4.3
-        version: 0.4.3(@leafer-in/interface@2.1.0(@leafer-ui/interface@2.1.0)(@leafer/interface@2.1.0))(@leafer-ui/core@2.1.0)(@leafer-ui/draw@2.1.0)(@leafer-ui/interface@2.1.0)(react-dom@19.2.8(react@19.2.8))(react@19.2.8)
+        specifier: 0.5.2
+        version: 0.5.2(react-dom@19.2.8(react@19.2.8))(react@19.2.8)
       '@smartdoca/files-capability':
         specifier: workspace:*
         version: link:packages/files-capability
@@ -180,11 +180,11 @@ importers:
         specifier: 0.2.3
         version: 0.2.3(@types/react-dom@19.2.7(@types/react@19.2.18))(@types/react@19.2.18)(react-dom@19.2.8(react@19.2.8))(react@19.2.8)
       '@smartdoca/slate':
-        specifier: 0.4.20
-        version: 0.4.20(patch_hash=9524bc2f432ac385217164e95fc7021301fe7fc711240fed4809281ce3d55cd6)(katex@0.18.7)(react-dom@19.2.8(react@19.2.8))(react@19.2.8)(slate-dom@0.118.1(slate@0.118.1))(slate-history@0.113.1(slate@0.118.1))(slate-react@0.118.2(react-dom@19.2.8(react@19.2.8))(react@19.2.8)(slate-dom@0.118.1(slate@0.118.1))(slate@0.118.1))(slate@0.118.1)
+        specifier: 0.4.22
+        version: 0.4.22(patch_hash=9524bc2f432ac385217164e95fc7021301fe7fc711240fed4809281ce3d55cd6)(katex@0.18.7)(react-dom@19.2.8(react@19.2.8))(react@19.2.8)(slate-dom@0.118.1(slate@0.118.1))(slate-history@0.113.1(slate@0.118.1))(slate-react@0.118.2(react-dom@19.2.8(react@19.2.8))(react@19.2.8)(slate-dom@0.118.1(slate@0.118.1))(slate@0.118.1))(slate@0.118.1)
       '@smartdoca/slides':
-        specifier: 0.3.0-alpha.2
-        version: 0.3.0-alpha.2(react-dom@19.2.8(react@19.2.8))(react@19.2.8)
+        specifier: 0.3.0-alpha.3
+        version: 0.3.0-alpha.3(react-dom@19.2.8(react@19.2.8))(react@19.2.8)
       antd:
         specifier: ^6.6.3
         version: 6.6.3(react-dom@19.2.8(react@19.2.8))(react@19.2.8)
@@ -3788,8 +3788,8 @@ packages:
       slate: '>=0.70.0'
       yjs: 13.6.32
 
-  '@smartdoca/canvas@0.4.3':
-    resolution: {integrity: sha512-tTdeo7AjvfyUJe0mdIW/3hmEutbMRmOCfFsDmsxCtnRmQwbE+0d7QEBAKZpivFF1Q1nuK76BUrYSETH+w+Bacw==}
+  '@smartdoca/canvas@0.5.2':
+    resolution: {integrity: sha512-x9aNdrhxrIf++hm0KFPnZlHQS76fVVf0SgW2ahGbh2WTlhFpVt7YMztFC2YyJNh0rAAM9iWIa5RUuOGhIV2Vbw==}
     engines: {node: '>=20', yarn: '>=1.22'}
     peerDependencies:
       react: '>=18.2.0'
@@ -3808,8 +3808,8 @@ packages:
       react: '>=18'
       react-dom: '>=18'
 
-  '@smartdoca/slate@0.4.20':
-    resolution: {integrity: sha512-fHI7XUjponyLGYBtLKFiRH1khHyntJbn3ZGwXL2MLJuBJ2jmv/C00FTaAlYFGhCusfFa/o8+H5R2an7YI+6lSw==}
+  '@smartdoca/slate@0.4.22':
+    resolution: {integrity: sha512-vAPAXcffhzYVXnY9DFZztHQ7qHLwCwQnmRtKepSo2sf2uxra8LMnCpgo+ydVGhewnf7gA82zqT1KRy3AuyUfPw==}
     peerDependencies:
       katex: ^0.18.7
       react: '>=18.2.0'
@@ -3822,8 +3822,8 @@ packages:
       katex:
         optional: true
 
-  '@smartdoca/slides@0.3.0-alpha.2':
-    resolution: {integrity: sha512-3z2dsfCB0dfQUmkldH6G8l5d9xhllsnBope6FrBio5Yafb7PHCCMURF8jNJrFgVMilW8LmAQegFIdvzBMONXZQ==}
+  '@smartdoca/slides@0.3.0-alpha.3':
+    resolution: {integrity: sha512-SnuRVCOQRDs0mqsrVrvgY6JqwT/okVbGIatvuxBzsk1+sOeNW/aDs83tE7r6zUCvZ8deltwxf5hvMxiqt5LlLw==}
     peerDependencies:
       react: '>=18'
       react-dom: '>=18'
@@ -13610,27 +13610,30 @@ snapshots:
       y-protocols: 1.0.7(yjs@13.6.32)
       yjs: 13.6.32
 
-  '@smartdoca/canvas@0.4.3(@leafer-in/interface@2.1.0(@leafer-ui/interface@2.1.0)(@leafer/interface@2.1.0))(@leafer-ui/core@2.1.0)(@leafer-ui/draw@2.1.0)(@leafer-ui/interface@2.1.0)(react-dom@19.2.8(react@19.2.8))(react@19.2.8)':
+  '@smartdoca/canvas@0.5.2(react-dom@19.2.8(react@19.2.8))(react@19.2.8)':
     dependencies:
       '@icon-park/react': 1.4.2(react-dom@19.2.8(react@19.2.8))(react@19.2.8)
       '@leafer-in/arrow': 2.1.0(@leafer-in/interface@2.1.0(@leafer-ui/interface@2.1.0)(@leafer/interface@2.1.0))(@leafer-ui/draw@2.1.0)(@leafer-ui/interface@2.1.0)
       '@leafer-in/editor': 2.1.0(@leafer-in/interface@2.1.0(@leafer-ui/interface@2.1.0)(@leafer/interface@2.1.0))(@leafer-in/resize@2.1.0(@leafer-in/interface@2.1.0(@leafer-ui/interface@2.1.0)(@leafer/interface@2.1.0))(@leafer-ui/draw@2.1.0)(@leafer-ui/interface@2.1.0))(@leafer-ui/core@2.1.0)(@leafer-ui/draw@2.1.0)(@leafer-ui/interface@2.1.0)
       '@leafer-in/export': 2.1.0(@leafer-in/interface@2.1.0(@leafer-ui/interface@2.1.0)(@leafer/interface@2.1.0))(@leafer-ui/draw@2.1.0)(@leafer-ui/interface@2.1.0)
+      '@leafer-in/interface': 2.1.0(@leafer-ui/interface@2.1.0)(@leafer/interface@2.1.0)
       '@leafer-in/resize': 2.1.0(@leafer-in/interface@2.1.0(@leafer-ui/interface@2.1.0)(@leafer/interface@2.1.0))(@leafer-ui/draw@2.1.0)(@leafer-ui/interface@2.1.0)
       '@leafer-in/text-editor': 2.1.0(@leafer-in/editor@2.1.0(@leafer-in/interface@2.1.0(@leafer-ui/interface@2.1.0)(@leafer/interface@2.1.0))(@leafer-in/resize@2.1.0(@leafer-in/interface@2.1.0(@leafer-ui/interface@2.1.0)(@leafer/interface@2.1.0))(@leafer-ui/draw@2.1.0)(@leafer-ui/interface@2.1.0))(@leafer-ui/core@2.1.0)(@leafer-ui/draw@2.1.0)(@leafer-ui/interface@2.1.0))(@leafer-in/interface@2.1.0(@leafer-ui/interface@2.1.0)(@leafer/interface@2.1.0))(@leafer-ui/core@2.1.0)(@leafer-ui/interface@2.1.0)
       '@leafer-in/view': 2.1.0(@leafer-in/interface@2.1.0(@leafer-ui/interface@2.1.0)(@leafer/interface@2.1.0))(@leafer-ui/draw@2.1.0)(@leafer-ui/interface@2.1.0)
       '@leafer-in/viewport': 2.1.0(@leafer-in/interface@2.1.0(@leafer-ui/interface@2.1.0)(@leafer/interface@2.1.0))(@leafer-ui/core@2.1.0)(@leafer-ui/interface@2.1.0)
+      '@leafer-ui/core': 2.1.0
+      '@leafer-ui/draw': 2.1.0
+      '@leafer-ui/interface': 2.1.0
+      '@leafer/interface': 2.1.0
       cropperjs: 2.2.0
       leafer-ui: 2.1.0
       react: 19.2.8
       react-dom: 19.2.8(react@19.2.8)
-      roughjs: 4.6.6
+      slate: 0.118.1
+      slate-dom: 0.118.1(slate@0.118.1)
+      slate-history: 0.113.1(slate@0.118.1)
+      slate-react: 0.118.2(react-dom@19.2.8(react@19.2.8))(react@19.2.8)(slate-dom@0.118.1(slate@0.118.1))(slate@0.118.1)
       yjs: 13.6.32
-    transitivePeerDependencies:
-      - '@leafer-in/interface'
-      - '@leafer-ui/core'
-      - '@leafer-ui/draw'
-      - '@leafer-ui/interface'
 
   '@smartdoca/markdown@0.4.3(patch_hash=ef72ffab67d6316303352f1f55effff258b20adbababfc9e4857ea222fefe81a)(@babel/runtime@8.0.5)(@codemirror/autocomplete@6.20.3)(@codemirror/lint@6.9.7)(@codemirror/search@6.7.2)(@codemirror/theme-one-dark@6.1.3)(@types/react@19.2.18)(codemirror@6.0.2)(react-dom@19.2.8(react@19.2.8))(react@19.2.8)(supports-color@8.1.1)(yjs@13.6.32)':
     dependencies:
@@ -13709,7 +13712,7 @@ snapshots:
       - '@types/react'
       - '@types/react-dom'
 
-  '@smartdoca/slate@0.4.20(patch_hash=9524bc2f432ac385217164e95fc7021301fe7fc711240fed4809281ce3d55cd6)(katex@0.18.7)(react-dom@19.2.8(react@19.2.8))(react@19.2.8)(slate-dom@0.118.1(slate@0.118.1))(slate-history@0.113.1(slate@0.118.1))(slate-react@0.118.2(react-dom@19.2.8(react@19.2.8))(react@19.2.8)(slate-dom@0.118.1(slate@0.118.1))(slate@0.118.1))(slate@0.118.1)':
+  '@smartdoca/slate@0.4.22(patch_hash=9524bc2f432ac385217164e95fc7021301fe7fc711240fed4809281ce3d55cd6)(katex@0.18.7)(react-dom@19.2.8(react@19.2.8))(react@19.2.8)(slate-dom@0.118.1(slate@0.118.1))(slate-history@0.113.1(slate@0.118.1))(slate-react@0.118.2(react-dom@19.2.8(react@19.2.8))(react@19.2.8)(slate-dom@0.118.1(slate@0.118.1))(slate@0.118.1))(slate@0.118.1)':
     dependencies:
       '@antv/x6': 2.19.2
       '@antv/x6-plugin-clipboard': 2.1.6(@antv/x6@2.19.2)
@@ -13736,7 +13739,7 @@ snapshots:
     optionalDependencies:
       katex: 0.18.7
 
-  '@smartdoca/slides@0.3.0-alpha.2(react-dom@19.2.8(react@19.2.8))(react@19.2.8)':
+  '@smartdoca/slides@0.3.0-alpha.3(react-dom@19.2.8(react@19.2.8))(react@19.2.8)':
     dependencies:
       '@antv/g-svg': 2.1.1
       '@antv/g2': 5.4.8

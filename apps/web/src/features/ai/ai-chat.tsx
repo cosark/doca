@@ -557,6 +557,7 @@ export function AIChat({ full = false }: { full?: boolean }) {
     null,
   );
   const restoringDraft = useRef(false);
+  const [restoredDraftKey, setRestoredDraftKey] = useState<string | null>(null);
   const referenceSlots = useRef(new Map<string, AIReference>());
   const referenceIdentity = (r: AIReference) =>
     JSON.stringify([r.resourceId, r.anchor, r.epochId, r.seq]);
@@ -1006,6 +1007,7 @@ export function AIChat({ full = false }: { full?: boolean }) {
     );
   };
   useLayoutEffect(() => {
+    let active = true;
     const previousKey = activeDraftKey.current;
     if (previousKey && previousKey !== draftKey)
       localDraftFiles.current.set(previousKey,
@@ -1046,9 +1048,14 @@ export function AIChat({ full = false }: { full?: boolean }) {
         .map(file => [file.response?.id ?? file.uid, file])).values()]);
     }
     queueMicrotask(() => {
+      if (!active) return;
       restoringDraft.current = false;
       skipReferenceInsert.current = false;
+      setRestoredDraftKey(draftKey);
     });
+    return () => {
+      active = false;
+    };
   }, [draftKey]);
   useEffect(() => {
     persistComposer();
@@ -1339,6 +1346,29 @@ export function AIChat({ full = false }: { full?: boolean }) {
     consumeAssistantDraft(launchDraft);
   }, [full, launchDraft]);
   useEffect(() => {
+    if (
+      (!full && !ai.open) || ai.restoring || ai.contextLoading ||
+      restoringDraft.current || restoredDraftKey !== draftKey ||
+      !senderRef.current || !ai.pendingReferences.length
+    ) return;
+    const present = new Set(
+      (senderRef.current.getValue().slotConfig ?? [])
+        .filter((slot) => slot.type === "tag")
+        .map((slot) => referenceSlots.current.get(slot.key!))
+        .filter((ref): ref is AIReference => !!ref)
+        .map(referenceIdentity),
+    );
+    for (const ref of ai.pendingReferences) {
+      const identity = referenceIdentity(ref);
+      if (present.has(identity)) continue;
+      insertReference(ref);
+      present.add(identity);
+    }
+    ai.consumePendingReferences(ai.pendingReferences);
+    persistComposer();
+    senderRef.current.focus();
+  }, [ai.pendingReferences, ai.restoring, ai.contextLoading, ai.open, full, draftKey, restoredDraftKey]);
+  useEffect(() => {
     setOlder([]);
     setOlderJobs([]);
     setOlderOperations([]);
@@ -1355,6 +1385,7 @@ export function AIChat({ full = false }: { full?: boolean }) {
     let active = true;
     const live = new Map<string, Conversation["jobs"][number]>();
     let modelLoaded = false;
+    let loadRevision = 0;
     const sessionId = ai.sessionId;
     const userId = ai.userId;
     setConversation((current) =>
@@ -1369,10 +1400,13 @@ export function AIChat({ full = false }: { full?: boolean }) {
           );
         },
       );
-    const load = () =>
-      api<Conversation>(`/ai/sessions/${sessionId}`)
+    const load = () => {
+      const revision = ++loadRevision;
+      return api<Conversation>(`/ai/sessions/${sessionId}`)
         .then((data) => {
-          if (!active) return;
+          // SSE status changes can overlap history requests. A late response
+          // must not replace a newer snapshot after its sent bubble is reconciled.
+          if (!active || revision !== loadRevision) return;
           const next = {
             ...data,
             jobs: data.jobs.map((job) => {
@@ -1396,7 +1430,7 @@ export function AIChat({ full = false }: { full?: boolean }) {
             item.sessionId !== sessionId || !data.messages.some(message => message.id === item.id)));
         })
         .catch((e) => {
-          if (active) {
+          if (active && revision === loadRevision) {
             if ([401, 403, 404].includes(e.status)) {
               setConversation(null);
               setOlder([]);
@@ -1406,6 +1440,7 @@ export function AIChat({ full = false }: { full?: boolean }) {
             ai.setError(e.message);
           }
         });
+    };
     void load();
     const events = new EventSource(
       `/api/v1/ai/sessions/${ai.sessionId}/stream`,
@@ -1450,7 +1485,7 @@ export function AIChat({ full = false }: { full?: boolean }) {
       clearInterval(timer);
       events.close();
     };
-  }, [ai.sessionId]);
+  }, [ai.sessionId, ai.userId]);
   useEffect(() => {
     const sync = () =>
       setPending(ai.userId ? loadPendingQueue(ai.userId, queueKey) : []);
@@ -3494,7 +3529,7 @@ export function AIChat({ full = false }: { full?: boolean }) {
                   const active = tags
                     .map((slot) => referenceSlots.current.get(slot.key!))
                     .filter((r): r is AIReference => !!r);
-                  if (composerReady.current) {
+                  if (composerReady.current && !restoringDraft.current) {
                     const sameRefs =
                       active.length === ai.references.length &&
                       active.every(

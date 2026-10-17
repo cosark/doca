@@ -4,7 +4,7 @@ const workflow = `
 执行规则：
 0. 新建文档先 document_create。requiresApproval:true 表示尚未创建；用户批准只代表允许执行，批准后必须用原始参数重试 document_create，拿到成功回执的真实 id 后再 document_read。不要把审批卡片、调用示例或自己生成的 UUID 当成已创建文档 ID。
 1. 先确认用户指定的文档/片段，通过 document_read 读取最新结构与 seq、epochId。默认返回 outline（稳定 ID 与短预览）；需要某段正文时再传 blockId/slideId/sheetId/elementId，或 view=content。content 分页未读完时按 nextOffset 继续，不根据标题猜内容。
-2. 根据document_read返回的capabilities.editTool选择rich_text_edit、markdown_edit、canvas_edit、presentation_edit或spreadsheet_edit，参数是 {resourceId,seq,epochId,operations:[原生命令]}。operations 必须直接传对象数组，不能传带引号的 JSON 字符串。命令形状见对应 *_edit 描述中的调用例；编辑前先遵循宿主本轮自动加载或文档工具回执提供的对应完整手册，尚未提供时先 load_skill。ID来自读取结果；新元素才生成唯一ID。一次调用尽量写完整篇或完整一节（最多80条操作，80是操作数量而非正文字符数），不要把同一篇文章拆成十几次工具调用。需要读取新表格、分栏等自动生成的 ID 时，先创建结构、document_read 读取真实 ID，再用回执 seq/epochId 批量填充。表格先确定表头和公式依赖，再按区域填入，避免每个单元格都单独调用。每次成功后使用返回的新 seq/epochId，遇到409先重新读取 outline，不重复追加已完成内容。
+2. 根据document_read返回的capabilities.editTool选择rich_text_edit、markdown_edit、canvas_edit、presentation_edit或spreadsheet_edit，参数是 {resourceId,seq,epochId,operations:[工具声明的原生命令或宿主工作流]}。operations 必须直接传对象数组，不能传带引号的 JSON 字符串。命令形状见对应 *_edit 描述中的调用例；编辑前先遵循宿主本轮自动加载或文档工具回执提供的对应完整手册，尚未提供时先 load_skill。ID来自读取结果；新元素才生成唯一ID。一次调用尽量写完整篇或完整一节（最多80条操作，80是操作数量而非正文字符数），不要把同一篇文章拆成十几次工具调用。需要读取新表格、分栏等自动生成的 ID 时，先创建结构、document_read 读取真实 ID，再用回执 seq/epochId 批量填充。表格先确定表头和公式依赖，再按区域填入，避免每个单元格都单独调用。每次成功后使用返回的新 seq/epochId，遇到409先重新读取 outline，不重复追加已完成内容。
 3. 引用片段只修改对应稳定锚点范围。保留其他内容、样式、公式、链接和元素ID，不用整文重建替代局部编辑。
 4. 用户明确要求编辑/保存就执行到保存完成，不能只说“将要操作”。工具失败先按错误修正参数；同一错误重复两次就报告具体限制，不编造成功。保存后用回执 seq 继续；验收或定位失败再读 outline/区域，不要每批回读全文。不把生成中的计划当最终结果。
 5. 总结、问答、翻译建议默认只回复对话；只有用户要求写回时才修改。回复使用中文、简洁说明结果和文档链接，不展示内部ID、版本号、底层命令。无渲染或计算证据时不要声称已通过视觉或公式计算验收。
@@ -69,6 +69,9 @@ Markdown：
 - 同一条 cells 写整块区域，不要每格单独调用。一次调用可包含多条操作。
 - document_read 的 spreadsheetHint.firstCellsCall 已带真实 sheetId，照形状改内容即可。
 - 工具会纠正 value/formula、A1 键、Sheet1 名称、说明文字 sheetId、JSON 字符串 cells 等常见写法。
+- 单元格样式放在 s 中：背景色 s:{bg:{rgb:"#FFCC00"}}，文字颜色 s:{cl:{rgb:"#333333"}}，粗体 s:{bl:1}，数字格式 s:{n:{pattern:"#,##0.00"}}。bgColor/backgroundColor/color/fill 不是原生单元格颜色字段，不要编造。
+- 只改背景色：{type:"cells",sheetId:"Sheet1",cells:[{row:0,column:0,s:{bg:{rgb:"#FFCC00"}}}]}。省略 v/f 保留原文字、公式及其他样式；s:{bg:null} 清除背景色。错误颜色字段会整批拒绝，按提示修正后重试。
+- 保存成功代表命令已保存，不能据此宣称颜色已经在页面上正确显示；定位问题时按 sheetId 和范围回读样式，页面验收需要实际画面。
 
 其他：
 - 超链接：{v:null,f:'=HYPERLINK("https://…","显示文字")'}。
@@ -79,22 +82,22 @@ Markdown：
   },
   {
     id: "canvas",
-    name: "画板与流程图",
-    description:
-      "可编辑流程图、结构图、原生图形文字、连线、分组、布局与局部调整",
+    name: "画布、流程图与界面设计",
+    description: "原生流程图、思维导图、画布表格、手机与平板容器中的可编辑 UI、矢量图案和局部修改",
     formats: ["canvas"],
-    content:
-      workflow +
-      `
-先读scene、元素树及稳定ID，检查已有元素边界。tag负责绘制，name负责原生属性面板；新增工具会按tag补齐name，自己指定时应使用原生值rect、ellipse、text、line、arrow、path、polygon、star、image、group、frame，不能用描述性名称覆盖name。用户指定选区时只改选中的节点，不移动整张画布。
-- 图形：{type:"add",element:{id:"唯一ID",tag:"Rect",x:80,y:160,width:160,height:64,fill:"#E8F1FE"}}。
-- 文字单独建原生Text：{type:"add",element:{id:"唯一ID",tag:"Text",x:96,y:176,width:128,height:32,text:"开始",fill:"#1f2937",textAlign:"center",verticalAlign:"middle"}}；不要假设Rect.text会显示。文本框位置居中不等于文字居中；需要明确 textAlign/verticalAlign，回读属性和边界，不能仅凭保存成功宣称版面通过。
-- 连线用原生Line，例：{tag:"Line",x:240,y:192,points:[0,0,80,0],stroke:"#64748b",strokeWidth:2,endArrow:"angle"}。points是相对x/y的坐标数组，不能写模型不支持的toPoint/x1/y1/x2/y2。startArrow/endArrow仅使用none、angle、triangle、circle、diamond；不能用true或"arrow"。明确端点坐标和节点连接关系。
-- 从左到右或从上到下排列，预留40~80像素节点间距，文字位于节点内部，考虑文本长度，不重叠。分支流程标明条件，节点和线放到合适层级。
-- patch:{type:"patch",id,patch:{x,y,width,height,fill,...}}局部修改；text:{type:"text",id,index,deleteCount,text}替换标签。
-- place:{type:"place",id,parentId:null或容器ID,beforeId}调整层级与顺序；group:{type:"group",ids:[...]}; ungroup:{type:"ungroup",id}; remove:{type:"remove",ids:[...]}仅移除用户指定元素。
-- 适用流程图、架构关系、泳道式布局、思维图初稿、便签分区、对齐与配色。没有专门自动布局工具时按坐标计算，保留可编辑元素；不要生成一张截图替代图形。
-- 保存后用回执 seq 继续；验收或定位失败再按 elementId 读区域，检查边界和间距。图像生成、复杂矢量布尔运算或未经支持的连接器功能要说明限制。`,
+    content: workflow + `
+当前 Canvas 0.5.2。新建画布用 document_create format:"canvas"；用 canvas_edit，所有坐标、尺寸、字体大小均为像素；子元素坐标相对父容器。Rect/Ellipse/Star 的 x/y 默认是外接矩形左上角，绝不是圆心；不指定 origin/around 时不能把中心坐标直接传给 x/y。同心圆例：中心(400,400)、直径280用{x:260,y:260,width:280,height:280}，内圈直径260用{x:270,y:270,width:260,height:260}。先规划整体包围盒，再计算脸、五官、耳朵、装饰和标题位置；各前景元素必须落在对应主体内或按设计相交。Text 居中必须给 width/height，例如 x:250,y:560,width:300,height:40,textAlign:"center"，不能只给中心点和 textAlign。先读 outline，按 elementId 读取完整目标；不能根据短预览覆盖正文。每个新对象指定唯一 id；文字长度使用 UTF-16 textLength。一次可写多个完整对象，不逐个调用。
+优先使用以下宿主工作流，它们组合当前组件的公开 CanvasModel 命令并生成原生可编辑节点：
+- 流程图：{type:"createFlowchart",id:"flow",x:60,y:60,nodes:[{id:"start",text:"开始",x:0,y:0,width:160,height:64,shape:"rounded"},{id:"check",text:"检查",x:260,y:0,width:160,height:64,shape:"diamond"}],edges:[{id:"e1",sourceId:"start",targetId:"check",mode:"elbow",label:"提交"}]}。shape 为 rounded/rect/ellipse/diamond，fill/stroke 可选；节点坐标相对流程图分组，edges 必须引用本次节点 ID，支持 straight/elbow。分支连线写明条件。返回线可指定sourcePort/targetPort=top/right/bottom/left和offset（纵向端口时为绕行x，横向端口时为绕行y），让退回线路绕到主流程外侧，不重叠主线。原生connector自己绘制箭头，不额外写Path.endArrow。节点间距至少 60px，菱形内短标签，避免标签与节点重叠。修改已有流程节点颜色要读Frame内部data.kind="diagram-body"的子图形并patch它的fill/stroke；文字改子Text，不给透明外Frame上色代替。
+- 思维导图：{type:"createMindmap",id:"mind",x:500,y:300,layout:"balanced",topic:{id:"root",text:"项目",children:[{id:"design",text:"设计",children:[{id:"ui",text:"界面"}]},{id:"dev",text:"研发"}]}}。layout 为 right/left/balanced。自动生成原生主题、逻辑父子关系和边。已有主题通过读取主题子 Text 的 id 后 text/patch 修改；remove 删除主题会递归删除逻辑后代；删除根主题移除整图。不得用 group/ungroup 改坏导图结构。
+- 表格：{type:"createTable",id:"tasks",x:60,y:60,cells:[["任务","负责人"],["设计","小林"]],columnWidths:[220,140],rowHeights:[48,56]}。矩阵必须矩形，最多100行30列；尺寸数组可省略以采用新建表格尺寸，指定时必须与行列数一致。
+- 操作已有表格：{type:"table",id:"已读取的表格分组ID",command:{kind:"cell",row:1,column:1,text:"小陈"}}。所有行列索引从0开始。区域 range={startRow:0,endRow:1,startColumn:0,endColumn:1}，端点均包含。
+  paste:{kind:"paste",row:1,column:0,cells:[["联调","小周"]]}；clear/merge/split:{kind:"merge",range}；style:{kind:"style",range,style:{bold:true,fontSize:16,color:"#1f2329",backgroundColor:"#eaf1ff",align:"center",verticalAlign:"middle"}}；resize:{kind:"resize",axis:"column",index:0,size:240}；insert-row/insert-column/delete-row/delete-column:{kind:"insert-row",index:1}。表格编辑回执的nativeTables给出操作后的rows/columns/lastRowIndex/lastTwoRows和合并位置；“末两行”等要求必须按最终lastTwoRows计算，不用增行前的索引。完成前逐项核对merges坐标和格内文字。表格结构只能走table工作流，禁止add/remove/place表格子节点或patch.data手写行列；新增末行先insert-row index=当前rows，再paste row=新增行索引。超范围粘贴先增行列，合并区域修改要覆盖完整合并格；结构修改前先 split，不能删最后一行列。整格 cell/paste/clear 明确替换该格正文；样式保留已有文字、格式及附件。富文本格合并未支持，错误时不要清除格式绕过保护。
+- 手机/平板/网页 UI：先 {type:"createContainer",id:"phone-home",containerType:"phone",title:"首页",x:60,y:60}；tablet 创建820×1180，phone为390×844，web为1280×800，也支持wide/standard/a4/section。随后 {type:"add",parentId:"phone-home",element:{id:"card",tag:"Rect",x:24,y:120,width:342,height:160,cornerRadius:16,fill:"#f3f6fc"}}。容器自带设备边框、摄像头和home bar，不重复绘制这些硬件。子元素全部放在目标容器，手机顶部0–100和底部30像素留给设备边框/标题；平板顶部留60像素。完整 UI 应包含导航、内容、操作与状态，保持组件间距和配色，不能只放标题冒充页面。
+- 绘制图案用原生 add：Rect/Ellipse/Text/Line/Path/Polygon/Star/Group/Frame/Image，支持透明度、描边、旋转和组合。路径用原生 path，例如{tag:"Path",path:"M0 0L80 0L40 60Z",fill:"#f4a261"}，禁止SVG属性d（工具会明确报出未知字段）；Line/Polygon 的 points 必须是相对 x/y 的扁平数字数组 [0,80,40,0,80,80] 或 [{x:0,y:80},{x:40,y:0},{x:80,y:80}]，禁止 [[0,80],[40,0],[80,80]]（不会显示）。三角耳朵例：{tag:"Polygon",x:100,y:80,points:[0,80,40,0,80,80],fill:"#f4a261"}；五角星用{tag:"Star",x:40,y:40,width:24,height:24,corners:5,innerRadius:0.45,fill:"#f4d03f"}，不要把Polygon的点对嵌套数组冒充星形。startArrow/endArrow 仅用 none/angle/triangle/circle/diamond。图案保持可编辑，不生成截图代替。文本单独用Text，明确fill/fontSize/textAlign/verticalAlign，不能把Rect.text当可见文字。
+- 新版原生分类包括 mindmap/mind-node/mind-edge、diagram-node/diagram-body、connector/connector-label、board-table/table-cell、note/card和frame；tag 与 name 必须匹配。普通图形省略 name 时工具补齐原生分类。对象关系位于 data.kind/parentId/sourceId/targetId，不能用显示文字当ID。data 是整字段 LWW，patch.data 必须先完整读取并保留其他字段；富文本 data.richText={version:1,value:[{type:"paragraph",children:[{text:"…",bold:true}]}]}，权威正文是 Text.text。保留媒体资源和自定义原子对象，不手写临时URL。
+- 通用编辑：{type:"patch",id,patch:{x,y,width,height,fill}}；{type:"text",id,index:0,deleteCount:读到的textLength,text:"新文字"}；place用id/parentId/beforeId，group用ids，ungroup用id，remove用ids。不要更换已有id或patch.children/tag/name。用户指定局部时保留其他元素。
+写入后回读实际seq/epochId、对象关系、表格内容和边界。没有真实渲染时只能说明内容已保存，不能声称视觉验收通过。`,
   },
   {
     id: "presentation",
@@ -105,18 +108,20 @@ Markdown：
     content:
       workflow +
       `
-先读size、slideOrder、slides、elementOrder和elements。坐标与尺寸使用EMU，字体大小使用pt；通常1像素=9525EMU，但实际排版以文稿size为准。先规划每页的标题和关键信息，逐页完成，不用长段文字挤满单页。用户指定总页数时必须核对最终 slideOrder.length，不能以“额外保留原页”为由悄悄超出页数。仅有默认示例首页时优先复用；已有用户内容且改写范围不明确时先确认。
+新建演示用 document_create format:"presentation"。先读size、slideOrder、slides、elementOrder和elements。元素transform与文稿size使用EMU，字体和letterSpacing使用pt；文本padding/paddingInsets和表格resize的size/extent使用CSS像素。pageSize命令的width/height也使用CSS像素。1像素=9525EMU；工具不自动猜单位，transform必须完整包含x/y/width/height/rotation。先规划每页的标题和关键信息，逐页完成，不用长段文字挤满单页。用户指定总页数时必须核对最终 slideOrder.length，不能以“额外保留原页”为由悄悄超出页数。仅有默认示例首页时优先复用；已有用户内容且改写范围不明确时先确认。
 - 新增页：{type:"addSlide",after:已有slideId}，随后读取生成的页面ID。也可传合法slide对象；没有结构样例时优先默认创建后局部编辑。
 - 插入原生文本示例：{type:"insert",slideId,element:{id:"新唯一ID",type:"text",transform:{x:1000000,y:1500000,width:9000000,height:1000000,rotation:0},fill:"#202124",paragraphs:[{type:"paragraph",children:[{text:"标题",fontSize:36,bold:true,color:"#202124"}]}]}}。使用读取的页面尺寸调整，不能套用越界坐标。
 - 通用新增：{type:"add",slideId,kind:"text"}后回读元素ID，再{type:"patch",slideId,id,patch:{...}}；不把kind当作原生element.type。
 - 修改已有文字禁止 patch.paragraphs（SDK 不支持）；使用 {type:"replaceText",slideId,id,query:"原段落中的准确文字",text:"新文字"}，保留元素标识和格式。query 不跨段落，先按 slideId 读取完整正文，不得用截断预览；不提供 slideId/id 时是全稿替换，只有用户要求全稿替换时才省略范围。
 - 超链接是文字叶子的link属性：paragraphs:[{type:"paragraph",children:[{text:"链接文字",link:"https://…"}]}]，insert 新文本元素时写入；已有文本链接不能用 patch.paragraphs 改写；保存后回读确认link属性存在。
-- formatText带slideId、ids、marks；paragraphFormat带slideId、ids、format；patch只修改目标属性，保留transform及其他属性。
+- formatText带slideId、ids、marks，例如 marks:{fontSize:24,bold:true,color:"#2563eb",letterSpacing:1.5}；paragraphFormat带slideId、ids、format，例如format:{align:"left",lineHeight:1.4,spaceBefore:0,spaceAfter:8}。paddingInsets用patch:{paddingInsets:{top:12,right:16,bottom:12,left:16}}设置文本内边距，单位像素。patch只修改目标属性，保留transform及其他属性。
 - 对齐align带slideId、ids、axis；等距distribute带同类参数；层级arrange带action=front/back/forward/backward；具体axis使用当前SDK支持值，不猜未知枚举。
 - group/ungroup/duplicate带slideId、ids。页面moveSlide带slideId、before(目标ID或null)；duplicateSlides带ids；setSlidesHidden带ids、hidden；deleteSlide带slideId仅删除明确要求的页面。
 - slideProperty带slideId、field=background/notes/name及value，可设置背景、讲稿备注和页面名；pageSize带width/height影响全稿，须用户明确要求。
-- createSection带name；renameSection带id/name；deleteSection带id；assignSection带ids/sectionId。
-- 表格命令用{type:"table",slideId,id,command}，只接受已读取/确认的原生TableCommand。图形、图表、图片用已验证的原生元素结构；图片需授权资产。不要编造动画、母版或外部素材生成能力。
+- createSection带name和ids（页面ID数组）；renameSection带id/name；deleteSection带id；assignSection带ids/sectionId。
+- 新建表格用{type:"add",slideId,kind:"table"}后回读；或insert原生TableElement，包含id/type:"table"/完整transform/cells矩阵。读取slideId+elementId得到cells、rowIds、columnIds、merges等；outline已有稳定行列ID。操作{type:"table",slideId,id,command}，下面的r/c均为读取到的稳定字符串ID，不是数字行号：
+  cell:{kind:"cell",row:r,column:c,value:"文字",expected:"读取的旧文字"}；paste:{kind:"paste",row:r,column:c,payload:{version:1,cells:[["任务","负责人"],["联调","小周"]]}}；style:{kind:"style",rows:[r],columns:[c],style:{bold:true,fontSize:18,color:"#1f2329",backgroundColor:"#eaf1ff",align:"center",verticalAlign:"middle"}}；merge/clear:{kind:"merge",rows:[r1,r2],columns:[c]}；split:{kind:"split",targets:[读取的merges[].id]}；resize:{kind:"resize",axis:"column",sizes:[{target:c,size:240}]}（像素）；insert-row/insert-column使用after:行列ID或null；delete-row/delete-column用target，批量delete-rows/delete-columns用targets。表格仅纯文本和整格样式，没有公式、格内富文本或链接；禁止patch覆盖cells/cellStyles/merges/rowHeights/columnWidths。不要把画布表格的数字索引命令混到PPT。
+- 图形insert使用type:"shape",shape:"rect"等，不能用type:"rect"；新增空元素用kind:"text"，不能用title/body等别名。新增Text必须有id、完整transform和paragraphs，不能传text字符串或扁平fontSize猜测。页面先形成统一配色和完整标题、正文、备注；图表、图片用已验证的原生结构与授权资产。不要编造母版能力。
 - 保存后用回执 seq 继续；验收或定位失败再按 slideId 读页面，核对标题、正文、元素数量与边界，不遮挡已有内容。建议标题28~44pt、正文18~28pt，留白与对齐一致。无真实渲染时不能宣称版面已通过视觉验收。`,
   },
   {
@@ -200,12 +205,12 @@ export function relevantSkillFormats(
     )
       formats.add(format);
   if (/(?:markdown|\.md\b|md\s*文档)/i.test(text)) formats.add("markdown");
-  if (/(?:表格|excel|spreadsheet|工作表)/i.test(text))
+  if (/(?:excel|spreadsheet|工作表)/i.test(text) || /表格/.test(text) && !formats.has("canvas") && !formats.has("presentation") && !/(?:画布|画板|ppt|演示|幻灯片)/i.test(text))
     formats.add("spreadsheet");
   if (/(?:ppt|幻灯片|演示文稿|presentation)/i.test(text))
     formats.add("presentation");
-  if (/(?:画布|画板|\bcanvas\b)/i.test(text)) formats.add("canvas");
-  if (/(?:流程图|思维导图|\bflowchart\b|\bmind\s*map\b)/i.test(text))
+  if (/(?:画布|画板|\bcanvas\b|UI设计|界面设计|界面原型|(?:手机|平板|ipad|\bpad\b).{0,12}(?:容器|设计|原型)|(?:画|绘制).{0,8}图案)/i.test(text)) formats.add("canvas");
+  if (!formats.has("canvas") && /(?:流程图|思维导图|\bflowchart\b|\bmind\s*map\b)/i.test(text))
     formats.add("rich_text");
   const fileExport =
     /(?:保存为|导出为?|下载为?).{0,12}(?:word|docx|pdf|excel|xlsx|markdown|\.md)|(?:word|pdf|excel|markdown)文件/i.test(

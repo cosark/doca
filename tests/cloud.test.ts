@@ -126,6 +126,21 @@ afterEach(async () => {
 });
 
 describe("cloud baseline", () => {
+  it("filters document sources with type and scope while respecting access", async () => {
+    const library = await create(alice, { kind: "library", title: "Source library" });
+    const personal = await create(alice, { format: "markdown" });
+    const inLibrary = await create(alice, { format: "markdown", libraryId: library.id });
+    await create(alice, { format: "spreadsheet", libraryId: library.id });
+    for (const [location, expected] of [["personal", personal.id], ["library", inLibrary.id]]) {
+      const response = await request("GET", `/resources?scope=owned&kind=document&format=markdown&location=${location}`, alice);
+      expect(response.statusCode, response.body).toBe(200);
+      expect(response.json().items.map((item: Resource) => item.id)).toEqual([expected]);
+      expect(response.json().total).toBe(1);
+    }
+    const hidden = await request("GET", "/resources?scope=all&kind=document&location=library", bob);
+    expect(hidden.json().items).toEqual([]);
+    expect((await request("GET", "/resources?location=unknown", alice)).statusCode).toBe(400);
+  });
   it("keeps private documents out of other users, administrator and anonymous views", async () => {
     const r = await create();
     for (const cookie of [bob, adminCookie, ""]) {

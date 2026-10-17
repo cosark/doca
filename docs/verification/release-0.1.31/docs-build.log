@@ -1,0 +1,2 @@
+$ node scripts/docs-site.mjs build
+Docsify site prepared: .cache/docs-site (72 bilingual pages).

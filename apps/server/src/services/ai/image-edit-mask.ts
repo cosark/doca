@@ -13,14 +13,14 @@ import {
   rawImageCandidateCanvas,
   rawImageTransformSchema,
 } from "./image-candidates.js";
-import { editRegionsSchema, type EditRegions } from "./image-edit-regions.js";
+import { editRegionsSchema, emptyEditRegionsSchema, type EditRegions } from "./image-edit-regions.js";
 import { bindImageEditBitmap } from "./image-edit-bitmap.js";
 import {
   readUsableImageMaskSegment,
   type ImageMaskSegmentInput,
 } from "./image-mask-segment.js";
 
-const regions = z.union([z.tuple([]), editRegionsSchema]);
+const regions = z.union([emptyEditRegionsSchema, editRegionsSchema]);
 export const imageEditMaskSelectionSchema = z
   .object({
     proposalIds: z

@@ -5,10 +5,10 @@ import type { DB } from "@db/index.js";
 import type { ToolContext } from "@core/workflows/ai-documents.js";
 import type { StorageRuntime } from "../../adapters/storage.js";
 import { fail } from "@core/shared/errors.js";
-import { editRegionsSchema, type EditRegions } from "./image-edit-regions.js";
+import { editRegionsSchema, emptyEditRegionsSchema, type EditRegions } from "./image-edit-regions.js";
 import { readImageEditMask } from "./image-edit-mask.js";
 
-const regions = z.union([z.tuple([]), editRegionsSchema]);
+const regions = z.union([emptyEditRegionsSchema, editRegionsSchema]);
 const rectangleSchema = z
   .object({
     left: z.number().int().nonnegative(),

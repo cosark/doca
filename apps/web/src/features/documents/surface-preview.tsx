@@ -118,6 +118,7 @@ export default function SurfacePreview({
           showHeader={false}
           className="doca-canvas"
           resources={{ resolveUrl: resolve }}
+          onResourcePreview={attachmentPreview.onCanvasResourcePreview}
         />
       ) : model ? (
         <SpreadsheetEditor

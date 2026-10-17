@@ -1,4 +1,5 @@
 import { useCallback, useState } from "react";
+import type { CanvasEditorProps } from "@smartdoca/canvas";
 import type { RichTextEditorProps } from "@smartdoca/slate";
 import type { SpreadsheetAttachmentPreviewHandler } from "@smartdoca/sheet";
 import { assetUrl } from "@web/shared/api.js";
@@ -36,8 +37,16 @@ export function useAttachmentPreview({
       ({ node }) => open(node.refId, node.label),
       [open],
     );
+  const onCanvasResourcePreview = useCallback<
+    NonNullable<CanvasEditorProps["onResourcePreview"]>
+  >(
+    (resource) =>
+      open(resource.path, resource.name ?? resource.path, resource.mimeType),
+    [open],
+  );
   return {
     previewFile,
+    onCanvasResourcePreview,
     onRichAttachmentPreview,
     onSheetAttachmentPreview,
     dialog: file ? (

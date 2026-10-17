@@ -3,7 +3,7 @@ import { useAI } from "@web/features/ai/ai-context.js";
 import { useDocumentReadOnly } from "@web/features/documents/document-mode.js";
 import { useCallback, useEffect, useMemo, useRef, useState } from "react";
 import { createPortal } from "react-dom";
-import { MessageSquare, Eye, EyeOff } from "lucide-react";
+import { MessageSquare, Eye, EyeOff, Sparkles } from "lucide-react";
 import {
   DocumentDownload,
   downloadResult,
@@ -14,8 +14,10 @@ import {
   type CanvasAnchorDecoration,
   type CanvasEditorRef,
   type CanvasEditorResources,
+  type CanvasResourceUploadContext,
 } from "@smartdoca/canvas";
-import { CanvasModel } from "@smartdoca/canvas/model";
+import { CanvasModel, type CanvasPresence } from "@smartdoca/canvas/model";
+import { useAttachmentPreview } from "./attachment-preview.js";
 import {
   api,
   assetUrl,
@@ -38,6 +40,35 @@ import { ModelFind } from "@web/features/search/model-find.js";
 import { EditorRecoveryBoundary } from "@web/features/documents/editor-recovery-boundary.js";
 import "@smartdoca/canvas/style.css";
 import "@web/features/documents/surface.css";
+async function uploadCanvasResource(
+  blob: Blob,
+  context: CanvasResourceUploadContext,
+  id: string,
+) {
+  const file =
+    blob instanceof File
+      ? blob
+      : new File([blob], context.fileName, { type: blob.type });
+  const asset = await uploadFile(
+    file,
+    "attachment",
+    id,
+    context.signal,
+    (progress) => {
+      context.onProgress?.(
+        progress.total ? Math.min(0.99, progress.loaded / progress.total) : 0,
+      );
+    },
+  );
+  context.onProgress?.(1);
+  return {
+    path: asset.id,
+    name: asset.filename,
+    size: asset.size,
+    mimeType: asset.mime,
+  };
+}
+
 const factory: SurfaceFactory<CanvasModel> = async (b) => {
   const value = CanvasModel.restore({
     codec: "aidcanvas-yjs",
@@ -75,6 +106,7 @@ export default function CanvasDocument({
 }) {
   const { locale, t } = useI18n();
   const ai = useAI();
+  const attachmentPreview = useAttachmentPreview();
   const aiRef = useRef(ai);
   aiRef.current = ai;
   const id = detail.resource.id,
@@ -90,7 +122,7 @@ export default function CanvasDocument({
       {
         id: "doca.ai",
         label: t("editor.citeAi"),
-        icon: <span>@</span>,
+        icon: <Sparkles size={20} />,
         allowInReadOnly: true,
         tooltip: t("editor.citeAi"),
         onClick: () => aiRef.current?.add(),
@@ -144,7 +176,7 @@ export default function CanvasDocument({
     return () => document.removeEventListener("focusin", focus);
   }, [handle]);
   const publish = useCallback(
-    (selection: { elementIds: string[] } | null) => {
+    (selection: CanvasPresence | null) => {
       if (sync.connected)
         realtime.send({
           type: "cursor",
@@ -152,7 +184,9 @@ export default function CanvasDocument({
           id: crypto.randomUUID(),
           epochId: model?.epochId,
           selection:
-            editable && selection?.elementIds.length
+            editable &&
+            selection &&
+            (selection.elementIds.length || selection.cursor || selection.text)
               ? { kind: "elements", ...selection }
               : null,
         });
@@ -173,6 +207,8 @@ export default function CanvasDocument({
               name: p.name,
               color: p.color,
               elementIds: p.selection.elementIds,
+              cursor: p.selection.cursor,
+              text: p.selection.text,
             }))
         : [],
     [sync.presence, sync.connected, editable],
@@ -235,15 +271,9 @@ export default function CanvasDocument({
   );
   const resources = useMemo<CanvasEditorResources>(
     () => ({
-      uploadImage: async (blob, context) => {
-        const file =
-          blob instanceof File
-            ? blob
-            : new File([blob], context.fileName, { type: blob.type });
-        const a = await uploadFile(file, "attachment", id, context.signal);
-        context.onProgress?.(1);
-        return { path: a.id, name: a.filename, size: a.size, mimeType: a.mime };
-      },
+      uploadImage: (blob, context) => uploadCanvasResource(blob, context, id),
+      uploadAttachment: (blob, context) =>
+        uploadCanvasResource(blob, context, id),
       resolveUrl: (path) =>
         /^[a-f0-9-]{36}$/.test(path) ? assetUrl(path) : "",
       resolveDownloadUrl: (path) =>
@@ -295,6 +325,7 @@ export default function CanvasDocument({
           },
         }))}
       />
+      {attachmentPreview.dialog}
       <Feedback message={sync.error || error} tone="error" />
       {sync.binding && (!sync.connected || sync.blocked) && (
         <button
@@ -329,6 +360,7 @@ export default function CanvasDocument({
               showHeader={false}
               className="doca-canvas"
               resources={resources}
+              onResourcePreview={attachmentPreview.onCanvasResourcePreview}
               anchors={[
                 ...(showCommentMarks
                   ? anchors
@@ -355,13 +387,20 @@ export default function CanvasDocument({
         <p className="empty">正在加载画布…</p>
       )}
       {handle && (
-        <ModelFind documentId={detail.resource.id} handle={ref} revision={sync.revision} canEdit={editable} />
+        <ModelFind
+          documentId={detail.resource.id}
+          handle={ref}
+          revision={sync.revision}
+          canEdit={editable}
+        />
       )}
       <RegionComments
         visibilityControl={
           <button
             className="icon comment-control canvas-comment-visibility"
-            aria-label={showCommentMarks ? "隐藏画板评论标记" : "显示画板评论标记"}
+            aria-label={
+              showCommentMarks ? "隐藏画板评论标记" : "显示画板评论标记"
+            }
             title={showCommentMarks ? "隐藏画板评论标记" : "显示画板评论标记"}
             aria-pressed={showCommentMarks}
             onClick={() => {

@@ -12,7 +12,7 @@ import type { AccountOptions } from "@web/features/auth/account-fields.js";
 import { AdminAccountEditor } from "@web/features/account/account-settings.js";
 import { Feedback } from "@web/shared/components/feedback.js";
 import { Webhooks } from "@web/features/admin/webhooks.js";
-import { useEffect, useState } from "react";
+import { useEffect, useRef, useState } from "react";
 import { Select } from "@web/shared/components/select.js";
 import { UserBadge } from "@web/shared/components/user-badge.js";
 import { SearchSettings } from "@web/features/search/search-settings.js";
@@ -241,12 +241,19 @@ export function Admin({
         .then(setAccountPolicy)
         .catch((e) => setError(e.message));
   }, [creating]);
+  const onlineUpdate = useRef<{ online: number } | null>(null);
   async function load() {
+    const onlineAtRequest = onlineUpdate.current;
     const [s, p] = await Promise.all([
       api<typeof stats>("/admin/stats"),
       api<Settings>("/admin/settings"),
     ]);
-    setStats(s);
+    const latestOnline = onlineUpdate.current;
+    setStats(
+      s && latestOnline && latestOnline !== onlineAtRequest
+        ? { ...s, online: latestOnline.online }
+        : s,
+    );
     setSettings(p);
   }
   useEffect(() => {
@@ -259,6 +266,7 @@ export function Admin({
     () =>
       realtime.subscribe((m) => {
         if (m.type === "stats") {
+          onlineUpdate.current = { online: m.online };
           setStats((s) => (s ? { ...s, online: m.online } : s));
           setOnlineRevision((value) => value + 1);
         }

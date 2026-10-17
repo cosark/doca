@@ -2,7 +2,7 @@ import { useI18n } from "@web/shared/i18n.js";
 import { platformAssetId } from "@web/shared/utils/asset-path.js";
 import { useAI } from "@web/features/ai/ai-context.js";
 import { useCallback, useEffect, useMemo, useRef, useState } from "react";
-import { AtSign, MessageSquare } from "lucide-react";
+import { Sparkles, MessageSquare } from "lucide-react";
 import {
   DocumentDownload,
   downloadResult,
@@ -686,7 +686,7 @@ export default function MarkdownDocument({
                 {
                   id: "doca.ai",
                   title: t("editor.citeAi"),
-                  icon: <AtSign size={17} />,
+                  icon: <Sparkles size={17} />,
                   disabled: !user,
                   onClick: () => ai?.add(),
                 },

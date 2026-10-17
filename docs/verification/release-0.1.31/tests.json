@@ -1,0 +1,1453 @@
+{
+  "success": true,
+  "numPassedTests": 2927,
+  "numFailedTests": 0,
+  "numPendingTests": 10,
+  "files": [
+    {
+      "file": "tests/access-requests.test.ts",
+      "status": "passed",
+      "tests": 1
+    },
+    {
+      "file": "tests/access-roles.test.ts",
+      "status": "passed",
+      "tests": 1
+    },
+    {
+      "file": "tests/accounts.test.ts",
+      "status": "passed",
+      "tests": 22
+    },
+    {
+      "file": "tests/ai-agent-skills.test.ts",
+      "status": "passed",
+      "tests": 4
+    },
+    {
+      "file": "tests/ai-attachments.test.ts",
+      "status": "passed",
+      "tests": 19
+    },
+    {
+      "file": "tests/ai-canvas-workflows.test.ts",
+      "status": "passed",
+      "tests": 7
+    },
+    {
+      "file": "tests/ai-checkpoint.test.ts",
+      "status": "passed",
+      "tests": 6
+    },
+    {
+      "file": "tests/ai-composer-draft.test.ts",
+      "status": "passed",
+      "tests": 3
+    },
+    {
+      "file": "tests/ai-context-budget.test.ts",
+      "status": "passed",
+      "tests": 11
+    },
+    {
+      "file": "tests/ai-continuation-runner.test.ts",
+      "status": "passed",
+      "tests": 2
+    },
+    {
+      "file": "tests/ai-continuations.test.ts",
+      "status": "passed",
+      "tests": 13
+    },
+    {
+      "file": "tests/ai-creation-resource-schema.test.ts",
+      "status": "passed",
+      "tests": 1
+    },
+    {
+      "file": "tests/ai-delivery.test.ts",
+      "status": "passed",
+      "tests": 24
+    },
+    {
+      "file": "tests/ai-document-parsing.test.ts",
+      "status": "passed",
+      "tests": 6
+    },
+    {
+      "file": "tests/ai-document-read.test.ts",
+      "status": "passed",
+      "tests": 7
+    },
+    {
+      "file": "tests/ai-document-skills.test.ts",
+      "status": "passed",
+      "tests": 13
+    },
+    {
+      "file": "tests/ai-doubao-reasoning.test.ts",
+      "status": "passed",
+      "tests": 26
+    },
+    {
+      "file": "tests/ai-edit-normalize.test.ts",
+      "status": "passed",
+      "tests": 20
+    },
+    {
+      "file": "tests/ai-edit-tool-output.test.ts",
+      "status": "passed",
+      "tests": 2
+    },
+    {
+      "file": "tests/ai-edit-tools.test.ts",
+      "status": "passed",
+      "tests": 6
+    },
+    {
+      "file": "tests/ai-embeddings.test.ts",
+      "status": "passed",
+      "tests": 4
+    },
+    {
+      "file": "tests/ai-error-history.test.ts",
+      "status": "passed",
+      "tests": 2
+    },
+    {
+      "file": "tests/ai-explorer-history.test.ts",
+      "status": "passed",
+      "tests": 1
+    },
+    {
+      "file": "tests/ai-file-extract-size.test.ts",
+      "status": "passed",
+      "tests": 2
+    },
+    {
+      "file": "tests/ai-file-locations.test.ts",
+      "status": "passed",
+      "tests": 3
+    },
+    {
+      "file": "tests/ai-folder-mentions.test.ts",
+      "status": "passed",
+      "tests": 11
+    },
+    {
+      "file": "tests/ai-history-flow.test.ts",
+      "status": "passed",
+      "tests": 1
+    },
+    {
+      "file": "tests/ai-history.test.ts",
+      "status": "passed",
+      "tests": 2
+    },
+    {
+      "file": "tests/ai-host-contribution-host.test.ts",
+      "status": "passed",
+      "tests": 6
+    },
+    {
+      "file": "tests/ai-host-events.test.ts",
+      "status": "passed",
+      "tests": 5
+    },
+    {
+      "file": "tests/ai-host-registries.test.ts",
+      "status": "passed",
+      "tests": 6
+    },
+    {
+      "file": "tests/ai-host-tools.test.ts",
+      "status": "passed",
+      "tests": 6
+    },
+    {
+      "file": "tests/ai-image-attempt-policy.test.ts",
+      "status": "passed",
+      "tests": 15
+    },
+    {
+      "file": "tests/ai-image-batch-attempts.test.ts",
+      "status": "passed",
+      "tests": 68
+    },
+    {
+      "file": "tests/ai-image-batch-autoreview-flow.test.ts",
+      "status": "passed",
+      "tests": 63
+    },
+    {
+      "file": "tests/ai-image-batch-context.test.ts",
+      "status": "passed",
+      "tests": 4
+    },
+    {
+      "file": "tests/ai-image-batch-current-message.test.ts",
+      "status": "passed",
+      "tests": 4
+    },
+    {
+      "file": "tests/ai-image-batch-file-deliveries.test.ts",
+      "status": "passed",
+      "tests": 18
+    },
+    {
+      "file": "tests/ai-image-batch-pending-reviews.test.ts",
+      "status": "passed",
+      "tests": 8
+    },
+    {
+      "file": "tests/ai-image-batch-repair.test.ts",
+      "status": "passed",
+      "tests": 8
+    },
+    {
+      "file": "tests/ai-image-batch-requirements.test.ts",
+      "status": "passed",
+      "tests": 13
+    },
+    {
+      "file": "tests/ai-image-batch-scope-upgrade.test.ts",
+      "status": "passed",
+      "tests": 75
+    },
+    {
+      "file": "tests/ai-image-batch.test.ts",
+      "status": "passed",
+      "tests": 8
+    },
+    {
+      "file": "tests/ai-image-candidate-region-view.test.ts",
+      "status": "passed",
+      "tests": 6
+    },
+    {
+      "file": "tests/ai-image-candidate-view.test.ts",
+      "status": "passed",
+      "tests": 11
+    },
+    {
+      "file": "tests/ai-image-candidates.test.ts",
+      "status": "passed",
+      "tests": 24
+    },
+    {
+      "file": "tests/ai-image-edit-adapter.test.ts",
+      "status": "passed",
+      "tests": 8
+    },
+    {
+      "file": "tests/ai-image-edit-bitmap.test.ts",
+      "status": "passed",
+      "tests": 6
+    },
+    {
+      "file": "tests/ai-image-edit-mask.test.ts",
+      "status": "passed",
+      "tests": 32
+    },
+    {
+      "file": "tests/ai-image-edit-preview.test.ts",
+      "status": "passed",
+      "tests": 6
+    },
+    {
+      "file": "tests/ai-image-edit-regions.test.ts",
+      "status": "passed",
+      "tests": 12
+    },
+    {
+      "file": "tests/ai-image-mask-flow.test.ts",
+      "status": "passed",
+      "tests": 14
+    },
+    {
+      "file": "tests/ai-image-mask-geometry.test.ts",
+      "status": "passed",
+      "tests": 34
+    },
+    {
+      "file": "tests/ai-image-mask-refine.test.ts",
+      "status": "passed",
+      "tests": 16
+    },
+    {
+      "file": "tests/ai-image-mask-region-view.test.ts",
+      "status": "passed",
+      "tests": 9
+    },
+    {
+      "file": "tests/ai-image-mask-segment.test.ts",
+      "status": "passed",
+      "tests": 36
+    },
+    {
+      "file": "tests/ai-image-mask-view.test.ts",
+      "status": "passed",
+      "tests": 8
+    },
+    {
+      "file": "tests/ai-image-mflux-provider-adapter.test.ts",
+      "status": "passed",
+      "tests": 13
+    },
+    {
+      "file": "tests/ai-image-mflux-transport.test.ts",
+      "status": "passed",
+      "tests": 4
+    },
+    {
+      "file": "tests/ai-image-preview-flow.test.ts",
+      "status": "passed",
+      "tests": 14
+    },
+    {
+      "file": "tests/ai-image-provider-adapters.test.ts",
+      "status": "passed",
+      "tests": 45
+    },
+    {
+      "file": "tests/ai-image-recompose.test.ts",
+      "status": "passed",
+      "tests": 28
+    },
+    {
+      "file": "tests/ai-image-repair-strategy.test.ts",
+      "status": "passed",
+      "tests": 3
+    },
+    {
+      "file": "tests/ai-image-review-json-mode.test.ts",
+      "status": "passed",
+      "tests": 45
+    },
+    {
+      "file": "tests/ai-image-review-pixels.test.ts",
+      "status": "passed",
+      "tests": 5
+    },
+    {
+      "file": "tests/ai-image-review-previews.test.ts",
+      "status": "passed",
+      "tests": 10
+    },
+    {
+      "file": "tests/ai-image-review-views.test.ts",
+      "status": "passed",
+      "tests": 11
+    },
+    {
+      "file": "tests/ai-image-review.test.ts",
+      "status": "passed",
+      "tests": 57
+    },
+    {
+      "file": "tests/ai-image-revision-raw.test.ts",
+      "status": "passed",
+      "tests": 43
+    },
+    {
+      "file": "tests/ai-image-saved-local-bitmap.test.ts",
+      "status": "passed",
+      "tests": 13
+    },
+    {
+      "file": "tests/ai-image-saved-local-revision.test.ts",
+      "status": "passed",
+      "tests": 14
+    },
+    {
+      "file": "tests/ai-image-saved-revision.test.ts",
+      "status": "passed",
+      "tests": 16
+    },
+    {
+      "file": "tests/ai-image-scene-analysis.test.ts",
+      "status": "passed",
+      "tests": 67
+    },
+    {
+      "file": "tests/ai-image-segment-flow.test.ts",
+      "status": "passed",
+      "tests": 7
+    },
+    {
+      "file": "tests/ai-image-segment-native-roi-worker.test.ts",
+      "status": "passed",
+      "tests": 3
+    },
+    {
+      "file": "tests/ai-image-task-route.test.ts",
+      "status": "passed",
+      "tests": 8
+    },
+    {
+      "file": "tests/ai-image-tool-schemas.test.ts",
+      "status": "passed",
+      "tests": 3
+    },
+    {
+      "file": "tests/ai-image-wan-provider-adapter.test.ts",
+      "status": "passed",
+      "tests": 75
+    },
+    {
+      "file": "tests/ai-images.test.ts",
+      "status": "passed",
+      "tests": 80
+    },
+    {
+      "file": "tests/ai-input-file-snapshot.test.ts",
+      "status": "passed",
+      "tests": 11
+    },
+    {
+      "file": "tests/ai-job-activity.test.ts",
+      "status": "passed",
+      "tests": 6
+    },
+    {
+      "file": "tests/ai-kimi-reasoning.test.ts",
+      "status": "passed",
+      "tests": 19
+    },
+    {
+      "file": "tests/ai-links.test.ts",
+      "status": "passed",
+      "tests": 14
+    },
+    {
+      "file": "tests/ai-model-image-native-transport.test.ts",
+      "status": "passed",
+      "tests": 12
+    },
+    {
+      "file": "tests/ai-model-stream-boundary.test.ts",
+      "status": "passed",
+      "tests": 8
+    },
+    {
+      "file": "tests/ai-notes.test.ts",
+      "status": "passed",
+      "tests": 1
+    },
+    {
+      "file": "tests/ai-office-files.test.ts",
+      "status": "passed",
+      "tests": 11
+    },
+    {
+      "file": "tests/ai-pdf-image-decoding.test.ts",
+      "status": "passed",
+      "tests": 5
+    },
+    {
+      "file": "tests/ai-pending-send.test.ts",
+      "status": "passed",
+      "tests": 1
+    },
+    {
+      "file": "tests/ai-progress-label.test.ts",
+      "status": "passed",
+      "tests": 4
+    },
+    {
+      "file": "tests/ai-protected-prompt.test.ts",
+      "status": "passed",
+      "tests": 10
+    },
+    {
+      "file": "tests/ai-providers.test.ts",
+      "status": "passed",
+      "tests": 27
+    },
+    {
+      "file": "tests/ai-reference-text.test.ts",
+      "status": "passed",
+      "tests": 2
+    },
+    {
+      "file": "tests/ai-secrets.test.ts",
+      "status": "passed",
+      "tests": 1
+    },
+    {
+      "file": "tests/ai-segmentation-profile.test.ts",
+      "status": "passed",
+      "tests": 18
+    },
+    {
+      "file": "tests/ai-send-files.test.ts",
+      "status": "passed",
+      "tests": 3
+    },
+    {
+      "file": "tests/ai-session-file-folders.test.ts",
+      "status": "passed",
+      "tests": 10
+    },
+    {
+      "file": "tests/ai-session-resources.test.ts",
+      "status": "passed",
+      "tests": 1
+    },
+    {
+      "file": "tests/ai-session-ux.test.ts",
+      "status": "passed",
+      "tests": 7
+    },
+    {
+      "file": "tests/ai-side-open.test.ts",
+      "status": "passed",
+      "tests": 1
+    },
+    {
+      "file": "tests/ai-spreadsheet-styles.test.ts",
+      "status": "passed",
+      "tests": 3
+    },
+    {
+      "file": "tests/ai-stream-search.test.ts",
+      "status": "passed",
+      "tests": 10
+    },
+    {
+      "file": "tests/ai-timeline.test.ts",
+      "status": "passed",
+      "tests": 6
+    },
+    {
+      "file": "tests/ai-tool-examples.test.ts",
+      "status": "passed",
+      "tests": 4
+    },
+    {
+      "file": "tests/ai-tool-failure-guard.test.ts",
+      "status": "passed",
+      "tests": 2
+    },
+    {
+      "file": "tests/ai-tool-image-labels.test.ts",
+      "status": "passed",
+      "tests": 7
+    },
+    {
+      "file": "tests/ai-tool-media.test.ts",
+      "status": "passed",
+      "tests": 52
+    },
+    {
+      "file": "tests/ai-upload-tree.test.ts",
+      "status": "passed",
+      "tests": 3
+    },
+    {
+      "file": "tests/ai-visual-input-proof.test.ts",
+      "status": "passed",
+      "tests": 23
+    },
+    {
+      "file": "tests/ai-web-fetch.test.ts",
+      "status": "passed",
+      "tests": 48
+    },
+    {
+      "file": "tests/ai-web-request.test.ts",
+      "status": "passed",
+      "tests": 2
+    },
+    {
+      "file": "tests/ai-workflow-failure-diagnostic.test.ts",
+      "status": "passed",
+      "tests": 30
+    },
+    {
+      "file": "tests/ai-workflow-tool-input-boundary.test.ts",
+      "status": "passed",
+      "tests": 4
+    },
+    {
+      "file": "tests/ai.test.ts",
+      "status": "passed",
+      "tests": 52
+    },
+    {
+      "file": "tests/asset-base.test.ts",
+      "status": "passed",
+      "tests": 5
+    },
+    {
+      "file": "tests/asset-cache.test.ts",
+      "status": "passed",
+      "tests": 3
+    },
+    {
+      "file": "tests/asset-path.test.ts",
+      "status": "passed",
+      "tests": 1
+    },
+    {
+      "file": "tests/assistant-profiles.test.ts",
+      "status": "passed",
+      "tests": 3
+    },
+    {
+      "file": "tests/back-navigation.test.ts",
+      "status": "passed",
+      "tests": 3
+    },
+    {
+      "file": "tests/browser-clipboard.test.ts",
+      "status": "passed",
+      "tests": 4
+    },
+    {
+      "file": "tests/browser-crypto.test.ts",
+      "status": "passed",
+      "tests": 5
+    },
+    {
+      "file": "tests/canvas-dependencies.test.ts",
+      "status": "passed",
+      "tests": 1
+    },
+    {
+      "file": "tests/canvas-native-elements.test.ts",
+      "status": "passed",
+      "tests": 2
+    },
+    {
+      "file": "tests/canvas-package-upgrade.test.ts",
+      "status": "passed",
+      "tests": 2
+    },
+    {
+      "file": "tests/canvas-presence.test.ts",
+      "status": "passed",
+      "tests": 1
+    },
+    {
+      "file": "tests/capability-documents.test.ts",
+      "status": "passed",
+      "tests": 2
+    },
+    {
+      "file": "tests/capability-domain-files.test.ts",
+      "status": "passed",
+      "tests": 2
+    },
+    {
+      "file": "tests/capability-domain-knowledge.test.ts",
+      "status": "passed",
+      "tests": 2
+    },
+    {
+      "file": "tests/capability-files.test.ts",
+      "status": "passed",
+      "tests": 2
+    },
+    {
+      "file": "tests/capability-knowledge.test.ts",
+      "status": "passed",
+      "tests": 2
+    },
+    {
+      "file": "tests/client-api.test.ts",
+      "status": "passed",
+      "tests": 2
+    },
+    {
+      "file": "tests/client-asset-upload.test.ts",
+      "status": "passed",
+      "tests": 6
+    },
+    {
+      "file": "tests/cloud.test.ts",
+      "status": "passed",
+      "tests": 30
+    },
+    {
+      "file": "tests/collaboration.test.ts",
+      "status": "passed",
+      "tests": 7
+    },
+    {
+      "file": "tests/comment-position.test.ts",
+      "status": "passed",
+      "tests": 4
+    },
+    {
+      "file": "tests/comment-scroll.test.ts",
+      "status": "passed",
+      "tests": 3
+    },
+    {
+      "file": "tests/community.test.ts",
+      "status": "passed",
+      "tests": 10
+    },
+    {
+      "file": "tests/content-block-inventory.test.ts",
+      "status": "passed",
+      "tests": 2
+    },
+    {
+      "file": "tests/content-blocks.test.ts",
+      "status": "passed",
+      "tests": 6
+    },
+    {
+      "file": "tests/content-stats.test.ts",
+      "status": "passed",
+      "tests": 1
+    },
+    {
+      "file": "tests/creation-resource-retrieval.test.ts",
+      "status": "passed",
+      "tests": 8
+    },
+    {
+      "file": "tests/creation-resources-http.test.ts",
+      "status": "passed",
+      "tests": 1
+    },
+    {
+      "file": "tests/creation-resources.test.ts",
+      "status": "passed",
+      "tests": 9
+    },
+    {
+      "file": "tests/credential-cipher.test.ts",
+      "status": "passed",
+      "tests": 15
+    },
+    {
+      "file": "tests/database-baseline.test.ts",
+      "status": "passed",
+      "tests": 3
+    },
+    {
+      "file": "tests/database-schema.test.ts",
+      "status": "passed",
+      "tests": 1
+    },
+    {
+      "file": "tests/document-author.test.ts",
+      "status": "passed",
+      "tests": 3
+    },
+    {
+      "file": "tests/document-default-permissions.test.ts",
+      "status": "passed",
+      "tests": 3
+    },
+    {
+      "file": "tests/document-icons.test.ts",
+      "status": "passed",
+      "tests": 12
+    },
+    {
+      "file": "tests/document-integration.test.ts",
+      "status": "passed",
+      "tests": 4
+    },
+    {
+      "file": "tests/document-mode.test.ts",
+      "status": "passed",
+      "tests": 3
+    },
+    {
+      "file": "tests/document-page-layout.test.ts",
+      "status": "passed",
+      "tests": 6
+    },
+    {
+      "file": "tests/document-pdf-access.test.ts",
+      "status": "passed",
+      "tests": 2
+    },
+    {
+      "file": "tests/document-pdf.test.ts",
+      "status": "passed",
+      "tests": 4
+    },
+    {
+      "file": "tests/document-scroll.test.ts",
+      "status": "passed",
+      "tests": 4
+    },
+    {
+      "file": "tests/document-search-navigation.test.ts",
+      "status": "passed",
+      "tests": 4
+    },
+    {
+      "file": "tests/document-source-input.test.ts",
+      "status": "passed",
+      "tests": 3
+    },
+    {
+      "file": "tests/document-startup-cache.test.ts",
+      "status": "passed",
+      "tests": 10
+    },
+    {
+      "file": "tests/dwg-preview.test.ts",
+      "status": "passed",
+      "tests": 1
+    },
+    {
+      "file": "tests/editor-package-upgrade.test.ts",
+      "status": "passed",
+      "tests": 49
+    },
+    {
+      "file": "tests/editor-presence.test.ts",
+      "status": "passed",
+      "tests": 2
+    },
+    {
+      "file": "tests/editor-sessions.test.ts",
+      "status": "passed",
+      "tests": 13
+    },
+    {
+      "file": "tests/editor-tools.test.ts",
+      "status": "passed",
+      "tests": 2
+    },
+    {
+      "file": "tests/excel-url-paste.test.ts",
+      "status": "passed",
+      "tests": 1
+    },
+    {
+      "file": "tests/experience.test.ts",
+      "status": "passed",
+      "tests": 12
+    },
+    {
+      "file": "tests/file-import.test.ts",
+      "status": "passed",
+      "tests": 6
+    },
+    {
+      "file": "tests/file-interactions.test.ts",
+      "status": "passed",
+      "tests": 7
+    },
+    {
+      "file": "tests/file-store-config.test.ts",
+      "status": "passed",
+      "tests": 20
+    },
+    {
+      "file": "tests/files-routing.test.ts",
+      "status": "passed",
+      "tests": 1
+    },
+    {
+      "file": "tests/files.test.ts",
+      "status": "passed",
+      "tests": 15
+    },
+    {
+      "file": "tests/find-composition.test.ts",
+      "status": "passed",
+      "tests": 3
+    },
+    {
+      "file": "tests/folder-sharing.test.ts",
+      "status": "passed",
+      "tests": 4
+    },
+    {
+      "file": "tests/header-layout.test.ts",
+      "status": "passed",
+      "tests": 4
+    },
+    {
+      "file": "tests/history-retention.test.ts",
+      "status": "passed",
+      "tests": 4
+    },
+    {
+      "file": "tests/history-storage.test.ts",
+      "status": "passed",
+      "tests": 16
+    },
+    {
+      "file": "tests/http-deployment-session.test.ts",
+      "status": "passed",
+      "tests": 8
+    },
+    {
+      "file": "tests/i18n-coverage.test.ts",
+      "status": "passed",
+      "tests": 27
+    },
+    {
+      "file": "tests/i18n.test.ts",
+      "status": "passed",
+      "tests": 3
+    },
+    {
+      "file": "tests/identity.test.ts",
+      "status": "passed",
+      "tests": 21
+    },
+    {
+      "file": "tests/internet-publication.test.ts",
+      "status": "passed",
+      "tests": 3
+    },
+    {
+      "file": "tests/job-host-projection-adapter.test.ts",
+      "status": "passed",
+      "tests": 3
+    },
+    {
+      "file": "tests/job-host.test.ts",
+      "status": "passed",
+      "tests": 2
+    },
+    {
+      "file": "tests/knowledge-book-batching.test.ts",
+      "status": "passed",
+      "tests": 13
+    },
+    {
+      "file": "tests/knowledge-book-diagrams.test.ts",
+      "status": "passed",
+      "tests": 5
+    },
+    {
+      "file": "tests/knowledge-book-payload-storage.test.ts",
+      "status": "passed",
+      "tests": 11
+    },
+    {
+      "file": "tests/knowledge-book-provenance.test.ts",
+      "status": "passed",
+      "tests": 1
+    },
+    {
+      "file": "tests/knowledge-book-reading.test.ts",
+      "status": "passed",
+      "tests": 4
+    },
+    {
+      "file": "tests/knowledge-book-run-duration.test.ts",
+      "status": "passed",
+      "tests": 1
+    },
+    {
+      "file": "tests/knowledge-book-runtime.test.ts",
+      "status": "passed",
+      "tests": 92
+    },
+    {
+      "file": "tests/knowledge-book-source-bindings.test.ts",
+      "status": "passed",
+      "tests": 7
+    },
+    {
+      "file": "tests/knowledge-book-startup-upgrade.test.ts",
+      "status": "passed",
+      "tests": 10
+    },
+    {
+      "file": "tests/knowledge-book-tool-schema.test.ts",
+      "status": "passed",
+      "tests": 3
+    },
+    {
+      "file": "tests/knowledge-book-web-sources.test.ts",
+      "status": "passed",
+      "tests": 5
+    },
+    {
+      "file": "tests/knowledge-books.test.ts",
+      "status": "passed",
+      "tests": 58
+    },
+    {
+      "file": "tests/knowledge-query-readonly.test.ts",
+      "status": "passed",
+      "tests": 1
+    },
+    {
+      "file": "tests/knowledge-records.test.ts",
+      "status": "passed",
+      "tests": 5
+    },
+    {
+      "file": "tests/library-tree.test.ts",
+      "status": "passed",
+      "tests": 3
+    },
+    {
+      "file": "tests/markdown-scroll.test.ts",
+      "status": "passed",
+      "tests": 8
+    },
+    {
+      "file": "tests/markdown.test.ts",
+      "status": "passed",
+      "tests": 9
+    },
+    {
+      "file": "tests/material-collections.test.ts",
+      "status": "passed",
+      "tests": 11
+    },
+    {
+      "file": "tests/meilisearch-fingerprints.test.ts",
+      "status": "passed",
+      "tests": 3
+    },
+    {
+      "file": "tests/meilisearch-rebuild.test.ts",
+      "status": "passed",
+      "tests": 2
+    },
+    {
+      "file": "tests/mobile-session.test.ts",
+      "status": "passed",
+      "tests": 3
+    },
+    {
+      "file": "tests/mobile-system-errors.test.ts",
+      "status": "passed",
+      "tests": 1
+    },
+    {
+      "file": "tests/module-boundaries.test.ts",
+      "status": "passed",
+      "tests": 13
+    },
+    {
+      "file": "tests/navigation-layout.test.ts",
+      "status": "passed",
+      "tests": 6
+    },
+    {
+      "file": "tests/online-users.test.ts",
+      "status": "passed",
+      "tests": 1
+    },
+    {
+      "file": "tests/package-licensing.test.ts",
+      "status": "passed",
+      "tests": 2
+    },
+    {
+      "file": "tests/page-state.test.ts",
+      "status": "passed",
+      "tests": 1
+    },
+    {
+      "file": "tests/permission-inheritance.test.ts",
+      "status": "passed",
+      "tests": 11
+    },
+    {
+      "file": "tests/permissions-v2.test.ts",
+      "status": "passed",
+      "tests": 18
+    },
+    {
+      "file": "tests/platform-polish.test.ts",
+      "status": "passed",
+      "tests": 5
+    },
+    {
+      "file": "tests/plugin-activity.test.ts",
+      "status": "passed",
+      "tests": 9
+    },
+    {
+      "file": "tests/plugin-ai-capability.test.ts",
+      "status": "passed",
+      "tests": 1
+    },
+    {
+      "file": "tests/plugin-assistant-http.test.ts",
+      "status": "passed",
+      "tests": 3
+    },
+    {
+      "file": "tests/plugin-assistant-native.test.ts",
+      "status": "passed",
+      "tests": 4
+    },
+    {
+      "file": "tests/plugin-assistant.test.ts",
+      "status": "passed",
+      "tests": 25
+    },
+    {
+      "file": "tests/plugin-content.test.ts",
+      "status": "passed",
+      "tests": 10
+    },
+    {
+      "file": "tests/plugin-contracts.test.ts",
+      "status": "passed",
+      "tests": 3
+    },
+    {
+      "file": "tests/plugin-credential-runtime.test.ts",
+      "status": "passed",
+      "tests": 6
+    },
+    {
+      "file": "tests/plugin-credentials.test.ts",
+      "status": "passed",
+      "tests": 12
+    },
+    {
+      "file": "tests/plugin-databases.test.ts",
+      "status": "passed",
+      "tests": 7
+    },
+    {
+      "file": "tests/plugin-description.test.ts",
+      "status": "passed",
+      "tests": 6
+    },
+    {
+      "file": "tests/plugin-editor-elements.test.ts",
+      "status": "passed",
+      "tests": 5
+    },
+    {
+      "file": "tests/plugin-element-refresh.test.ts",
+      "status": "passed",
+      "tests": 1
+    },
+    {
+      "file": "tests/plugin-extensions.test.ts",
+      "status": "passed",
+      "tests": 9
+    },
+    {
+      "file": "tests/plugin-file-bindings.test.ts",
+      "status": "passed",
+      "tests": 1
+    },
+    {
+      "file": "tests/plugin-file-receipts.test.ts",
+      "status": "passed",
+      "tests": 1
+    },
+    {
+      "file": "tests/plugin-host.test.ts",
+      "status": "passed",
+      "tests": 6
+    },
+    {
+      "file": "tests/plugin-installation.test.ts",
+      "status": "passed",
+      "tests": 11
+    },
+    {
+      "file": "tests/plugin-managed-storage.test.ts",
+      "status": "passed",
+      "tests": 22
+    },
+    {
+      "file": "tests/plugin-manager.test.ts",
+      "status": "passed",
+      "tests": 15
+    },
+    {
+      "file": "tests/plugin-mobile-session.test.ts",
+      "status": "passed",
+      "tests": 1
+    },
+    {
+      "file": "tests/plugin-monitoring-cluster.test.ts",
+      "status": "passed",
+      "tests": 1
+    },
+    {
+      "file": "tests/plugin-monitoring.test.ts",
+      "status": "passed",
+      "tests": 9
+    },
+    {
+      "file": "tests/plugin-native.test.ts",
+      "status": "passed",
+      "tests": 3
+    },
+    {
+      "file": "tests/plugin-notifications.test.ts",
+      "status": "passed",
+      "tests": 2
+    },
+    {
+      "file": "tests/plugin-platform.test.ts",
+      "status": "passed",
+      "tests": 4
+    },
+    {
+      "file": "tests/plugin-postgres-permissions.test.ts",
+      "status": "passed",
+      "tests": 2
+    },
+    {
+      "file": "tests/plugin-public-documents.test.ts",
+      "status": "passed",
+      "tests": 8
+    },
+    {
+      "file": "tests/plugin-sdk.test.ts",
+      "status": "passed",
+      "tests": 8
+    },
+    {
+      "file": "tests/plugin-storage-namespaces.test.ts",
+      "status": "passed",
+      "tests": 16
+    },
+    {
+      "file": "tests/plugin-store-icons.test.ts",
+      "status": "passed",
+      "tests": 9
+    },
+    {
+      "file": "tests/plugin-store-v1.test.ts",
+      "status": "passed",
+      "tests": 7
+    },
+    {
+      "file": "tests/plugin-user-file-namespace.test.ts",
+      "status": "passed",
+      "tests": 1
+    },
+    {
+      "file": "tests/presentation.test.ts",
+      "status": "passed",
+      "tests": 10
+    },
+    {
+      "file": "tests/prismjs-language-esm.test.ts",
+      "status": "passed",
+      "tests": 2
+    },
+    {
+      "file": "tests/public-discovery.test.ts",
+      "status": "passed",
+      "tests": 10
+    },
+    {
+      "file": "tests/realtime-cluster.test.ts",
+      "status": "passed",
+      "tests": 3
+    },
+    {
+      "file": "tests/region-comment-interaction.test.ts",
+      "status": "passed",
+      "tests": 3
+    },
+    {
+      "file": "tests/rich-selection-anchor.test.ts",
+      "status": "passed",
+      "tests": 6
+    },
+    {
+      "file": "tests/rich-text-collaboration-selection.test.ts",
+      "status": "passed",
+      "tests": 2
+    },
+    {
+      "file": "tests/runtime-session-events.test.ts",
+      "status": "passed",
+      "tests": 4
+    },
+    {
+      "file": "tests/schema-reconciliation-postgres.test.ts",
+      "status": "passed",
+      "tests": 2
+    },
+    {
+      "file": "tests/schema-reconciliation.test.ts",
+      "status": "passed",
+      "tests": 7
+    },
+    {
+      "file": "tests/search-content-sources.test.ts",
+      "status": "passed",
+      "tests": 3
+    },
+    {
+      "file": "tests/search-embeddings.test.ts",
+      "status": "passed",
+      "tests": 27
+    },
+    {
+      "file": "tests/search-engine.test.ts",
+      "status": "passed",
+      "tests": 1
+    },
+    {
+      "file": "tests/search-excerpts.test.ts",
+      "status": "passed",
+      "tests": 5
+    },
+    {
+      "file": "tests/search-filters.test.ts",
+      "status": "passed",
+      "tests": 1
+    },
+    {
+      "file": "tests/search-host-query.test.ts",
+      "status": "passed",
+      "tests": 5
+    },
+    {
+      "file": "tests/search-host-registry.test.ts",
+      "status": "passed",
+      "tests": 3
+    },
+    {
+      "file": "tests/search-intent.test.ts",
+      "status": "passed",
+      "tests": 7
+    },
+    {
+      "file": "tests/search-reconciliation.test.ts",
+      "status": "passed",
+      "tests": 5
+    },
+    {
+      "file": "tests/search-source-integration.test.ts",
+      "status": "passed",
+      "tests": 1
+    },
+    {
+      "file": "tests/select.test.ts",
+      "status": "passed",
+      "tests": 2
+    },
+    {
+      "file": "tests/server-plugin-adapters.test.ts",
+      "status": "passed",
+      "tests": 2
+    },
+    {
+      "file": "tests/server-plugin-search.test.ts",
+      "status": "passed",
+      "tests": 3
+    },
+    {
+      "file": "tests/service-credentials.test.ts",
+      "status": "passed",
+      "tests": 6
+    },
+    {
+      "file": "tests/sheet-axis-sizes.test.ts",
+      "status": "passed",
+      "tests": 1
+    },
+    {
+      "file": "tests/sheet-collection.test.ts",
+      "status": "passed",
+      "tests": 1
+    },
+    {
+      "file": "tests/sheet-document-links.test.ts",
+      "status": "passed",
+      "tests": 4
+    },
+    {
+      "file": "tests/sheet-package-upgrade.test.ts",
+      "status": "passed",
+      "tests": 2
+    },
+    {
+      "file": "tests/slides-table-upgrade.test.ts",
+      "status": "passed",
+      "tests": 1
+    },
+    {
+      "file": "tests/spreadsheet-xlsx-import.test.ts",
+      "status": "passed",
+      "tests": 4
+    },
+    {
+      "file": "tests/static-compression.test.ts",
+      "status": "passed",
+      "tests": 17
+    },
+    {
+      "file": "tests/storage-http-endpoint.test.ts",
+      "status": "passed",
+      "tests": 1
+    },
+    {
+      "file": "tests/storage.test.ts",
+      "status": "passed",
+      "tests": 5
+    },
+    {
+      "file": "tests/system-error-i18n.test.ts",
+      "status": "passed",
+      "tests": 16
+    },
+    {
+      "file": "tests/templates.test.ts",
+      "status": "passed",
+      "tests": 7
+    },
+    {
+      "file": "tests/tickets.test.ts",
+      "status": "passed",
+      "tests": 7
+    },
+    {
+      "file": "tests/trash.test.ts",
+      "status": "passed",
+      "tests": 7
+    },
+    {
+      "file": "tests/tree-order.test.ts",
+      "status": "passed",
+      "tests": 5
+    },
+    {
+      "file": "tests/update-outbox.test.ts",
+      "status": "passed",
+      "tests": 4
+    },
+    {
+      "file": "tests/upload-storage.test.ts",
+      "status": "passed",
+      "tests": 6
+    },
+    {
+      "file": "tests/user-directory.test.ts",
+      "status": "passed",
+      "tests": 7
+    },
+    {
+      "file": "tests/web-plugin-registry.test.ts",
+      "status": "passed",
+      "tests": 8
+    },
+    {
+      "file": "tests/webhooks.test.ts",
+      "status": "passed",
+      "tests": 4
+    },
+    {
+      "file": "tests/workspace-home.test.ts",
+      "status": "passed",
+      "tests": 5
+    }
+  ]
+}

@@ -42,11 +42,14 @@ import { recordVersion } from "../../history/repository.js";
 import type { Actor } from "../../identity/passwords.js";
 import { notify, validateNewMentions } from "../../interactions/community.js";
 import { validatePluginElementPayload } from "@smartdoca/plugin-contracts";
-export function validateSheetPluginElements(workbook: { sheets: Record<string, any> }) {
+export function validateSheetPluginElements(workbook: {
+  sheets: Record<string, any>;
+}) {
   for (const sheet of Object.values(workbook.sheets))
     for (const row of Object.values(sheet.cellData ?? {}) as any[])
       for (const cell of Object.values(row) as any[])
-        if (cell?.custom && Object.hasOwn(cell.custom, "docaElement")) validatePluginElementPayload(cell.custom.docaElement);
+        if (cell?.custom && Object.hasOwn(cell.custom, "docaElement"))
+          validatePluginElementPayload(cell.custom.docaElement);
 }
 export const surfaceCodec = (format: string) =>
   format === "canvas"
@@ -338,15 +341,48 @@ export async function exchangeSurface(
         ].join("\n");
       text = collect(value.scene);
       embeddedMedia = textMediaIds(JSON.stringify(value));
-      const assets = (n: any) => {
+      const references = new Map<string, boolean>();
+      const resource = (r: any) => {
         if (
-          n.tag === "Image" &&
-          !/^[a-f0-9-]{36}$/.test(n.data?.resourcePath ?? "")
+          !r ||
+          !["image", "attachment"].includes(r.kind) ||
+          typeof r.path !== "string" ||
+          !/^[a-f0-9-]{36}$/i.test(r.path)
         )
-          fail(400, "图片必须通过本系统上传");
+          fail(400, "资源必须通过本系统上传");
+        references.set(
+          r.path,
+          references.get(r.path) === true || r.kind === "image",
+        );
+      };
+      const assets = (n: any) => {
+        if (n.tag === "Image") {
+          if (!/^[a-f0-9-]{36}$/i.test(n.data?.resourcePath ?? ""))
+            fail(400, "图片必须通过本系统上传");
+          references.set(n.data.resourcePath, true);
+        }
+        if (n.data?.kind === "attachment") resource(n.data.resource);
+        for (const block of n.data?.richText?.value ?? [])
+          if (block.resource) resource(block.resource);
         (n.children ?? []).forEach(assets);
       };
       assets(value.scene);
+      if (references.size) {
+        const stored = await tx
+          .selectFrom("assets")
+          .select(["id", "mime"])
+          .where("resource_id", "=", id)
+          .where("deleted_at", "is", null)
+          .where("id", "in", [...references.keys()])
+          .execute();
+        const authorized = new Map(stored.map((a) => [a.id, a.mime]));
+        for (const [path, image] of references)
+          if (
+            !authorized.has(path) ||
+            (image && !authorized.get(path)!.startsWith("image/"))
+          )
+            fail(400, "资源不属于当前文档或类型无效");
+      }
       encoded = model.checkpoint().update;
     } finally {
       model.dispose();

@@ -1,0 +1,48 @@
+{
+  "date": "2026-10-17",
+  "target": "Doca source checkout; not published or deployed",
+  "versions": {
+    "slate": "0.4.22",
+    "canvas": "0.5.0 with local packaging repair",
+    "slides": "0.3.0-alpha.3"
+  },
+  "canvas": {
+    "path": "vendor/smartdoca-canvas-0.5.0-75e637df1a75.tgz",
+    "sha256": "75e637df1a759b35b10c209af246a899c0938f4fcbe1c6fafc937948d3720a15",
+    "repair": "Mark PlainTextEditor.ts and SlateTextEditor.tsx as side effects to preserve native editor registration during the library build.",
+    "sourceCommit": "4051b3b",
+    "sourceDiff": "package.json sideEffects only"
+  },
+  "slate": {
+    "codec": "byte identical to installed 0.4.20",
+    "yjs": "byte identical to installed 0.4.20",
+    "headless": "byte identical to installed 0.4.20",
+    "docxPatch": "Unchanged contents rebound from 0.4.20 to 0.4.22"
+  },
+  "protocols": {
+    "canvas": {
+      "codec": "aidcanvas-yjs",
+      "schemaVersion": 1
+    },
+    "slate": {
+      "schemaVersion": 3
+    },
+    "slides": {
+      "codec": "eppt-yjs-v6",
+      "schemaVersion": 2
+    }
+  },
+  "decision": "User explicitly selected: only new Slides documents use revision 6; old revision 5 documents and clients are rejected without conversion or writes.",
+  "preserved": [
+    "Original old Slides data",
+    "Epochs",
+    "Yjs bytes",
+    "Existing history",
+    "Pending message identity"
+  ],
+  "limits": [
+    "No npm publish or deployment",
+    "No real Office/WPS visual acceptance",
+    "No production database or user documents used"
+  ]
+}

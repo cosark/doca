@@ -1,0 +1,34 @@
+{
+  "result": "passed",
+  "checks": [
+    {
+      "scenario": "snapshot",
+      "loads": 4,
+      "observation": {
+        "seen": true,
+        "disappeared": false,
+        "events": [
+          {
+            "type": "visible",
+            "at": 1341.2000000476837
+          }
+        ]
+      }
+    },
+    {
+      "scenario": "error",
+      "loads": 4,
+      "observation": {
+        "seen": true,
+        "disappeared": false,
+        "events": [
+          {
+            "type": "visible",
+            "at": 570.3999999761581
+          }
+        ]
+      }
+    }
+  ],
+  "errors": []
+}

@@ -1,3 +1,4 @@
+import { canvasTableSummary } from "./canvas-workflows.js";
 import { defaultOfficialSkills } from "./skills.js";
 import { richBlockTypes } from "./edit-schema.js";
 import { editToolCallExamples } from "./tool-examples.js";
@@ -33,7 +34,7 @@ const commands = {
     "insertColumn",
     "deleteColumn",
   ],
-  canvas: ["add", "patch", "remove", "place", "group", "ungroup", "text"],
+  canvas: ["createFlowchart", "createMindmap", "createTable", "createContainer", "table", "add", "patch", "remove", "place", "group", "ungroup", "text"],
   presentation: [
     "addSlide",
     "deleteSlide",
@@ -76,10 +77,12 @@ function compactEditingGuide(format: string, skillId?: string) {
     format === "rich_text"
       ? '删除块用 {type:"deleteBlock",blockId}，不要用 remove。替换文字用 text，deleteCount 用读取到的 textLength（UTF-16，一个汉字算 1），不能猜。改表格文字用 setCellContent，cellId 用 cells[].id；局部修改才用 text，blockId 用该格 paragraphId。原生图用 insertBlock type:"flowchart" 或 mindmap，不要编造 node/graphic。改图先按 blockId 读取完整块，不能用 outline.nodes 的短预览重建。流程图 setBlock properties.nodes 保留节点 ID/坐标/尺寸，节点填充=fillColor、边框=color、文字=textColor；连线用 properties.edges 的 color/thickness，保留端点/端口/sourceAnchor/targetAnchor/routeMode/vertices。实心箭头用 shape:block-arrow，arrowDirection=right/down/left/up，arrowRoute=straight/elbow/step，arrowThickness/arrowHeadSize 为正数像素，arrowBend 为 0–100 百分比；手动连线保留 routeMode:manual 与 vertices。图块顶层不接受 color/backgroundColor/style，图内不能用 formatText 或画板 fill/stroke。思维导图改完整 properties.mindData，节点支持 color/style（rounded/pill/square/solid/underline）/fontSize/bold，整图支持 structure（balanced/right/left）、theme（classic/ocean/forest/mono）、background（plain/dots）；保留层级/ID/direction/坐标及其余原生字段，未指定设置不补写。新版流程图支持 cube/chevron/trapezoid/callout/folder/crescent；节点字体/效果字段为 fontFamily/bold/italic/underline/textAlign/rounded/shadow/aspectRatioLocked。连线保留 parentId，支持 sourceArrow/targetArrow（none/classic/block/open/diamond/circle）、sourceArrowSize/targetArrowSize、sourceOffset/targetOffset、lineJoin（miter/round/bevel）、lineJump（none/arc/gap/cubic）、jumpSize、labelPosition 和字体字段。修改完整 nodes/edges 时保留这些原生属性。画布设置位于 canvasSettings（view:{zoom,x,y}、grid/gridSize、pageView、paper:a4/a3/letter、landscape、backgroundColor、connectionArrows/connectionPoints、guides、minimap）；只修改用户要求的设置，未提供的旧字段不补写。不要手写 previewSvg/previewVersion。单元格图片用 setCellContent，children 直接是 {type:"image",path:"资产ID",children:[{text:""}]}，不要套 paragraph，不要写 assetId。'
       : format === "spreadsheet"
-        ? "cells 必须带 sheetId。用 sheetOrder[0]；写 Sheet1 也会解析。常量只写 v，公式只写 f，不要写 f:null。"
+        ? 'cells 必须带 sheetId。用 sheetOrder[0]；写 Sheet1 也会解析。常量只写 v，公式只写 f，不要写 f:null。单元格背景色使用 s:{bg:{rgb:"#FFCC00"}}，文字颜色使用 s:{cl:{rgb:"#333333"}}；只改样式时省略 v/f，保留内容和其他样式。bgColor/backgroundColor/color 等错误字段整批拒绝。保存成功只代表命令已保存，不能据此声称页面渲染已验收。'
         : format === "presentation"
           ? '删除元素用 {type:"remove",slideId,ids:[元素ID]}；样式用 {type:"formatText",slideId,ids:[元素ID],marks:{color:"#2563eb"}}；背景用 {type:"slideProperty",slideId,field:"background",value:"#ffffff"}。改正文用 {type:"replaceText",slideId,id,query:"原段落准确文字",text:"新文字"}；query 不跨段落。禁止 patch.paragraphs，SDK 不支持；省略 slideId/id 会全稿替换。不要用 blockId、elementId 或 params 代替 ids/marks。'
-          : "";
+          : format === "canvas"
+            ? '流程图优先 createFlowchart，思维导图用 createMindmap，表格用 createTable/table，手机和平板 UI 用 createContainer（phone/tablet）后 add 元素并带 parentId。坐标均为父容器内像素。原生关联放 data.kind/parentId/sourceId/targetId；不能用普通 Rect 加文字冒充原生节点。table 使用零基行列，修改前按 elementId 读取完整表格。data 为整字段替换，patch 时保留原有元数据。'
+            : "";
   return `editTool=${format}_edit。可用命令：${ops.join("、")}。${extra}完整手册 load_skill id=${skillId ?? format}。`.trim();
 }
 
@@ -153,7 +156,10 @@ export function documentReadCapabilities(
   format: string,
   offset: number,
   value?: unknown,
-) {
+): Partial<Pick<ReturnType<typeof documentCapabilities>, "editTool" | "operations" | "nativeDiagrams" | "loadSkill" | "note" | "editingGuide"> & {
+  spreadsheetHint: ReturnType<typeof spreadsheetReadHint>;
+  nativeTables: ReturnType<typeof canvasTableSummary>;
+}> {
   if (offset !== 0) return {};
   const caps = documentCapabilities(format);
   return {
@@ -163,6 +169,7 @@ export function documentReadCapabilities(
     loadSkill: caps.loadSkill,
     note: caps.note,
     editingGuide: caps.editingGuide,
+    ...(format === "canvas" ? {nativeTables: canvasTableSummary(value)} : {}),
     spreadsheetHint:
       format === "spreadsheet" ? spreadsheetReadHint(value as any) : undefined,
   };
@@ -259,6 +266,7 @@ export function spreadsheetReadHint(value: {
     notes: [
       `sheetId 用 ${sheetId}。写 ${name ?? "Sheet1"} 也会解析成这张表。常量只写 v，公式只写 f，不要写 f:null。`,
       "这是命令形状。把要填的格子一次写全，不要原样提交示例，也不要写省略号。",
+      '背景色写 s:{bg:{rgb:"#FFCC00"}}，文字颜色写 s:{cl:{rgb:"#333333"}}，不要写 bgColor/backgroundColor/color。',
       "表格插图必须调用 image_insert，五个参数都要传：assetId、resourceId、sheetId、row、column；不要嵌套 spreadsheet，不要把对话图片 ID 写进 cells 或 putFloatingObject",
     ],
     imageInsertCall: {

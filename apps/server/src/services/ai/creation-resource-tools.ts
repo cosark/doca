@@ -16,6 +16,27 @@ import {
   resourceRetrievalSchema,
 } from "@core/modules/creation-resources/service.js";
 
+// Function calling requires an object at the root. Publish the combined fields,
+// then validate the original exact per-kind contract before executing a service.
+function validateKind(template: z.ZodType, material: z.ZodType) {
+  return (
+    input: { kind: "templates" | "materials" },
+    context: z.RefinementCtx,
+  ) => {
+    const { kind, ...query } = input;
+    const result = (kind === "materials" ? material : template).safeParse(
+      query,
+    );
+    if (!result.success)
+      for (const issue of result.error.issues)
+        context.addIssue({
+          code: "custom",
+          path: issue.path,
+          message: issue.message,
+        });
+  };
+}
+
 /** Query tools call public resource services; search engines belong to providers. */
 export function createCreationResourceQueryTools(
   services: { templates: TemplatesServiceV1; materials: MaterialsServiceV2 },
@@ -44,10 +65,11 @@ export function createCreationResourceQueryTools(
       id: "creation_resource_retrieve",
       description:
         "用一句话或关键词检索插件模板/素材。素材返回materials和collections两组；需要成套主题时先看素材集，精确找单项时看素材。用target控制结果类型，collectionRefs限定素材集成员；topK分别限制每组。优先用于按需求寻找资源，返回有限相关候选及来源，不含正文/缩略图。providerIds严格限制来源；不能自行扩大用户指定的来源范围。不支持或失败会明确报告，不通过遍历列表替代检索。rank只在来源内部比较，truncated表示还有未展示候选，可细化查询；不能编造结果。",
-      inputSchema: z.discriminatedUnion("kind", [
-        resourceRetrievalSchema.extend({ kind: z.literal("templates") }),
-        materialRetrievalSchema.extend({ kind: z.literal("materials") }),
-      ]),
+      inputSchema: resourceRetrievalSchema
+        .extend({ ...materialRetrievalSchema.shape, kind })
+        .superRefine(
+          validateKind(resourceRetrievalSchema, materialRetrievalSchema),
+        ),
       execute: async ({ kind, ...input }) =>
         kind === "materials"
           ? services.materials.retrieve(context, input)
@@ -57,10 +79,9 @@ export function createCreationResourceQueryTools(
       id: "creation_resource_search",
       description:
         "分页浏览当前用户可用的插件模板/素材，可按query/tags/providerIds筛选。按需求找资源优先用creation_resource_retrieve，不翻遍目录。热度/使用量仅支持明确指定一个来源。在线文档契约doca.document.rich_text等版本1；内容doca.native.rich_text等版本1，presentation为2。没有来源时为空。",
-      inputSchema: z.discriminatedUnion("kind", [
-        resourceSearchSchema.extend({ kind: z.literal("templates") }),
-        materialSearchSchema.extend({ kind: z.literal("materials") }),
-      ]),
+      inputSchema: resourceSearchSchema
+        .extend({ ...materialSearchSchema.shape, kind })
+        .superRefine(validateKind(resourceSearchSchema, materialSearchSchema)),
       execute: async ({ kind, ...input }) => {
         if (kind === "materials") {
           const page = await services.materials.search(context, input);
@@ -108,10 +129,11 @@ export function createCreationResourceQueryTools(
       id: "creation_resource_tags",
       description:
         "获取所选providerIds的可见模板/素材标签。素材的materials/collections标签各自独立，公共标签已去重。与用户选中的来源范围保持一致。",
-      inputSchema: z.discriminatedUnion("kind", [
-        resourceFilterSchema.extend({ kind: z.literal("templates") }),
-        materialQueryFilterSchema.extend({ kind: z.literal("materials") }),
-      ]),
+      inputSchema: resourceFilterSchema
+        .extend({ ...materialQueryFilterSchema.shape, kind })
+        .superRefine(
+          validateKind(resourceFilterSchema, materialQueryFilterSchema),
+        ),
       execute: async ({ kind, ...filter }) =>
         kind === "materials"
           ? services.materials.tags(context, filter)

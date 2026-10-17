@@ -13,7 +13,11 @@ import {
   REMOTE_ORIGIN,
   isLocalContentOrigin,
 } from "@smartdoca/slides/core";
-import { importPptx, exportPptx, validatePptxFile } from "@smartdoca/slides/pptx";
+import {
+  importPptx,
+  exportPptx,
+  validatePptxFile,
+} from "@smartdoca/slides/pptx";
 import { openTestDatabase } from "./database.js";
 import type { DB } from "@db/index.js";
 import { createUser, type Actor } from "@core/modules/identity/passwords.js";
@@ -34,7 +38,7 @@ import {
   restoreSurface,
   surfaceAnchor,
 } from "@core/modules/documents/codecs/surfaces.js";
-const protocol = { codec: "eppt-yjs-v5", schemaVersion: 2, protocolVersion: 1 };
+const protocol = { codec: "eppt-yjs-v6", schemaVersion: 2, protocolVersion: 1 };
 let db: DB, owner: Actor;
 beforeEach(async () => {
   db = await openTestDatabase({ driver: "sqlite", path: ":memory:" });
@@ -68,7 +72,7 @@ async function setup() {
     envelope: { ...protocol, epochId: initial.epochId },
   };
 }
-it("PPT v5: sections, hidden pages and rich text formatting survive ACK and reload", async () => {
+it("PPT v6: sections, hidden pages and rich text formatting survive ACK and reload", async () => {
   const { docs, resource, doc, envelope } = await setup();
   const controller = new EditorController(doc);
   const reloaded = new Y.Doc();
@@ -173,7 +177,7 @@ it("PPT section deletion preserves slides through host ACK, reload and one-step 
     replica.destroy();
   }
 });
-it("PPT v5: malformed sections are rejected without corrupting saved content", async () => {
+it("PPT v6: malformed sections are rejected without corrupting saved content", async () => {
   const { docs, resource, doc, envelope } = await setup();
   try {
     rootOf(doc).set("section:__proto__", "invalid");
@@ -429,4 +433,104 @@ it("PPTX subset imports a new epoch, round trips text/style, export is pure; uns
   }
   for (const name of ["a.ppt", "a.json", "a.pptm"])
     expect(() => validatePptxFile({ name, size: 100 })).toThrow();
+});
+
+it("revision 5 documents and clients are rejected unchanged, while new documents use revision 6", async () => {
+  const { docs, resource, doc, envelope } = await setup();
+  try {
+    const original = await db
+      .selectFrom("document_states")
+      .selectAll()
+      .where("resource_id", "=", resource.id)
+      .executeTakeFirstOrThrow();
+    expect(original.codec).toBe("eppt-yjs-v6");
+    await expect(
+      docs.exchange(owner, resource.id, { ...envelope, codec: "eppt-yjs-v5" }),
+    ).rejects.toThrow();
+    await db
+      .updateTable("document_states")
+      .set({ codec: "eppt-yjs-v5" })
+      .where("resource_id", "=", resource.id)
+      .execute();
+    await expect(docs.exchange(owner, resource.id, envelope)).rejects.toThrow();
+    const retained = await db
+      .selectFrom("document_states")
+      .selectAll()
+      .where("resource_id", "=", resource.id)
+      .executeTakeFirstOrThrow();
+    expect(retained).toEqual({ ...original, codec: "eppt-yjs-v5" });
+  } finally {
+    doc.destroy();
+  }
+});
+
+it("revision 6 table merges, styles, dimensions and text insets survive host validation, ACK and reload", async () => {
+  const { tableIds } = await import("@smartdoca/slides/core");
+  const { docs, resource, doc, envelope } = await setup();
+  const control = new EditorController(doc),
+    replica = new Y.Doc();
+  try {
+    const slide = readDocument(doc).slideOrder[0]!;
+    const table = {
+      id: "qa-table",
+      type: "table" as const,
+      transform: { x: 0, y: 0, width: 4000000, height: 2000000, rotation: 0 },
+      cells: [
+        ["任务", "负责人"],
+        ["适配", "QA"],
+      ],
+      fill: "#ffffff",
+      stroke: "#000000",
+      strokeWidth: 1,
+    };
+    control.insert(slide, table);
+    const text = createTextElement("新样式");
+    text.paddingInsets = { top: 10, left: 15 };
+    text.paragraphs[0]!.children[0]!.letterSpacing = 2;
+    control.insert(slide, text);
+    const axes = tableIds(table);
+    control.tableCommand(slide, table.id, {
+      kind: "merge",
+      rows: axes.rowIds,
+      columns: [axes.columnIds[0]!],
+    });
+    control.tableCommand(slide, table.id, {
+      kind: "style",
+      rows: axes.rowIds,
+      columns: axes.columnIds,
+      style: { bold: true, backgroundColor: "#f0f5ff" },
+    });
+    control.tableCommand(slide, table.id, {
+      kind: "resize",
+      axis: "column",
+      sizes: [{ target: axes.columnIds[0]!, size: 250 }],
+    });
+    const message = {
+      ...envelope,
+      messageId: randomUUID(),
+      update: b64(Y.encodeStateAsUpdate(doc)),
+    };
+    const ack = await docs.exchange(owner, resource.id, message);
+    expect(ack.seq).toBe(1);
+    expect((await docs.exchange(owner, resource.id, message)).seq).toBe(1);
+    Y.applyUpdate(
+      replica,
+      (await restoreSurface(db, resource.id, "presentation")).update,
+    );
+    expect(readDocument(replica)).toEqual(readDocument(doc));
+    const saved = readDocument(replica).slides[slide]!.elements[
+      table.id
+    ] as typeof table & {
+      merges: unknown[];
+      cellStyles: { bold: boolean }[][];
+      columnWidths: number[];
+    };
+    expect(saved.merges).toHaveLength(1);
+    expect(saved.cellStyles[0]![0]!.bold).toBe(true);
+    expect(saved.columnWidths[0]).toBe(250);
+  } finally {
+    control.dispose();
+    doc.destroy();
+    replica.destroy();
+  }
 });

@@ -2,7 +2,7 @@ import { PluginSlot } from "@web/plugins/extensions.js";
 import { useAI } from "@web/features/ai/ai-context.js";
 import { createPortal } from "react-dom";
 import { useEffect, useRef, useState } from "react";
-import { AtSign, Copy, Pin, Share2, Star, Trash2 } from "lucide-react";
+import { Sparkles, Copy, Pin, Share2, Star, Trash2 } from "lucide-react";
 import { api, type Detail, type Resource } from "@web/shared/api.js";
 import { publishReaction } from "@web/features/documents/document-reactions.js";
 import { Feedback } from "@web/shared/components/feedback.js";
@@ -156,7 +156,7 @@ export function TreeDocumentMenu({
             close();
           }}
         >
-          <AtSign size={16} />
+          <Sparkles size={16} />
           {t("doc.cite")}
         </button>
       )}

@@ -525,3 +525,10 @@ body:has(.sheet-document.is-reading) .uos-office-popover,
   width: 16px;
   height: 16px;
 }
+
+/* Native Slides color chips use .empty for transparency, inside the host's empty-state scope. */
+.eppt-workspace .eppt-current-color.empty {
+  display: block;
+  min-height: 0;
+  padding: 0;
+}

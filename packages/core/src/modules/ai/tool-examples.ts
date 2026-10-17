@@ -359,43 +359,15 @@ export const TOOL_EXAMPLES: Record<string, Record<string, unknown>[]> = {
     },
   ],
   canvas_edit: [
-    {
-      ...editBase,
-      operations: [
-        {
-          type: "add",
-          element: {
-            id: "新唯一ID",
-            tag: "Rect",
-            x: 80,
-            y: 160,
-            width: 160,
-            height: 64,
-            fill: "#E8F1FE",
-          },
-        },
-      ],
-    },
-    {
-      ...editBase,
-      operations: [
-        {
-          type: "add",
-          element: {
-            id: "新唯一ID",
-            tag: "Text",
-            x: 96,
-            y: 176,
-            width: 128,
-            height: 32,
-            text: "开始",
-            fill: "#1f2937",
-          },
-        },
-      ],
-    },
+    { ...editBase, operations: [{type:"createFlowchart",id:"new-flow",x:60,y:60,
+      nodes:[{id:"start",text:"开始",x:0,y:0,width:160,height:64,shape:"rounded"},{id:"finish",text:"完成",x:260,y:0,width:160,height:64,shape:"rounded"}],
+      edges:[{id:"e1",sourceId:"start",targetId:"finish",mode:"elbow"}]}] },
+    { ...editBase, operations: [{type:"createMindmap",id:"new-mind",x:500,y:300,layout:"balanced",topic:{id:"root",text:"项目",children:[{id:"design",text:"设计"},{id:"dev",text:"开发"}]}}] },
+    { ...editBase, operations: [{type:"createTable",id:"new-table",x:60,y:60,cells:[["任务","负责人"],["设计","小林"]]},{type:"table",id:"new-table",command:{kind:"cell",row:1,column:1,text:"小周"}}] },
+    { ...editBase, operations: [{type:"createContainer",id:"new-phone",x:60,y:60,containerType:"phone",title:"首页"},{type:"add",parentId:"new-phone",element:{id:"new-card",tag:"Rect",x:24,y:120,width:342,height:160,cornerRadius:16,fill:"#eaf1ff"}}] },
   ],
   presentation_edit: [
+    { ...editBase, operations: [{type:"table",slideId:"已读取的页面ID",id:"已读取的表格ID",command:{kind:"style",rows:["已读取的rowIds[0]"],columns:["已读取的columnIds[0]"],style:{bold:true,backgroundColor:"#eaf1ff"}}}] },
     {
       ...editBase,
       operations: [
@@ -449,8 +421,18 @@ export const TOOL_EXAMPLES: Record<string, Record<string, unknown>[]> = {
           type: "cells",
           sheetId: "Sheet1",
           cells: [
-            { row: 0, column: 0, v: "费用类别" },
-            { row: 0, column: 1, v: "金额" },
+            {
+              row: 0,
+              column: 0,
+              v: "费用类别",
+              s: { bg: { rgb: "#FFCC00" }, bl: 1 },
+            },
+            {
+              row: 0,
+              column: 1,
+              v: "金额",
+              s: { bg: { rgb: "#FFCC00" }, bl: 1 },
+            },
             { row: 1, column: 0, v: "人力成本" },
             { row: 1, column: 1, v: 300000 },
             { row: 2, column: 0, v: "合计" },

@@ -1,0 +1,76 @@
+{
+  "buildx.build.provenance/linux/amd64": {
+    "builder": {
+      "id": ""
+    },
+    "buildType": "https://mobyproject.org/buildkit@v1",
+    "materials": [
+      {
+        "uri": "pkg:docker/node@22-bookworm-slim?platform=linux%2Famd64",
+        "digest": {
+          "sha256": "c3de60bf2f9dd0ac6370e6117950ff62d6e339527e7472301c9c78a017978392"
+        }
+      }
+    ],
+    "invocation": {
+      "configSource": {
+        "entryPoint": "Dockerfile"
+      },
+      "parameters": {
+        "frontend": "dockerfile.v0",
+        "locals": [
+          {
+            "name": "context"
+          },
+          {
+            "name": "dockerfile"
+          }
+        ]
+      },
+      "environment": {
+        "platform": "linux/arm64"
+      }
+    }
+  },
+  "buildx.build.provenance/linux/arm64": {
+    "builder": {
+      "id": ""
+    },
+    "buildType": "https://mobyproject.org/buildkit@v1",
+    "materials": [
+      {
+        "uri": "pkg:docker/node@22-bookworm-slim?platform=linux%2Farm64",
+        "digest": {
+          "sha256": "c3de60bf2f9dd0ac6370e6117950ff62d6e339527e7472301c9c78a017978392"
+        }
+      }
+    ],
+    "invocation": {
+      "configSource": {
+        "entryPoint": "Dockerfile"
+      },
+      "parameters": {
+        "frontend": "dockerfile.v0",
+        "locals": [
+          {
+            "name": "context"
+          },
+          {
+            "name": "dockerfile"
+          }
+        ]
+      },
+      "environment": {
+        "platform": "linux/arm64"
+      }
+    }
+  },
+  "buildx.build.ref": "desktop-linux/desktop-linux/69p4ettosmavur4eby0viyasw",
+  "containerimage.descriptor": {
+    "mediaType": "application/vnd.oci.image.index.v1+json",
+    "digest": "sha256:4be4dc0b1c6a851a7aa1812786e18c7413685586e08d23abd727f44e576de560",
+    "size": 1609
+  },
+  "containerimage.digest": "sha256:4be4dc0b1c6a851a7aa1812786e18c7413685586e08d23abd727f44e576de560",
+  "image.name": "docker.io/smartdoca/doca:0.1.31-candidate"
+}

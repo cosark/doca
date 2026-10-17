@@ -40,7 +40,7 @@ import { useSheetDocumentPicker } from "@web/features/documents/sheet-document-p
 import { useSheetPluginElements } from "./sheet-plugin-elements.js";
 import "@smartdoca/sheet/style.css";
 import "@web/features/documents/surface.css";
-import { AtSign, Eye, EyeOff, MessageSquare } from "lucide-react";
+import { Sparkles, Eye, EyeOff, MessageSquare } from "lucide-react";
 const factory: SurfaceFactory<ExlsxCollaborationSession> = async (
   b,
   sessionId,
@@ -87,7 +87,7 @@ export default function SheetDocument({
   targetComment?: string | null;
   loadMoreComments?: () => Promise<void>;
 }) {
-  const { locale } = useI18n();
+  const { locale, t } = useI18n();
   const mentionKeyboard = useSheetMentionKeyboard();
   const id = detail.resource.id,
     sync = useSurfaceSync(
@@ -136,7 +136,7 @@ export default function SheetDocument({
   const menus = useMemo<SpreadsheetMenuExtension[]>(
     () => [
       ...elements.menus,
-      { id: "doca-ai", title: "引用给 AI", ariaLabel: "引用给 AI", path: "ribbon.others.others", order: 998, icon: <AtSign size={18} />, requiresEditPermission: false, enabled: context => !!context.selection && !!aiRef.current?.userId, action: () => aiRef.current?.add() },
+      { id: "doca-ai", title: t("editor.citeAi"), ariaLabel: t("editor.citeAi"), path: "ribbon.others.others", order: 998, icon: <Sparkles size={18} />, requiresEditPermission: false, enabled: context => !!context.selection && !!aiRef.current?.userId, action: () => aiRef.current?.add() },
       {
         id: "doca-region-comment",
         title: "评论",
@@ -151,7 +151,7 @@ export default function SheetDocument({
         action: () => createComment.current(),
       },
     ],
-    [elements.menus, rank, sync.connected, sync.blocked],
+    [elements.menus, rank, sync.connected, sync.blocked, t],
   );
   const publish = useCallback(
     (selection: SpreadsheetCellSelection | null) => {

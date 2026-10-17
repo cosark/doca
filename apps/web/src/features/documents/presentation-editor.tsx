@@ -28,8 +28,14 @@ import {
   type User,
 } from "@web/shared/api.js";
 import { realtime } from "@web/features/documents/realtime.js";
-import { useSurfaceSync, type SurfaceFactory } from "@web/features/documents/surface-sync.js";
-import { RegionComments, type RegionController } from "@web/features/comments/region-comments.js";
+import {
+  useSurfaceSync,
+  type SurfaceFactory,
+} from "@web/features/documents/surface-sync.js";
+import {
+  RegionComments,
+  type RegionController,
+} from "@web/features/comments/region-comments.js";
 import {
   DocumentDownload,
   downloadResult,
@@ -76,7 +82,7 @@ export default function PresentationDocument({
 }) {
   const { locale, t } = useI18n();
   const id = detail.resource.id;
-  const sync = useSurfaceSync(id, user?.id, "eppt-yjs-v5", factory, changed, 2);
+  const sync = useSurfaceSync(id, user?.id, "eppt-yjs-v6", factory, changed, 2);
   const model = sync.binding?.value;
   const rank = Math.min(roleRank(detail.resource.role), sync.rank);
   const [presenting, setPresenting] = useState(false),
@@ -196,7 +202,9 @@ export default function PresentationDocument({
     },
     [id, sync.connected, editable, model],
   );
-  useEffect(() => { if (!editable && model) publish("", []); }, [editable, model, publish]);
+  useEffect(() => {
+    if (!editable && model) publish("", []);
+  }, [editable, model, publish]);
   const members = useMemo(
     () =>
       sync.connected && editable
@@ -355,7 +363,9 @@ export default function PresentationDocument({
               renderCommentAction={(anchor) =>
                 rank >= 1 && !presenting ? (
                   <span className="ppt-comment-action-group">
-                    <AIReferenceButton anchor={{...anchor, epochId: model?.epochId}} />
+                    <AIReferenceButton
+                      anchor={{ ...anchor, epochId: model?.epochId }}
+                    />
                     <button
                       className="ppt-comment-action"
                       title={t("editor.commentSelection")}
@@ -379,7 +389,12 @@ export default function PresentationDocument({
         <p className="empty">正在加载演示文稿…</p>
       )}
       {handle && !presenting && (
-        <ModelFind documentId={detail.resource.id} handle={find} revision={sync.revision} canEdit={editable} />
+        <ModelFind
+          documentId={detail.resource.id}
+          handle={find}
+          revision={sync.revision}
+          canEdit={editable}
+        />
       )}
       {!presenting && (
         <RegionComments

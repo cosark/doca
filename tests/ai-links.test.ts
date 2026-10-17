@@ -504,7 +504,7 @@ it("presentation text leaf link property persists", async () => {
   expect(text).toContain('"link":"https://doca.example.com"');
 });
 
-it("saves a presentation text box written in pixels without rotation", async () => {
+it("rejects obsolete presentation text inputs without writes and accepts explicit native units", async () => {
   const doc = await createContent(db).create(owner, {
     title: "PPT",
     kind: "document",
@@ -512,7 +512,7 @@ it("saves a presentation text box written in pixels without rotation", async () 
   });
   const read = await readAIDocument(db, { actor: owner }, doc.id);
   const slideId = (read.value as any).slideOrder[0];
-  await editAIDocument(
+  await expect(editAIDocument(
     db,
     { actor: owner },
     doc.id,
@@ -530,7 +530,17 @@ it("saves a presentation text box written in pixels without rotation", async () 
       },
     ],
     randomUUID(),
-  );
+  )).rejects.toThrow("element.id");
+  const rejected = await readAIDocument(db, { actor: owner }, doc.id);
+  expect(rejected.seq).toBe(read.seq);
+  expect(rejected.epochId).toBe(read.epochId);
+  expect(rejected.value).toEqual(read.value);
+  await editAIDocument(db, { actor: owner }, doc.id,
+    { seq: read.seq, epochId: read.epochId! }, [{ type: "insert", slideId,
+      element: { id: "native-title", type: "text",
+        transform: { x: 914400, y: 685800, width: 4572000, height: 609600, rotation: 0 },
+        paragraphs: [{ type: "paragraph", children: [{ text: "项目计划", fontSize: 32 }] }] },
+    }], randomUUID());
   const after = await readAIDocument(db, { actor: owner }, doc.id);
   const elements = Object.values((after.value as any).slides[slideId].elements) as any[];
   expect(elements.some((element) => JSON.stringify(element).includes("项目计划"))).toBe(true);

@@ -1176,6 +1176,7 @@ export async function createApp(db: DB, options: CreateAppOptions) {
       parentId?: string;
       tree?: boolean;
       format?: string;
+      location?: "personal" | "library";
       sort?: string;
       order?: string;
     };
@@ -1223,6 +1224,9 @@ export async function createApp(db: DB, options: CreateAppOptions) {
           cursor: optional(Type.String({ maxLength: 2048 })),
           parentId: optional(id),
           tree: optional(Type.Boolean()),
+          location: optional(
+            Type.Union([Type.Literal("personal"), Type.Literal("library")]),
+          ),
           format: optional(
             Type.Union(
               [

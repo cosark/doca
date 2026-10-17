@@ -1,0 +1,57 @@
+{
+  "hostRegression": {
+    "passed": 161,
+    "skipped": 1,
+    "files": 20
+  },
+  "canvasBrowser": {
+    "passed": 222,
+    "scope": "All SDK source browser cases; installed rebuilt artifact separately exercised in the Doca host suite"
+  },
+  "canvasModel": {
+    "passed": 30
+  },
+  "slate": {
+    "passed": 220,
+    "files": 53
+  },
+  "slides": {
+    "passed": 198,
+    "skipped": 3,
+    "filesPassed": 43
+  },
+  "browserHost": {
+    "result": "passed",
+    "checks": [
+      "Slate 0.4.22: typing, diagram label replacement, durable ACK, peer convergence and reload",
+      "Canvas native mind map insertion and keyboard child editing persist through host ACK",
+      "Canvas rich cell formatting, attachment upload and host-authorized preview",
+      "Canvas authorized image upload, same-user peer without echo and checkpoint reload",
+      "Canvas readonly paste and resize do not write content",
+      "Canvas readonly SVG export embeds authorized images without writing document content",
+      "Slides revision 6: cell edit/Tab, merge/split, whole-cell bold, row insertion, host ACK, peer and reload",
+      "Slides readonly selection and typing produce no writes",
+      "Slides readonly PPTX download reimports with native table content and no document writes",
+      "60-second idle observation: zero content writes across all three editors and peers"
+    ],
+    "errors": [],
+    "idleSeconds": 60
+  },
+  "slidesNative": {
+    "result": "passed",
+    "checks": [
+      "Slides native text presets, font search, character spacing and independent margins save through host ACK",
+      "Slides matrix clipboard, native undo/redo, row/column drag resizing and checkpoint reload"
+    ],
+    "errors": []
+  },
+  "typecheck": "passed",
+  "productionBuild": "passed",
+  "canvasLint": "passed",
+  "canvasAppAndExamplesTypes": "passed",
+  "hostFinalSupplement": {
+    "passed": 22,
+    "files": 5
+  },
+  "transparentSwatch": "Browser-asserted native size <=28x28 px after host CSS reset"
+}
