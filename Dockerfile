@@ -26,7 +26,6 @@ RUN pnpm config set store-dir /pnpm/store \
 
 COPY pnpm-lock.yaml pnpm-workspace.yaml package.json ./
 COPY patches ./patches
-COPY vendor ./vendor
 RUN --mount=type=cache,id=pnpm-${TARGETARCH},target=/pnpm/store,sharing=locked \
     pnpm fetch --reporter=append-only
 

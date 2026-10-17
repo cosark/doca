@@ -1,6 +1,6 @@
 {
   "name": "doca",
-  "version": "0.1.30",
+  "version": "0.1.31",
   "license": "MIT",
   "private": true,
   "type": "module",
@@ -57,7 +57,7 @@
     "@open-file-viewer/core": "0.1.47",
     "@open-file-viewer/react": "0.1.47",
     "@sinclair/typebox": "^0.34.52",
-    "@smartdoca/canvas": "file:vendor/smartdoca-canvas-0.5.0-75e637df1a75.tgz",
+    "@smartdoca/canvas": "0.5.2",
     "@smartdoca/files-capability": "workspace:*",
     "@smartdoca/knowledge-capability": "workspace:*",
     "@smartdoca/markdown": "0.4.3",

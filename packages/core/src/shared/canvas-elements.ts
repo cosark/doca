@@ -1,6 +1,6 @@
 import type { SceneNode } from "@smartdoca/canvas/model";
 
-// AidCanvas 0.5.0 uses `tag` for rendering and `name` for its native
+// AidCanvas 0.5.2 uses `tag` for rendering and `name` for its native
 // properties/commands. Both are needed; IDs remain owned by CanvasModel.
 const nativeNames: Record<string, string> = {
   Rect: "rect",

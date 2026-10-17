@@ -1,0 +1,14 @@
+{
+  "checks": [
+    "source filter works across recent and owned tabs with server-side results",
+    "top upload uses the existing import flow and preserves imported content after reload",
+    "rich-text first-open selection reaches the composer and survives draft reload",
+    "delayed existing-session restore keeps the selection and repeated citation is deduplicated",
+    "spreadsheet native selection reaches the composer",
+    "canvas native selected elements reach the composer",
+    "presentation native selected element reaches the composer",
+    "selection, citation and draft reload leave all five document content sequences unchanged",
+    "first admin load retains newer realtime count when stale HTTP stats arrive last"
+  ],
+  "errors": []
+}

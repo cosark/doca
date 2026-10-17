@@ -1,6 +1,6 @@
 # AI 原生画布与演示工具
 
-当前目标：Canvas 0.5.0、Slides 0.3.0-alpha.3。宿主的 `canvas_edit` / `presentation_edit` 使用现有授权、seq/epochId 乐观校验、原生 Yjs 命令、原子验证和 durable ACK；没有第二条 JSON 保存通道。
+当前目标：Canvas 0.5.2、Slides 0.3.0-alpha.3。宿主的 `canvas_edit` / `presentation_edit` 使用现有授权、seq/epochId 乐观校验、原生 Yjs 命令、原子验证和 durable ACK；没有第二条 JSON 保存通道。
 
 ## 画布
 

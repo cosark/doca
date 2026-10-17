@@ -313,6 +313,65 @@ try {
   const richInput = c.page.locator('[data-slate-editor="true"]');
   await richInput.waitFor();
   await richInput.focus();
+  await saved(c.page);
+  const tableValue = async () =>
+    (await preview(canvas.id)).value.scene.children.find(
+      (n: any) => n.data?.kind === "table",
+    );
+  const originalTable = await tableValue();
+  await richInput.fill(
+    "你好就是你\n连续中文输入\n内容撑高整行\n后续行保持对齐",
+  );
+  await c.page.keyboard.press("Escape");
+  await until(
+    async () => (await tableValue()).data.rowHeights[0] > 46,
+    "table row growth saved",
+  );
+  await saved(c.page);
+  const grownTable = await tableValue(),
+    height = grownTable.data.rowHeights[0];
+  assert(
+    grownTable.children
+      .filter((n: any) => n.data.row === 0)
+      .every(
+        (n: any) => n.height === height && n.children[0].height === height - 20,
+      ),
+  );
+  assert(
+    grownTable.children
+      .filter((n: any) => n.data.row === 1)
+      .every((n: any) => n.y === height),
+  );
+  await c.page.locator(".canvas-app").focus();
+  await c.page.keyboard.press("ControlOrMeta+z");
+  await until(
+    async () =>
+      JSON.stringify(await tableValue()) === JSON.stringify(originalTable),
+    "text and row geometry undo together",
+  );
+  await c.page.keyboard.press("ControlOrMeta+Shift+z");
+  await until(
+    async () =>
+      JSON.stringify(await tableValue()) === JSON.stringify(grownTable),
+    "text and row geometry redo together",
+  );
+  await c.page.mouse.click(cellBounds.x + 50, cellBounds.y + 20);
+  await richInput.waitFor();
+  assert.equal(
+    await richInput.evaluate((el) => getComputedStyle(el).overflowY),
+    "clip",
+  );
+  assert(
+    await richInput.evaluate(
+      (el) => el.scrollTop === 0 && el.scrollHeight <= el.clientHeight + 1,
+    ),
+  );
+  await c.page.screenshot({ path: join(output, "canvas-table-grown.png") });
+  assert.equal(cp.updates.length, 0);
+  pass(
+    "Canvas 0.5.2: multiline content grows the complete shared row, with atomic undo/redo and no peer echo",
+  );
+  await richInput.fill("");
   await c.page.keyboard.insertText("单元格富文本");
   await c.page.keyboard.press("ControlOrMeta+a");
   await c.page
@@ -357,6 +416,90 @@ try {
   );
   pass(
     "Canvas authorized image upload, same-user peer without echo and checkpoint reload",
+  );
+  await c.page.getByRole("button", { name: "便笺 (N)", exact: true }).click();
+  await c.page.getByRole("button", { name: "玫瑰粉", exact: true }).click();
+  await host.click({ position: { x: 1050, y: 240 } });
+  await until(
+    async () =>
+      JSON.stringify((await preview(canvas.id)).value).includes(
+        '"name":"note"',
+      ),
+    "note insertion saved",
+  );
+  await host.click({ position: { x: 1050, y: 240 } });
+  await richInput.waitFor();
+  const cdp = await context.newCDPSession(c.page);
+  let composed = "";
+  for (const text of [
+    "你好",
+    "继续编辑",
+    "中文输入",
+    "保存以后",
+    "仍然可以修改",
+  ]) {
+    for (const candidate of ["n", "ni", "nih", "niha", "nihao"])
+      await cdp.send("Input.imeSetComposition", {
+        text: candidate,
+        selectionStart: candidate.length,
+        selectionEnd: candidate.length,
+      });
+    await cdp.send("Input.dispatchKeyEvent", {
+      type: "keyDown",
+      key: "Enter",
+      code: "Enter",
+      windowsVirtualKeyCode: 229,
+    });
+    await cdp.send("Input.insertText", { text });
+    await cdp.send("Input.dispatchKeyEvent", {
+      type: "keyUp",
+      key: "Enter",
+      code: "Enter",
+      windowsVirtualKeyCode: 13,
+    });
+    composed += text;
+    await until(
+      async () => (await richInput.innerText()) === composed,
+      "consecutive Chinese composition",
+    );
+    assert(await richInput.evaluate((el) => el === document.activeElement));
+  }
+  await c.page.keyboard.press("Escape");
+  await until(
+    async () =>
+      JSON.stringify((await preview(canvas.id)).value).includes(composed),
+    "composed text durably saved",
+  );
+  await saved(c.page);
+  assert(JSON.stringify((await preview(canvas.id)).value).includes(composed));
+  await c.page.locator(".canvas-app").focus();
+  await c.page.keyboard.press("Enter");
+  await richInput.waitFor();
+  assert.equal(await richInput.innerText(), composed);
+  await c.page.keyboard.press("ControlOrMeta+End");
+  await c.page.keyboard.insertText("完成");
+  await c.page.keyboard.press("Escape");
+  await until(
+    async () =>
+      JSON.stringify((await preview(canvas.id)).value).includes(
+        composed + "完成",
+      ),
+    "continued edit durably saved",
+  );
+  await saved(c.page);
+  await c.page.screenshot({
+    path: join(output, "canvas-chinese-composition.png"),
+  });
+  await c.page.reload();
+  await host.waitFor();
+  assert(
+    JSON.stringify((await preview(canvas.id)).value).includes(
+      composed + "完成",
+    ),
+  );
+  assert.equal(cp.updates.length, 0);
+  pass(
+    "Canvas 0.5.2: five consecutive Chinese IME commits, continued editing after save, host ACK and checkpoint reload",
   );
   await mode(c.page, "阅读");
   const beforeReadonly = await preview(canvas.id),

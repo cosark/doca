@@ -131,3 +131,9 @@ The user explicitly approved deleting canvas/PPT tool input aliases, automatic e
 
 
 AI read/edit receipts also expose bounded current native-table facts (final dimensions, last-row indices and merge rectangles). Region acceptance uses final coordinates after structural edits. Polygon/Line point inputs use the current component's flat-number or point-object arrays; nested pairs are rejected, and Path uses `path`, never SVG `d`. Invalid input reports the actual field name rather than introducing an alias or implicit conversion. Root `add` accepts the shipped model's explicit `parentId:null`.
+
+## Canvas 0.5.2 registry integration — 2026-10-17
+
+Doca 0.1.31 pins the published `@smartdoca/canvas` 0.5.2 registry artifact. This supersedes the temporary 0.5.0 tarball above, which is removed from the runtime dependency/build path and retained in the preceding source snapshot for recovery. Public exports, dependencies and declaration signatures match that artifact; the sole declaration difference is a table-layout comment. The model runtime is byte-identical. No historical reader, stored-scene conversion, field backfill, codec/schema change or checkpoint/outbox replacement is introduced.
+
+The package fixes consecutive Chinese composition, toolbar tracking during pan/zoom, and content-driven table row growth. Row geometry and text changes use the same native collaborative undo transaction. The host continues its stable model, authenticated resource/presence callbacks and durable ACK queue. Source, browser, image and publication verification is recorded in `docs/verification/release-0.1.31/`; the earlier 0.5.0 evidence remains dated evidence rather than proof of every 0.5.2 operation.

@@ -337,7 +337,6 @@ try {
     slideText.x + slideText.width / 2,
     slideText.y + slideText.height / 2,
   );
-  await slides.getByRole("button", { name: "格式", exact: true }).click();
   await slides
     .getByRole("button", { name: "引用给 AI", exact: true })
     .first()
