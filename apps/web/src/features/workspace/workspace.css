@@ -245,6 +245,7 @@
 }
 .quick-actions {
   display: flex;
+  flex-wrap: wrap;
   gap: 14px;
   margin-bottom: 30px;
 }
@@ -317,8 +318,9 @@
   color: #f5a70a;
 }
 .quick-actions > button {
+  min-width: 0;
   max-width: 350px;
-  flex: 1;
+  flex: 1 1 220px;
   display: flex;
   justify-content: initial;
   text-align: left;
@@ -337,6 +339,9 @@
   font-size: 15px;
   font-weight: 550;
   display: block;
+}
+.quick-actions > button > span:nth-child(2) {
+  min-width: 0;
 }
 .quick-actions small {
   display: block;
@@ -419,10 +424,15 @@
   background: var(--selected);
 }
 .dashboard-toolbar {
+  flex-wrap: wrap;
   display: flex;
   align-items: center;
   gap: 10px;
   padding: 19px 0;
+}
+.dashboard-toolbar > .subtle {
+  flex-shrink: 0;
+  white-space: nowrap;
 }
 .dashboard-toolbar h2 {
   font-size: 16px;
@@ -915,6 +925,10 @@
   }
   .quick-actions {
     gap: 8px;
+  }
+  .quick-actions:not(.library-quick-actions) > button {
+    flex: 1 1 140px;
+    max-width: none;
   }
   .quick-actions > button {
     padding: 12px;

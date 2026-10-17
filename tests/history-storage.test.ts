@@ -95,7 +95,7 @@ async function setup(
     format === "presentation"
       ? await nativeDocuments(db).exchange(owner, resource.id, {
           protocolVersion: 1,
-          codec: "eppt-yjs-v5",
+          codec: "eppt-yjs-v6",
           schemaVersion: 2,
         })
       : await createDocuments(db).exchange(owner, resource.id, {});
@@ -455,7 +455,11 @@ it("blocks host startup during an interrupted rollback and resumes without resam
   const second = indexes[1]!;
   const bytes = await readFile(join(directory, second.object_key));
   await writeFile(join(directory, second.object_key), Buffer.from("corrupt"));
-  await convertBookStorage(db,"rollback",{apply:true,hostsStopped:true,manifestPath:join(directory,"book-before-history-rollback.json")});
+  await convertBookStorage(db, "rollback", {
+    apply: true,
+    hostsStopped: true,
+    manifestPath: join(directory, "book-before-history-rollback.json"),
+  });
   await expect(rollbackHistoryStorage(db)).rejects.toMatchObject({
     status: 503,
   });
@@ -520,7 +524,11 @@ it("retains attachment dependencies through sampling and trash, and only reclaim
 
 it("requires an explicit exact-baseline upgrade and can return all retained versions to the old database shape", async () => {
   const { resource } = await setup();
-  await convertBookStorage(db,"rollback",{apply:true,hostsStopped:true,manifestPath:join(directory,"book-to-inline.json")});
+  await convertBookStorage(db, "rollback", {
+    apply: true,
+    hostsStopped: true,
+    manifestPath: join(directory, "book-to-inline.json"),
+  });
   const rows = await populate(resource.id, 30);
   for (const table of Object.keys(historyTables))
     await sql.raw(`DROP TABLE ${table}`).execute(db);
@@ -551,10 +559,20 @@ it("requires an explicit exact-baseline upgrade and can return all retained vers
     await db.selectFrom("schema_baseline").select("id").executeTakeFirst(),
   ).toEqual({ id: HISTORY_SCHEMA_BASELINE });
   await expect(upgradeHistorySchema(db)).rejects.toThrow("accepts only");
-  await convertBookStorage(db,"upgrade",{apply:true,hostsStopped:true,manifestPath:join(directory,"book-upgrade-again.json")});
+  await convertBookStorage(db, "upgrade", {
+    apply: true,
+    hostsStopped: true,
+    manifestPath: join(directory, "book-upgrade-again.json"),
+  });
   await validateSchema(db);
-  await expect(rollbackHistoryStorage(db)).rejects.toThrow("history-storage-v1");
-  await convertBookStorage(db,"rollback",{apply:true,hostsStopped:true,manifestPath:join(directory,"book-rollback-again.json")});
+  await expect(rollbackHistoryStorage(db)).rejects.toThrow(
+    "history-storage-v1",
+  );
+  await convertBookStorage(db, "rollback", {
+    apply: true,
+    hostsStopped: true,
+    manifestPath: join(directory, "book-rollback-again.json"),
+  });
   await retainDocumentHistory(db, resource.id);
   const index = (await archives(resource.id))[0]!;
   expect(await rollbackHistoryStorage(db)).toBe(1);

@@ -8,6 +8,8 @@ import {
   createDocuments,
   documentAccess,
 } from "@core/modules/collaboration/documents.js";
+import { CanvasModel } from "@smartdoca/canvas/model";
+import { canvasSelection } from "@core/modules/documents/codecs/canvas-presence.js";
 import { cellSelection } from "@core/modules/documents/codecs/cell-presence.js";
 import { markdownSelection } from "@core/modules/documents/codecs/markdown.js";
 import {
@@ -170,7 +172,10 @@ export async function registerRealtime(
           )
             .then(() => true)
             .catch((error) => {
-              if (error instanceof AppError && [403, 404].includes(error.status))
+              if (
+                error instanceof AppError &&
+                [403, 404].includes(error.status)
+              )
                 return false;
               throw error;
             }),
@@ -178,10 +183,9 @@ export async function registerRealtime(
     const allowed = new Set(
       (
         await Promise.all(
-          [...access].map(async ([userId, check]) => [
-            userId,
-            await check,
-          ] as const),
+          [...access].map(
+            async ([userId, check]) => [userId, await check] as const,
+          ),
         )
       )
         .filter(([, permitted]) => permitted)
@@ -528,11 +532,17 @@ export async function registerRealtime(
                           },
                         );
                       } else if (access.resource.format === "canvas") {
-                        c.cursor = await surfaceAnchor(db, m.room, "canvas", {
-                          type: "elements",
-                          epochId: m.epochId,
-                          elementIds: s?.elementIds,
+                        const model = CanvasModel.restore({
+                          codec: "aidcanvas-yjs",
+                          schemaVersion: 1,
+                          epochId: loaded.epochId,
+                          update: loaded.update,
                         });
+                        try {
+                          c.cursor = canvasSelection(model, s ?? {});
+                        } finally {
+                          model.dispose();
+                        }
                       } else {
                         const cells = cellSelection(s!);
                         const sheet =
@@ -818,7 +828,9 @@ export async function registerRealtime(
     closed = true;
     clearInterval(timer);
     unsubscribe();
-    const rooms = [...new Set([...clients].flatMap((c) => (c.room ? [c.room] : [])))];
+    const rooms = [
+      ...new Set([...clients].flatMap((c) => (c.room ? [c.room] : []))),
+    ];
     await Promise.all(
       [...clients].map((c) => cluster.remove(c.connectionId).catch(() => {})),
     );

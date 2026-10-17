@@ -1,0 +1,8 @@
+{
+  "result": "passed",
+  "checks": [
+    "Slides native text presets, font search, character spacing and independent margins save through host ACK",
+    "Slides matrix clipboard, native undo/redo, row/column drag resizing and checkpoint reload"
+  ],
+  "errors": []
+}

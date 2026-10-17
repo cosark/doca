@@ -1,4 +1,5 @@
 import sharp from "sharp";
+import { normalizedImagePointSchema } from "./image-edit-regions.js";
 import { z } from "zod";
 import type { DB } from "@db/index.js";
 import { AppError, fail } from "@core/shared/errors.js";
@@ -30,7 +31,7 @@ export const imageMaskRegionViewInputSchema = z
   .object({
     maskReceiptId: z.string().uuid(),
     region: normalizedRegion,
-    points: z.array(z.tuple([fraction, fraction])).max(16),
+    points: z.array(normalizedImagePointSchema).max(16),
   })
   .strict();
 export type ImageMaskRegionViewInput = z.infer<

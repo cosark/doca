@@ -9,6 +9,7 @@ import {
 } from "@smartdoca/slate/headless";
 import { importMarkdown } from "@smartdoca/slate/conversion";
 import { CanvasModel } from "@smartdoca/canvas/model";
+import { assertCanvasPrimitiveOperation, executeCanvasWorkflow, removeCanvasElements } from "../modules/ai/canvas-workflows.js";
 import { nativeCanvasElement } from "../shared/canvas-elements.js";
 import {
   assertLinkUrl,
@@ -428,7 +429,7 @@ export async function editAIDocument(
     const { resource } = await checkScope(tx, ctx, id, true);
     if (expected.format && expected.format !== resource.format)
       fail(400, `此文档为 ${resource.format}，请使用 ${resource.format}_edit`);
-    operations = collectEditOperations({ operations }) as EditOperation[];
+    operations = collectEditOperations({ operations }, resource.format) as EditOperation[];
     operations = normalizeEditOperations(resource.format, operations);
     validateEditOperations(resource.format, operations);
     if (resource.format === "canvas") {
@@ -819,19 +820,25 @@ export async function editAIDocument(
         model.onLocalUpdate((u) => updates.push(u.update));
         try {
           for (const op of operations) {
+            assertCanvasPrimitiveOperation(model, op);
             if (op.type === "add")
               model.add(nativeCanvasElement(op.element), op.parentId);
-            else if (op.type === "patch") model.patch(op.id, op.patch);
-            else if (op.type === "remove") model.remove(op.ids);
+            else if (op.type === "patch") {
+              if (!model.patch(op.id, op.patch)) fail(400, "画布元素不存在，请重新读取 ID");
+            }
+            else if (op.type === "remove") removeCanvasElements(model, op.ids);
             else if (op.type === "place")
               model.place(op.id, op.parentId ?? null, op.beforeId);
             else if (op.type === "group") model.group(op.ids);
             else if (op.type === "ungroup") model.ungroup(op.id);
             else if (op.type === "text")
               model.editText(op.id, op.index, op.deleteCount, op.text);
-            else fail(400, "不支持的画板命令");
+            else if (!executeCanvasWorkflow(model, op)) fail(400, "不支持的画板命令");
           }
           update = Y.mergeUpdates(updates);
+        } catch (error) {
+          if (error instanceof AppError) throw error;
+          fail(400, `画布编辑失败：${error instanceof Error ? error.message : "未知错误"}`);
         } finally {
           model.dispose();
         }
@@ -848,7 +855,7 @@ export async function editAIDocument(
               controller.deleteSlide(op.slideId);
             else if (op.type === "insert") {
               if (op.element?.type === "text" && !Array.isArray(op.element.paragraphs))
-                fail(400, '文本元素需要 paragraphs:[{type:"paragraph",children:[{text:"…"}]}]，或直接给 text 字符串');
+                fail(400, '文本元素需要 paragraphs:[{type:"paragraph",children:[{text:"…"}]}]');
               controller.insert(op.slideId, op.element);
             }
             else if (op.type === "add") controller.add(op.slideId, op.kind);
@@ -880,10 +887,8 @@ export async function editAIDocument(
             else if (op.type === "paragraphFormat")
               controller.paragraphFormat(op.slideId, op.ids, op.format);
             else if (op.type === "pageSize") {
-              // The editor takes CSS pixels. Models often send the document's EMU size.
-              const pixels = (value: number) =>
-                value > 10000 ? value / 9525 : value;
-              controller.pageSize(pixels(op.width), pixels(op.height));
+              // The current pageSize command takes CSS pixels; transforms remain EMU.
+              controller.pageSize(op.width, op.height);
             }
             else if (op.type === "distribute")
               controller.distribute(op.slideId, op.ids, op.axis);

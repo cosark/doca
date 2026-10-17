@@ -1,0 +1,144 @@
+{
+  "date": "2026-10-17",
+  "cases": [
+    {
+      "case": "ppt",
+      "model": "kimi-k2.7-code",
+      "rounds": [
+        "generation saved, independently reviewed, rendered and asserted",
+        "follow-up edit saved, independently reviewed, rendered and asserted"
+      ],
+      "passed": true,
+      "sourceRun": "artifacts/ai-native-creativity/round-4"
+    },
+    {
+      "case": "flowchart",
+      "model": "kimi-k2.7-code",
+      "rounds": [
+        "generation saved, independently reviewed, rendered and asserted",
+        "follow-up edit saved, independently reviewed, rendered and asserted"
+      ],
+      "passed": true,
+      "sourceRun": "artifacts/ai-native-creativity/round-6"
+    },
+    {
+      "case": "mindmap",
+      "model": "kimi-k2.7-code",
+      "rounds": [
+        "generation saved, independently reviewed, rendered and asserted",
+        "follow-up edit saved, independently reviewed, rendered and asserted"
+      ],
+      "passed": true,
+      "sourceRun": "artifacts/ai-native-creativity/round-3"
+    },
+    {
+      "case": "table",
+      "model": "kimi-k2.7-code",
+      "rounds": [
+        "generation saved, independently reviewed, rendered and asserted",
+        "follow-up edit saved, independently reviewed, rendered and asserted"
+      ],
+      "passed": true,
+      "sourceRun": "artifacts/ai-native-creativity/round-8"
+    },
+    {
+      "case": "ui",
+      "model": "deepseek-v4.1-flash",
+      "rounds": [
+        "generation saved, independently reviewed, rendered and asserted",
+        "follow-up edit saved, independently reviewed, rendered and asserted"
+      ],
+      "passed": true,
+      "sourceRun": "artifacts/ai-native-creativity/round-7"
+    },
+    {
+      "case": "create",
+      "model": "kimi-k2.7-code",
+      "rounds": [
+        "generation saved, independently reviewed, rendered and asserted",
+        "follow-up edit saved, independently reviewed, rendered and asserted"
+      ],
+      "passed": true,
+      "sourceRun": "artifacts/ai-native-creativity/round-6"
+    },
+    {
+      "case": "pattern",
+      "model": "kimi-k2.7-code",
+      "rounds": [
+        "generation saved, independently reviewed, rendered and asserted",
+        "follow-up edit saved, independently reviewed, rendered and asserted"
+      ],
+      "passed": true,
+      "sourceRun": "artifacts/ai-native-creativity/round-14",
+      "visualReviewPassed": true
+    }
+  ],
+  "automated": {
+    "files": 22,
+    "tests": 245,
+    "passed": true
+  },
+  "browserReplay": {
+    "idleSeconds": 60,
+    "browserErrors": [],
+    "contentUpdatesSent": 0,
+    "fixtures": [
+      {
+        "index": 1,
+        "format": "presentation",
+        "file": "artifacts/ai-native-creativity/round-4/ppt-edit.json",
+        "seq": 0,
+        "passed": true
+      },
+      {
+        "index": 2,
+        "format": "canvas",
+        "file": "artifacts/ai-native-creativity/round-6/flowchart-edit.json",
+        "seq": 0,
+        "passed": true
+      },
+      {
+        "index": 3,
+        "format": "canvas",
+        "file": "artifacts/ai-native-creativity/round-3/mindmap-edit.json",
+        "seq": 0,
+        "passed": true
+      },
+      {
+        "index": 4,
+        "format": "canvas",
+        "file": "artifacts/ai-native-creativity/round-8/table-edit.json",
+        "seq": 0,
+        "passed": true
+      },
+      {
+        "index": 5,
+        "format": "canvas",
+        "file": "artifacts/ai-native-creativity/round-7/ui-edit.json",
+        "seq": 0,
+        "passed": true
+      },
+      {
+        "index": 6,
+        "format": "canvas",
+        "file": "artifacts/ai-native-creativity/round-14/pattern-edit.json",
+        "seq": 0,
+        "passed": true
+      }
+    ],
+    "boundary": "New isolated current-format resources from synthetic AI projections; original CRDT identity restoration is covered separately by host tests."
+  },
+  "scope": "Synthetic accounts and documents only; no deployment or user data changes",
+  "acceptedJobs": 14,
+  "failedVisualRuns": [
+    "round-9",
+    "round-13"
+  ],
+  "gatewayReviewTransport": "Streaming current SDK; read-only snapshot and submit_review requirements unchanged",
+  "additionalRun": {
+    "model": "doubao-seed-2.1-pro",
+    "sourceRun": "artifacts/ai-native-creativity/round-12",
+    "generation": "passed native assertions, independent review and manual screenshot inspection",
+    "edit": "cancelled during an additional long-running request after the final Kimi two-round scenario completed; not counted as acceptance"
+  }
+}

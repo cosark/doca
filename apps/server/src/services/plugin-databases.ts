@@ -28,6 +28,14 @@ export type PluginDatabaseConfig =
   | { driver: "sqlite"; path: string }
   | { driver: "postgres"; url: string | null; poolMax: number };
 
+/** Fixed host diagnostics that can safely cross the plugin storage boundary. */
+export class PluginDatabaseConfigurationError extends Error {
+  constructor(message: string) {
+    super(message);
+    this.name = "PluginDatabaseConfigurationError";
+  }
+}
+
 /** One host-managed business store, never a fallback to the core connection. */
 export function pluginDatabaseConfig(
   main: DatabaseConfig,
@@ -207,7 +215,15 @@ export class PluginDatabases {
                 throw new Error(
                   "Plugin database namespace is missing; it will not be recreated",
                 );
-              await tx.schema.createSchema(name).execute();
+              try {
+                await tx.schema.createSchema(name).execute();
+              } catch (error) {
+                if ((error as { code?: string }).code === "42501")
+                  throw new PluginDatabaseConfigurationError(
+                    "Shared plugin database role requires CREATE on the plugin database to create plugin schemas; ask the database owner to grant it and retry",
+                  );
+                throw error;
+              }
             }
             await sql`select set_config('search_path', ${name}, true)`.execute(
               tx,
@@ -321,7 +337,7 @@ export class PluginDatabases {
       registerDriver(db, "sqlite");
     } else {
       if (!this.config.url)
-        throw new Error(
+        throw new PluginDatabaseConfigurationError(
           "Configure DOCA_PLUGIN_DATABASE_URL once for all SQL plugins",
         );
       const pool = new Pool({
@@ -342,17 +358,10 @@ export class PluginDatabases {
             database: string;
             address: string | null;
             port: number | null;
-            role: string;
-            elevated: boolean;
-            member: boolean;
-          }>`select current_database() as database, inet_server_addr()::text as address, inet_server_port() as port, current_user as role, (rolsuper or rolcreatedb or rolcreaterole or rolbypassrls) as elevated, exists(select 1 from pg_auth_members where member=r.oid) as member from pg_roles r where rolname=current_user`.execute(
+          }>`select current_database() as database, inet_server_addr()::text as address, inet_server_port() as port`.execute(
             db,
           )
         ).rows[0]!;
-        if (identity.elevated || identity.member)
-          throw new Error(
-            "Shared plugin database requires a restricted role without elevated privileges or role membership",
-          );
         const core = (
           await sql<{
             database: string;
@@ -362,21 +371,16 @@ export class PluginDatabases {
             coreConnection,
           )
         ).rows[0]!;
-        if (core.address === identity.address && core.port === identity.port) {
-          if (core.database === identity.database)
-            throw new Error(
-              "Shared plugin database must be separate from the core database",
-            );
-          const access = await sql<{
-            allowed: boolean;
-          }>`select exists(select 1 from pg_class c join pg_namespace n on n.oid=c.relnamespace where n.nspname=current_schema() and c.relkind in ('r','p','v') and has_table_privilege(${identity.role},c.oid,'SELECT,INSERT,UPDATE,DELETE,TRUNCATE')) as allowed`.execute(
-            coreConnection,
+        // Account privileges belong to the operator. Only the business database
+        // target must remain separate from core, including for shared/admin logins.
+        if (
+          core.address === identity.address &&
+          core.port === identity.port &&
+          core.database === identity.database
+        )
+          throw new PluginDatabaseConfigurationError(
+            "Shared plugin database must be separate from the core database",
           );
-          if (access.rows[0]!.allowed)
-            throw new Error(
-              "Shared plugin database role must not have access to core tables",
-            );
-        }
       } catch (error) {
         await db.destroy();
         throw error;
@@ -407,11 +411,24 @@ export class PluginDatabases {
                 "Shared plugin database contains unknown schemas; no data was changed",
               );
           }
-          await tx.schema
-            .createTable(rootMarker)
-            .addColumn("id", "text", (c) => c.notNull().primaryKey())
-            .addColumn("storage_version", "integer", (c) => c.notNull())
-            .execute();
+          try {
+            await tx.schema
+              .createTable(rootMarker)
+              .addColumn("id", "text", (c) => c.notNull().primaryKey())
+              .addColumn("storage_version", "integer", (c) => c.notNull())
+              .execute();
+          } catch (error) {
+            if (
+              this.config.driver === "postgres" &&
+              ["42501", "3F000"].includes(
+                (error as { code?: string }).code ?? "",
+              )
+            )
+              throw new PluginDatabaseConfigurationError(
+                "Shared plugin database role requires USAGE and CREATE on schema public in the plugin database to initialize the shared marker; ask the database owner to grant them and retry",
+              );
+            throw error;
+          }
           await tx
             .insertInto(rootMarker)
             .values({ id: "shared", storage_version: 3 })

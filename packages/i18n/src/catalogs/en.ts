@@ -2823,6 +2823,10 @@ export const en = {
   "home.purging": "Deleting…",
   "home.newLibrary": "New library",
   "home.newDocument": "New document",
+  "home.upload": "Upload document",
+  "home.uploadHint": "Import a file to edit online",
+  "home.source": "Document source",
+  "home.allSources": "All sources",
   "home.newLibraryHint": "Turn scattered notes into knowledge",
   "home.newDocumentHint": "Write something and start a light collaboration",
   "home.backWorkspace": "Back to workspace",
@@ -3461,7 +3465,7 @@ export const en = {
   "comment.regionEmpty":
     "Select something, then use the comment icon to add a comment.",
   "comment.selectionHint":
-    "Select text, an image, or a file, then click Comment or @, or press ⌘ / Ctrl + Alt + M.",
+    "Select text, an image, or a file, then click Comment or the AI icon. You can also press ⌘ / Ctrl + Alt + M to comment.",
   "comment.quoteDeleted": "Original text deleted",
   "comment.thread": "Comment: {quote}",
   "comment.moreReplies": "Load more replies",

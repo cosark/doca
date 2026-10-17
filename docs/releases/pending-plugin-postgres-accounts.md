@@ -1,0 +1,17 @@
+# PostgreSQL plugin account configuration (pending release)
+
+[简体中文](pending-plugin-postgres-accounts.zh-CN.md)
+
+Plugin business database logins are now chosen by the deployment operator. Startup accepts superusers, roles with `CREATEDB`/`CREATEROLE`/`BYPASSRLS`, role memberships and accounts with core-table privileges. The same login may be used for core and plugin databases. No additional opt-in setting or automatic privilege change is introduced.
+
+The plugin business database must remain separate from the core database. Actual PostgreSQL permissions are still required for database/schema operations; missing configuration or grants now produce specific host diagnostics rather than the generic plugin storage error. The [configuration contract](../plugin-database-isolation.md) includes an optional dedicated-account setup.
+
+## Upgrade and rollback
+
+The owner approved this account-policy change on 2026-10-16. Existing format-3 declarations, markers, installation generations, schema definitions and data versions remain unchanged. No database DDL, data migration, historical defaults or permission rewrites are introduced. The existing format-2 rejection and uninstall-before-upgrade contract remain unchanged.
+
+Keep existing databases, files, credentials and configuration when deploying. Rolling back to 0.1.26–0.1.29 restores their account rejection rules, so a newly accepted administrator account may prevent old-host startup. Account configuration for a rollback must satisfy that host's rules while retaining access to existing business data; the host does not reset data or automatically change ownership/grants.
+
+## Verification
+
+Isolated PostgreSQL 17/18 regression covers administrator attributes, memberships, core-table grants, rejection of a core database target, the same administrator login across separate databases, retained records after restart, ordinary-account grant failures and retry. SQLite retains its existing behavior. See the [verification record](../verification/plugin-postgres-permissions-2026-10-16.md).

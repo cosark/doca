@@ -1,0 +1,116 @@
+{
+  "id": "7ca5cb51-f1be-4892-847b-75344a2112e1",
+  "schemaVersion": 2,
+  "title": "2026-10-17 presentation QA",
+  "size": {
+    "width": 12192000,
+    "height": 6858000
+  },
+  "slideOrder": [
+    "slide-b85a6071-c091-4328-9d6d-8d740ad5667c"
+  ],
+  "slides": {
+    "slide-b85a6071-c091-4328-9d6d-8d740ad5667c": {
+      "id": "slide-b85a6071-c091-4328-9d6d-8d740ad5667c",
+      "background": "#ffffff",
+      "elementOrder": [
+        "text-6eba7e8d-8a31-4cae-a009-406d07776422",
+        "table-db778262-3f16-4125-9602-1d6c00cf63db"
+      ],
+      "elements": {
+        "table-db778262-3f16-4125-9602-1d6c00cf63db": {
+          "id": "table-db778262-3f16-4125-9602-1d6c00cf63db",
+          "transform": {
+            "x": 1333500,
+            "y": 1428750,
+            "width": 6096000,
+            "height": 2476500,
+            "rotation": 0
+          },
+          "type": "table",
+          "cells": [
+            [
+              "演示表格验收\n第二格\n目标\n产品\n72\n90\n增长\n46\n60",
+              "",
+              ""
+            ],
+            [
+              "",
+              "",
+              ""
+            ],
+            [
+              "",
+              "",
+              ""
+            ],
+            [
+              "",
+              "",
+              ""
+            ]
+          ],
+          "headerFill": "#325af0",
+          "rowIds": [
+            "table-db778262-3f16-4125-9602-1d6c00cf63db:r0",
+            "table-db778262-3f16-4125-9602-1d6c00cf63db:r1",
+            "table-db778262-3f16-4125-9602-1d6c00cf63db:r2",
+            "table-op-b3fe624b-6a01-4e88-8319-73fad63ad6b9"
+          ],
+          "columnIds": [
+            "table-db778262-3f16-4125-9602-1d6c00cf63db:c0",
+            "table-db778262-3f16-4125-9602-1d6c00cf63db:c1",
+            "table-db778262-3f16-4125-9602-1d6c00cf63db:c2"
+          ],
+          "cellStyles": [
+            [
+              {
+                "bold": true
+              },
+              {},
+              {}
+            ],
+            [
+              {},
+              {},
+              {}
+            ],
+            [
+              {},
+              {},
+              {}
+            ],
+            [
+              {},
+              {},
+              {}
+            ]
+          ]
+        },
+        "text-6eba7e8d-8a31-4cae-a009-406d07776422": {
+          "id": "text-6eba7e8d-8a31-4cae-a009-406d07776422",
+          "type": "text",
+          "transform": {
+            "x": 914400,
+            "y": 914400,
+            "width": 4572000,
+            "height": 914400,
+            "rotation": 0
+          },
+          "fill": "#202124",
+          "paragraphs": [
+            {
+              "type": "paragraph",
+              "children": [
+                {
+                  "fontSize": 24,
+                  "text": "EPPT 协同演示文稿"
+                }
+              ]
+            }
+          ]
+        }
+      }
+    }
+  }
+}

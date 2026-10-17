@@ -172,12 +172,14 @@ export function CreatePopover({
   choose,
   busy,
   progress,
+  initialMode = "create",
 }: {
   rect: DOMRect;
   close: () => void;
   choose: (format: Resource["format"], file?: File) => void;
   busy: boolean;
   progress?: ImportProgress | null;
+  initialMode?: "create" | "import";
 }) {
   const { t } = useI18n();
   const ref = useRef<HTMLDivElement>(null);
@@ -213,7 +215,7 @@ export function CreatePopover({
       window.removeEventListener("resize", place);
     };
   }, [rect]);
-  const [importing, setImporting] = useState(false);
+  const [importing, setImporting] = useState(initialMode === "import");
   const [target, setTarget] = useState<keyof typeof importFormats | null>(null);
   const [sourceOpen, setSourceOpen] = useState(false);
   const [folderPicker, setFolderPicker] = useState<boolean | "materials">(false);

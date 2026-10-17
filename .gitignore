@@ -64,3 +64,6 @@ pnpm-debug.log*
 *.swp
 *.swo
 *~
+
+# Canvas 0.5.0 packaging repair; immutable artifact consumed by the lockfile.
+!/vendor/smartdoca-canvas-0.5.0-75e637df1a75.tgz

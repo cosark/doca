@@ -1,6 +1,11 @@
 import { z } from "zod";
+import { canvasWorkflowSchemas, canvasTableCommand } from "./canvas-workflows.js";
 import { CANVAS_ELEMENT_PROPERTIES } from "@smartdoca/canvas/model";
 import { fail } from "../../shared/errors.js";
+import {
+  spreadsheetColor,
+  validateSpreadsheetCellMatrix,
+} from "./spreadsheet-cell-style.js";
 
 export const documentFormats = [
   "rich_text",
@@ -206,7 +211,7 @@ const schemas = {
     op("deleteColumn", { layoutId: id, columnId: id }),
   ]),
   canvas: z.union([
-    op("add", { element: canvas, parentId: optionalId }),
+    op("add", { element: canvas, parentId: id.nullable().optional() }),
     op("patch", { id, patch: json }),
     op("remove", { ids }),
     op("place", {
@@ -217,6 +222,7 @@ const schemas = {
     op("group", { ids }),
     op("ungroup", { id }),
     op("text", { id, ...textEdit }),
+    ...canvasWorkflowSchemas,
   ]),
   presentation: z.union([
     op("addSlide", { after: optionalId, slide: json.optional() }),
@@ -255,6 +261,42 @@ const schemas = {
           kind: z.enum(["delete-row", "delete-column"]),
           target: id,
         }),
+        z.strictObject({
+          kind: z.enum(["delete-rows", "delete-columns"]),
+          targets: ids,
+        }),
+        z.strictObject({
+          kind: z.enum(["clear", "merge"]),
+          rows: ids,
+          columns: ids,
+        }),
+        z.strictObject({ kind: z.literal("split"), targets: ids }),
+        z.strictObject({
+          kind: z.literal("style"),
+          rows: ids,
+          columns: ids,
+          style: json,
+        }),
+        z.strictObject({
+          kind: z.literal("resize"),
+          axis: z.enum(["row", "column"]),
+          sizes: z
+            .array(
+              z.strictObject({
+                target: id,
+                size: z.number().min(1).max(100000),
+              }),
+            )
+            .min(1)
+            .max(100),
+          extent: z.number().min(1).max(100000).optional(),
+        }),
+        z.strictObject({
+          kind: z.literal("paste"),
+          row: id,
+          column: id,
+          payload: json,
+        }),
       ]),
     }),
     op("replaceText", {
@@ -266,8 +308,8 @@ const schemas = {
     op("formatText", { slideId: id, ids, marks: json }),
     op("paragraphFormat", { slideId: id, ids, format: json }),
     op("pageSize", {
-      width: z.number().positive(),
-      height: z.number().positive(),
+      width: z.number().min(100).max(10000),
+      height: z.number().min(100).max(10000),
     }),
     op("distribute", {
       slideId: id,
@@ -373,6 +415,14 @@ const wireCells = z
             f: z.string().nullable().optional(),
             s: z
               .object({
+                bg: spreadsheetColor
+                  .nullable()
+                  .optional()
+                  .describe('背景色，例如 {rgb:"#FFCC00"}；null 清除背景色'),
+                cl: spreadsheetColor
+                  .nullable()
+                  .optional()
+                  .describe('文字颜色，例如 {rgb:"#333333"}'),
                 bl: z.number().optional(),
                 n: z.object({ pattern: z.string() }).optional(),
               })
@@ -385,9 +435,12 @@ const wireCells = z
     z.record(z.string(), z.record(z.string(), json.nullable())),
   ])
   .describe(
-    '必须提供实际单元格数据。优先使用 [{row:0,column:0,v:"表头"},{row:1,column:0,f:"=SUM(B2:B4)"}]。零基坐标，禁止 null 或空数组。',
+    '必须提供实际单元格数据。优先使用 [{row:0,column:0,v:"表头"},{row:1,column:0,f:"=SUM(B2:B4)"}]。只改背景用 [{row:0,column:0,s:{bg:{rgb:"#FFCC00"}}}]，省略 v/f 可保留文字和公式。零基坐标，禁止 null 或空数组。',
   );
 
+const presentationTableSchema = schemas.presentation.options.find(
+  (schema) => schema.shape.type.value === "table",
+)!;
 const presentationWireFields = {
   slideId: z.string().min(1).max(200).optional(),
   after: z.string().min(1).max(200).optional(),
@@ -399,7 +452,7 @@ const presentationWireFields = {
   query: z.string().optional(),
   field: z.string().min(1).max(40).optional(),
   value: z.any().optional(),
-  command: z.any().optional(),
+  command: (presentationTableSchema.shape as any).command.optional(),
   axis: z.string().min(1).max(20).optional(),
   format: z.any().optional(),
   width: z.number().optional(),
@@ -478,7 +531,18 @@ export function editToolSchema(format: DocumentFormat) {
         ? wireOperation.extend(presentationWireFields)
         : format === "rich_text"
           ? wireOperation.extend(richTextWireFields)
-          : wireOperation;
+          : format === "canvas"
+            ? wireOperation.extend({
+                x: z.number().optional(), y: z.number().optional(),
+                parentId: z.string().nullable().optional(), beforeId: optionalId,
+                ids: ids.optional(), index: index.optional(), deleteCount: index.optional(),
+                nodes: z.array(z.any()).optional(), edges: z.array(z.any()).optional(),
+                topic: z.any().optional(), layout: z.enum(["right", "left", "balanced"]).optional(),
+                containerType: z.enum(["phone", "tablet", "web", "wide", "standard", "a4", "section"]).optional(),
+                title: z.string().optional(), columnWidths: z.array(z.number()).optional(), rowHeights: z.array(z.number()).optional(),
+                command: canvasTableCommand.optional(),
+              })
+            : wireOperation;
   // Keep union checks out of the wire schema: Mastra reports those as a bare
   // "Invalid input". Named fields still have to be listed, otherwise providers
   // drop sheetId/cells or slideId and the model only retries with type.
@@ -851,6 +915,7 @@ export function validateEditOperations(format: string, operations: any[]) {
     );
     if (format === "spreadsheet" && operation.type === "cells") {
       const cells = (parsed.data as { cells?: Record<string, unknown> }).cells;
+      validateSpreadsheetCellMatrix(cells);
       assert(
         cells &&
           Object.values(cells).some(
@@ -859,6 +924,12 @@ export function validateEditOperations(format: string, operations: any[]) {
         'cells 不能为空。请传入 [{row:0,column:0,v:"表头"},{row:0,column:1,f:"=A1"}]，常量只写 v，公式只写 f，不要写 f:null 或省略号。',
       );
     }
+    if (
+      format === "spreadsheet" &&
+      operation.type === "mutation" &&
+      operation.id === "sheet.mutation.set-range-values"
+    )
+      validateSpreadsheetCellMatrix(operation.params?.cellValue);
     if (format === "rich_text") {
       if (operation.type === "insertBlock") validateRichNode(operation.block);
       if (operation.type === "setCellContent")
@@ -887,10 +958,16 @@ export function validateEditOperations(format: string, operations: any[]) {
               k === "text" ||
               (!partial && ["id", "children"].includes(k)),
           ),
-          "画板元素包含未知属性",
+          `画板元素包含未知属性：${Object.keys(element).filter(k => !CANVAS_ELEMENT_PROPERTIES.includes(k) && k !== "text" && !(!partial && ["id", "children"].includes(k))).slice(0,8).join("、")}。Path 的原生路径字段是 path，不是 SVG 的 d；颜色用 fill/stroke。不要保留错误字段后反复提交。`,
         );
         if (element.tag !== undefined || !partial)
           assert(canvas.safeParse(element).success, "未知画板元素类型");
+        if (element.points !== undefined) {
+          const points = element.points, minimum = element.tag === "Polygon" ? 3 : 2;
+          const flat = Array.isArray(points) && points.length >= minimum * 2 && points.length % 2 === 0 && points.every((n: unknown) => typeof n === "number" && Number.isFinite(n));
+          const objects = Array.isArray(points) && points.length >= minimum && points.every((p: any) => p && typeof p === "object" && !Array.isArray(p) && Number.isFinite(p.x) && Number.isFinite(p.y));
+          assert(flat || objects, 'points 必须是原生扁平数组 [x1,y1,x2,y2,…] 或 [{x,y},…]；不接受 [[x,y],…]，后者会保存成不可见图形。');
+        }
         if (partial) {
           assert(
             element.tag === undefined && element.name === undefined,
@@ -898,20 +975,21 @@ export function validateEditOperations(format: string, operations: any[]) {
           );
         } else if (element.name) {
           const names: Record<string, string[]> = {
-            Rect: ["rect", "square"],
-            Ellipse: ["ellipse", "circle"],
-            Text: ["text"],
+            Rect: ["rect", "square", "diagram-body"],
+            Ellipse: ["ellipse", "circle", "diagram-body"],
+            Text: ["text", "frame-title"],
             Image: ["image"],
             Line: ["line", "arrow"],
             Arrow: ["arrow"],
-            Path: ["path", "special-shape", "eraser"],
+            Path: ["path", "special-shape", "connector", "template-edge", "mind-edge", "diagram-body"],
             Polygon: ["polygon"],
             Star: ["star"],
-            Group: ["group"],
-            Frame: ["frame"],
+            Group: ["group", "mindmap", "board-table"],
+            Frame: ["frame", "mind-node", "diagram-node", "table-cell", "note", "card", "connector-label"],
           };
           assert(
-            names[element.tag]?.includes(element.name),
+            names[element.tag]?.includes(element.name) ||
+              (element.data?.kind === "container-decoration" && typeof element.name === "string" && element.name.startsWith("container-")),
             "name 必须是匹配 tag 的原生工具分类；可省略由系统补齐，不能填写描述性名称",
           );
         }

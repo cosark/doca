@@ -203,6 +203,7 @@ function WorkspaceApp() {
     [error, setError] = useState(""),
     [busy, setBusy] = useState(false),
     [importProgress, setImportProgress] = useState<ImportProgress | null>(null),
+    [createMode, setCreateMode] = useState<"create" | "import">("create"),
     [loading, setLoading] = useState(false),
     [modal, setModal] = useState(""),
     [searchSeed, setSearchSeed] = useState(""),
@@ -746,7 +747,8 @@ function WorkspaceApp() {
     location.hash = path;
     setScope(next);
   }
-  function create(kind: "document" | "library", parent?: Resource) {
+  function create(kind: "document" | "library", parent?: Resource, mode: "create" | "import" = "create") {
+    setCreateMode(mode);
     setCreation({
       kind,
       parentId: parent?.kind === "document" ? parent.id : null,
@@ -1460,6 +1462,7 @@ function WorkspaceApp() {
               refresh={refresh}
               preferences={me?.preferences}
               create={create}
+              upload={() => create("document", undefined, "import")}
               changed={() => setRefresh((n) => n + 1)}
             />
           )}
@@ -1470,6 +1473,8 @@ function WorkspaceApp() {
       </main>
       {createAnchor && (
         <CreatePopover
+          key={createMode}
+          initialMode={createMode}
           rect={createAnchor}
           close={() => setCreateAnchor(null)}
           busy={busy}

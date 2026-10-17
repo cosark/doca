@@ -2,7 +2,7 @@
 import assert from "node:assert/strict";
 import { randomUUID } from "node:crypto";
 import * as Y from "yjs";
-import { readDocument } from "@eppt/editor/core";
+import { readDocument } from "@smartdoca/slides/core";
 if (process.env.DOCA_QA_ISOLATED !== "1") throw Error("Isolated QA only");
 const port = process.env.DOCA_QA_PORT ?? "39254";
 if (!["39251", "39254"].includes(port)) throw Error("Unknown QA port");

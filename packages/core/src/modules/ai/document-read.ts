@@ -35,6 +35,7 @@ function previewText(value: unknown, max = 80): string {
     if (typeof n.label === "string") parts.push(n.label);
     if (Array.isArray(n.children)) n.children.forEach(walk);
     if (Array.isArray(n.paragraphs)) n.paragraphs.forEach(walk);
+    if (Array.isArray(n.cells)) n.cells.forEach(walk);
   };
   walk(value);
   return clip(parts.join(""), max);
@@ -170,6 +171,19 @@ function canvasNodes(nodes: any[] | undefined, depth = 0): unknown[] {
     id: n?.id,
     tag: n?.tag,
     name: n?.name,
+    kind: n?.data?.kind,
+    parentTopicId: n?.data?.kind === "mind-node" ? n.data.parentId : undefined,
+    root: n?.data?.kind === "mind-node" ? n.data.root : undefined,
+    cellRow: n?.data?.kind === "table-cell" ? n.data.row : undefined,
+    cellColumn: n?.data?.kind === "table-cell" ? n.data.column : undefined,
+    rowSpan: n?.data?.rowSpan, columnSpan: n?.data?.columnSpan, coveredBy: n?.data?.coveredBy,
+    sourceId: n?.data?.sourceId, targetId: n?.data?.targetId,
+    containerType: n?.data?.containerType,
+    rows: n?.data?.kind === "table" ? n.data.rows : undefined,
+    columns: n?.data?.kind === "table" ? n.data.columns : undefined,
+    textLength: typeof n?.text === "string" ? n.text.length : undefined,
+    childCount: n?.children?.length,
+    childrenTruncated: n?.children?.length > 200 || (depth >= 8 && n?.children?.length > 0),
     x: n?.x,
     y: n?.y,
     width: n?.width,
@@ -197,12 +211,20 @@ function presentationOutline(value: any) {
       return {
         id,
         name: slide.name,
+        hidden: slide.hidden, sectionId: slide.sectionId,
+        elementCount: elementOrder.length,
+        elementsTruncated: elementOrder.length > 40,
         elementOrder,
         elements: elementOrder.slice(0, 40).map((eid: string) => {
           const el = slide.elements?.[eid];
           return {
             id: eid,
             type: el?.type,
+            transform: el?.transform,
+            ...(el?.type === "table" ? { rows: el.cells?.length, columns: el.cells?.[0]?.length,
+              rowIds: el.rowIds, columnIds: el.columnIds, merges: el.merges,
+              previewCells: el.cells?.slice(0, 4).map((row: string[]) => row.slice(0, 5).map(value => clip(value, 40))),
+            } : {}),
             preview: previewText(el, 60),
           };
         }),
@@ -321,12 +343,16 @@ function regionValue(
   if (format === "presentation" && query.slideId) {
     const doc = value as any;
     const slide = doc?.slides?.[query.slideId];
-    return slide
-      ? { value: { size: doc.size, slideId: query.slideId, slide } }
-      : {
-          error: `找不到 slideId ${query.slideId}。可用 ${JSON.stringify(doc?.slideOrder ?? [])}。`,
-        };
+    if (!slide) return { error: `找不到 slideId ${query.slideId}。可用 ${JSON.stringify(doc?.slideOrder ?? [])}。` };
+    if (query.elementId) {
+      const element = slide.elements?.[query.elementId];
+      return element ? { value: { size: doc.size, slideId: query.slideId, element } }
+        : { error: `找不到 elementId ${query.elementId}；请读取该页 elementOrder。` };
+    }
+    return { value: { size: doc.size, slideId: query.slideId, slide } };
   }
+  if (format === "presentation" && query.elementId)
+    return { error: "读取 PPT 元素时请同时提供 slideId 和 elementId。" };
   if (format === "spreadsheet" && query.sheetId) {
     const doc = value as any;
     const sheet = doc?.sheets?.[query.sheetId];

@@ -90,6 +90,7 @@ function scriptedAI(script: Script, review: Script, seen: string[] = []) {
     const isReview = body.tools?.some(
       (t: any) => t.function?.name === "submit_review",
     );
+    if (isReview) expect(body.stream).toBe(true);
     const next = (isReview ? review : script)({ toolMessages, prompt, body });
     const message =
       "text" in next

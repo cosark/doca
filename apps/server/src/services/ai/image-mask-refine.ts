@@ -6,7 +6,7 @@ import { transact } from "@db/transactions.js";
 import { fail } from "@core/shared/errors.js";
 import type { ToolContext } from "@core/workflows/ai-documents.js";
 import type { StorageRuntime } from "../../adapters/storage.js";
-import { editRegionsSchema, type EditRegions } from "./image-edit-regions.js";
+import { editRegionsSchema, emptyEditRegionsSchema, type EditRegions } from "./image-edit-regions.js";
 import {
   imageEditMaskInputSchema,
   imageEditMaskReceiptSchema,
@@ -18,7 +18,7 @@ import {
   type ImageMaskGeometryOutput,
 } from "./image-mask-geometry.js";
 
-const regions = z.union([z.tuple([]), editRegionsSchema]);
+const regions = z.union([emptyEditRegionsSchema, editRegionsSchema]);
 const explicitRegions = (message: string) =>
   regions.refine((items) => items.length <= 32, { message });
 const sourceExclusion = z

@@ -8,16 +8,11 @@ import {
 } from "../packages/core/src/modules/ai/edit-normalize.js";
 import { validateEditOperations } from "../packages/core/src/modules/ai/edit-schema.js";
 
-it("accepts an unambiguous canvas params alias but rejects conflicting patches", () => {
+it("rejects removed canvas params aliases", () => {
   const operations = normalizeEditOperations("canvas", [
-    { type: "patch", id: "label", params: { textAlign: "center", verticalAlign: "middle" } },
+    { type: "patch", id: "label", params: { textAlign: "center" } },
   ]);
-  expect(operations[0]).toEqual({ type: "patch", id: "label", patch: { textAlign: "center", verticalAlign: "middle" } });
-  expect(() => validateEditOperations("canvas", operations)).not.toThrow();
-  const conflict = normalizeEditOperations("canvas", [
-    { type: "patch", id: "label", patch: { x: 10 }, params: { x: 20 } },
-  ]);
-  expect(() => validateEditOperations("canvas", conflict)).toThrow();
+  expect(() => validateEditOperations("canvas", operations)).toThrow();
 });
 
 it("parses A1 and common spreadsheet payloads into cells", () => {
@@ -141,6 +136,29 @@ it("hydrates JSON-string cells and top-level sheetId/cells onto the operation", 
   ).toThrow(/cells 不能为空/);
 });
 
+it.each([
+  [{ row: 0, column: 0, s: { bg: { rgb: "#FFCC00" } } }],
+  { A1: { s: { bg: { rgb: "#FFCC00" } } } },
+  { 0: { 0: { s: { bg: { rgb: "#FFCC00" } } } } },
+])("keeps a native style-only patch free of content-clearing fields", (cells) => {
+  const [op] = normalizeEditOperations("spreadsheet", [{ type: "cells", sheetId: "sheet", cells }]);
+  expect(op!.cells).toEqual({ 0: { 0: { s: { bg: { rgb: "#FFCC00" } } } } });
+  expect(() => validateEditOperations("spreadsheet", [op!])).not.toThrow();
+});
+
+it.each([
+  { bgColor: "#FFCC00" },
+  { backgroundColor: "#FFCC00" },
+  { s: { bgColor: "#FFCC00" } },
+  { s: { backgroundColor: "#FFCC00" } },
+  { s: { bg: "#FFCC00" } },
+  { s: { cl: { color: "#333333" } } },
+])("rejects invalid color fields before normalization can discard them", (cell) => {
+  for (const cells of [[{ row: 0, column: 0, ...cell }], { A1: cell }, { 0: { 0: cell } }])
+    expect(() => normalizeEditOperations("spreadsheet", [{ type: "cells", sheetId: "sheet", cells }])).toThrow(/s:\{bg:\{rgb/);
+  expect(() => validateEditOperations("spreadsheet", [{ type: "mutation", id: "sheet.mutation.set-range-values", params: { cellValue: { 0: { 0: cell } } } }])).toThrow(/本批次未保存/);
+});
+
 it("keeps sheetId and cells on the advertised tool schema", async () => {
   const { editToolSchema } = await import(
     "../packages/core/src/modules/ai/edit-schema.js"
@@ -165,11 +183,11 @@ it("keeps sheetId and cells on the advertised tool schema", async () => {
   });
 });
 
-it("normalizes canvas tags and keeps canonical rich-text code blocks", () => {
+it("requires native canvas tags and keeps canonical rich-text code blocks", () => {
   const [canvas] = normalizeEditOperations("canvas", [
     { type: "add", element: { id: "n1", tag: "rect", x: 0, y: 0 } },
   ]);
-  expect(canvas!.element).toMatchObject({ tag: "Rect" });
+  expect(() => validateEditOperations("canvas", [canvas!])).toThrow();
   const [code] = normalizeEditOperations("rich_text", [
     { type: "insertBlock", block: { id: "c1", type: "code-block", code: "x", children: [{ text: "" }] } },
   ]);
@@ -215,29 +233,15 @@ it("keeps canonical image cells", () => {
   ).not.toThrow();
 });
 
-it("turns common presentation payloads into native elements", () => {
-  const [pixel, titled] = normalizeEditOperations("presentation", [
-    {
-      type: "insert",
-      slideId: "slide-1",
-      element: {
-        type: "text",
-        text: "封面",
-        fontSize: 36,
-        transform: { x: 80, y: 60, width: 640, height: 80 },
-      },
-    },
-    { type: "add", slideId: "slide-1", kind: "title" },
-  ]);
-  expect(pixel!.element).toMatchObject({
-    type: "text",
-    transform: { x: 762000, y: 571500, width: 6096000, height: 762000, rotation: 0 },
-    paragraphs: [{ type: "paragraph", children: [{ text: "封面", fontSize: 36 }] }],
-  });
-  expect(pixel!.element).not.toHaveProperty("text");
-  expect(pixel!.element).not.toHaveProperty("fontSize");
-  expect(titled).toMatchObject({ type: "add", kind: "text" });
-  expect(() => validateEditOperations("presentation", [pixel!, titled!])).not.toThrow();
+it("rejects removed presentation aliases and never guesses units or element data", () => {
+  const old = {type:"insert",slideId:"s",element:{type:"text",text:"封面",fontSize:36,transform:{x:80,y:60,width:640,height:80}}};
+  expect(normalizeEditOperations("presentation", [old])).toEqual([old]);
+  expect(() => validateEditOperations("presentation", [old])).toThrow();
+  expect(() => validateEditOperations("presentation", [{type:"add",slideId:"s",kind:"title"}])).toThrow();
+  const native = {type:"insert",slideId:"s",element:{id:"t",type:"text",paragraphs:[{type:"paragraph",children:[{text:"微小坐标"}]}],transform:{x:80,y:60,width:640,height:80,rotation:0}}};
+  expect(normalizeEditOperations("presentation", [native])).toEqual([native]);
+  expect(() => validateEditOperations("presentation", [native])).not.toThrow();
+  expect(collectEditOperations({operations:[{...old,element:JSON.stringify(old.element)}]},"presentation")[0].element).toBeTypeOf("string");
 });
 
 it("keeps presentation page fields on the advertised tool schema", async () => {
@@ -256,5 +260,7 @@ it("advertises concrete cell fields and rejects the null payload seen in live mo
   expect(wire).toContain('"column"');
   expect(wire).toContain('"row"');
   expect(wire).toContain('"pattern"');
+  for (const field of ["bg", "cl", "rgb"])
+    expect(wire).toContain(`"${field}"`);
   expect(schema.safeParse({resourceId:"aaaaaaaa-bbbb-4ccc-8ddd-eeeeeeeeeeee",seq:0,epochId:"e",operations:[{type:"cells",sheetId:"s",cells:null}]}).success).toBe(false);
 });

@@ -4,7 +4,7 @@ import { htmlLang } from "@doca/i18n";
 import { Feedback } from "@web/shared/components/feedback.js";
 import { Select } from "@web/shared/components/select.js";
 import { DocumentAuthor } from "@web/features/documents/document-author.js";
-import { Fragment, useEffect, useState } from "react";
+import { Fragment, useEffect, useRef, useState } from "react";
 import {
   BookOpen,
   BookOpenCheck,
@@ -22,6 +22,7 @@ import {
   ImagePlus,
   Pencil,
   Settings,
+  Upload,
 } from "lucide-react";
 import {
   api,
@@ -69,6 +70,7 @@ export function Dashboard({
   refresh,
   preferences,
   create,
+  upload,
   changed,
   currentUserId,
 }: {
@@ -76,6 +78,7 @@ export function Dashboard({
   refresh: number;
   preferences?: Preferences;
   create: (kind: "document" | "library") => void;
+  upload: () => void;
   changed: () => void;
   currentUserId?: string;
 }) {
@@ -83,6 +86,7 @@ export function Dashboard({
   const date = (value?: string | null) => listTime(value, Date.now(), locale);
   const [tab, setTab] = useState(section === "libraries" ? "libraries" : "recent"),
     [format, setFormat] = useState(""),
+    [source, setSource] = useState(""),
     [searchOpen, setSearchOpen] = useState(false),
     [sort, setSort] = useState(section === "libraries" ? "updated_at" : "visited_at"),
     [order, setOrder] = useState("desc"),
@@ -123,7 +127,10 @@ export function Dashboard({
     order,
     ...(!trash ? { kind: libraryCards ? "library" : "document" } : {}),
     ...(!libraryCards && format ? { format } : {}),
+    ...(!libraryCards && !trash && source ? { location: source } : {}),
   }).toString();
+  const activeQuery = useRef(query);
+  activeQuery.current = query;
   useEffect(() => {
     const c = new AbortController();
     setLoading(true);
@@ -152,6 +159,11 @@ export function Dashboard({
     const onReaction = (event: Event) => {
       const change = (event as CustomEvent<ReactionChange>).detail;
       if (!change?.id) return;
+      // Reaction events do not carry location metadata. Requery filtered lists
+      // instead of inserting an item whose source has not been checked.
+      if ((source || format) && change.resource &&
+          ((scope === "favorites" && change.favorite) || (scope === "pins" && change.pinned)))
+        setLocalRefresh((value) => value + 1);
       const drop =
         (scope === "favorites" && change.favorite === false) ||
         (scope === "pins" && change.pinned === false);
@@ -166,6 +178,7 @@ export function Dashboard({
         if (
           !present &&
           change.resource &&
+          !source && !format &&
           ((scope === "favorites" && change.favorite) || (scope === "pins" && change.pinned))
         )
           return {
@@ -189,7 +202,7 @@ export function Dashboard({
     };
     window.addEventListener("resource-reaction", onReaction);
     return () => window.removeEventListener("resource-reaction", onReaction);
-  }, [scope]);
+  }, [scope, source, format]);
   async function mutate(r: Resource, action: "rename" | "trash" | "restore") {
     document
       .querySelectorAll<HTMLDetailsElement>("details.menu[open]")
@@ -202,15 +215,16 @@ export function Dashboard({
     try {
       const page = "&cursor=" + encodeURIComponent(data.nextCursor);
       const p = await api<Page>("/resources?" + query + page);
+      if (activeQuery.current !== query) return;
       setData((old) => ({
         ...p,
         total: p.total ?? old.total,
         items: [...old.items, ...p.items],
       }));
     } catch (e) {
-      setError((e as Error).message);
+      if (activeQuery.current === query) setError((e as Error).message);
     } finally {
-      setLoading(false);
+      if (activeQuery.current === query) setLoading(false);
     }
   }
   const heading = libraries
@@ -334,6 +348,16 @@ export function Dashboard({
             </span>
             <ArrowUpRight size={17} />
           </button>
+          {!libraries && (
+            <button onClick={upload}>
+              <span className="quick-icon"><Upload size={22} /></span>
+              <span>
+                <strong>{t("home.upload")}</strong>
+                <small>{t("home.uploadHint")}</small>
+              </span>
+              <ArrowUpRight size={17} />
+            </button>
+          )}
           <button
             onClick={() =>
               libraries ? navigateBackOr("/documents") : create("library")
@@ -419,6 +443,14 @@ export function Dashboard({
               <Search size={16} />
               {t("home.searchLibraries")}
             </button>
+          )}
+          {!libraryCards && !trash && (
+            <Select aria-label={t("home.source")} value={source}
+              onChange={(event) => setSource(event.target.value)}>
+              <option value="">{t("home.allSources")}</option>
+              <option value="library">{t("home.libraries")}</option>
+              <option value="personal">{t("home.personalDoc")}</option>
+            </Select>
           )}
           {!libraryCards && <TypeFilter value={format} change={setFormat} />}
           <label className="sort-select">

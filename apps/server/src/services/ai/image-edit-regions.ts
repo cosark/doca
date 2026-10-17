@@ -26,13 +26,18 @@ function segmentsIntersect(a: Point, b: Point, c: Point, d: Point) {
     onSegment(c, d, a) || onSegment(c, d, b);
 }
 
+// Keep exact tuple validation; publish the equivalent homogeneous-array schema
+// accepted by function-calling endpoints (draft-07 tuple items are not portable).
+export const normalizedImagePointSchema = z.tuple([z.number().min(0).max(1), z.number().min(0).max(1)])
+  .meta({items:{type:"number",minimum:0,maximum:1},minItems:2,maxItems:2});
+export const emptyEditRegionsSchema = z.tuple([]).meta({items:{},maxItems:0});
 export const editRegionsSchema = z
   .array(
     z
       .object({
         label: z.string().trim().min(1).max(100),
         points: z
-          .array(z.tuple([z.number().min(0).max(1), z.number().min(0).max(1)]))
+          .array(normalizedImagePointSchema)
           .min(3)
           .max(200),
       })

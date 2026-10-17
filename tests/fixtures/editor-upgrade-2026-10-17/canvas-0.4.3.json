@@ -1,0 +1,32 @@
+{
+  "source": "Actual installed @smartdoca/canvas 0.4.3 registry artifact",
+  "epochId": "released-canvas-043-qa",
+  "update": "ARiFxrvCCwAoAQRtZXRhB2Vwb2NoSWQBdxZyZWxlYXNlZC1jYW52YXMtMDQzLXFhKAEEbWV0YQ1zY2hlbWFWZXJzaW9uAX0BKAEEbWV0YQRuYW1lAXcVUmVsZWFzZWQgQ2FudmFzIDAuNC4zJwEIZWxlbWVudHMIb2xkLXRleHQBJwCFxrvCCwMFcHJvcHMBKACFxrvCCwQDdGFnAXcEVGV4dCgAhca7wgsEAXgBfbgBKACFxrvCCwQBeQF9pAEoAIXGu8ILBAhmb250U2l6ZQF9FCcAhca7wgsDBHRleHQCBACFxrvCCwkS5pen54mI5Lit5paH5YaF5a65KACFxrvCCwMJcGxhY2VtZW50AXYCBnBhcmVudH4EcmFua30AKACFxrvCCwMHZGVsZXRlZAF5JwEIZWxlbWVudHMIb2xkLXJlY3QBJwCFxrvCCxIFcHJvcHMBKACFxrvCCxMDdGFnAXcEUmVjdCgAhca7wgsTAXgBfTIoAIXGu8ILEwF5AX0yKACFxrvCCxMFd2lkdGgBfYgDKACFxrvCCxMGaGVpZ2h0AX2QASgAhca7wgsTBGZpbGwBdwcjMzM3MGZmJwCFxrvCCxIEdGV4dAIoAIXGu8ILEglwbGFjZW1lbnQBdgIGcGFyZW50fgRyYW5rfQEoAIXGu8ILEgdkZWxldGVkAXkA",
+  "value": {
+    "version": 1,
+    "name": "Released Canvas 0.4.3",
+    "updatedAt": "",
+    "scene": {
+      "tag": "Leafer",
+      "children": [
+        {
+          "tag": "Text",
+          "x": 120,
+          "y": 100,
+          "fontSize": 20,
+          "id": "old-text",
+          "text": "旧版中文内容"
+        },
+        {
+          "tag": "Rect",
+          "x": 50,
+          "y": 50,
+          "width": 200,
+          "height": 80,
+          "fill": "#3370ff",
+          "id": "old-rect"
+        }
+      ]
+    }
+  }
+}

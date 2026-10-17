@@ -7,9 +7,9 @@ import {
 import type { DB } from "../../../../../db/src/index.js";
 import { fail } from "../../../shared/errors.js";
 
-// The SDK calls its codec `eppt`, revision 5. Doca binds that revision into the
+// The SDK calls its codec `eppt`, revision 6. Doca binds that revision into the
 // negotiated codec since its common transport has no separate revision field.
-export const PPT_CODEC = "eppt-yjs-v5";
+export const PPT_CODEC = "eppt-yjs-v6";
 export const PPT_SCHEMA = 2;
 function bounded(
   value: any,
@@ -177,6 +177,7 @@ export async function validatePresentationUpdate(
               "background",
               "verticalAlign",
               "padding",
+              "paddingInsets",
               "shape",
               "stroke",
               "strokeWidth",
@@ -185,6 +186,10 @@ export async function validatePresentationUpdate(
               "crop",
               "arrow",
               "cells",
+              "cellStyles",
+              "merges",
+              "columnWidths",
+              "rowHeights",
               "headerFill",
               "chartType",
               "labels",

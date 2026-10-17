@@ -9,7 +9,7 @@ import {
   type ReactNode,
   type SetStateAction,
 } from "react";
-import { AtSign } from "lucide-react";
+import { Sparkles } from "lucide-react";
 import { api, type FileItem, type Resource } from "@web/shared/api.js";
 import type { AIReference } from "@core/workflows/ai-documents.js";
 import { usePendingSendRunner } from "@web/features/ai/ai-pending-runner.js";
@@ -49,6 +49,8 @@ type AIContextValue = {
   setComposerDraft: (v: string | null) => void;
   references: AIReference[];
   setReferences: (v: AIReference[]) => void;
+  pendingReferences: AIReference[];
+  consumePendingReferences: (references: AIReference[]) => void;
   add: (anchor?: unknown) => void;
   addDocument: (resource: Resource) => void;
   fileContext: AIFileContext | null;
@@ -93,6 +95,7 @@ export function AIProvider({
       return null;
     }),
     [references, setReferences] = useState<AIReference[]>([]),
+    [pendingReferences, setPendingReferences] = useState<AIReference[]>([]),
     [fileContext, setFileContext] = useState<AIFileContext | null>(null),
     [composerDraft, setComposerDraftState] = useState<string | null>(null),
     [error, setError] = useState("");
@@ -176,6 +179,7 @@ export function AIProvider({
   };
   useEffect(() => {
     setReferences([]);
+    setPendingReferences([]);
     setComposerDraftState(null);
     setPendingReference(null);
     setPendingStoredFiles([]);
@@ -226,7 +230,7 @@ export function AIProvider({
     try {
       const anchor = provided ?? bridges.get(resource.id)?.capture();
       if (!anchor) throw Error("请先选择要引用的内容");
-      setReferences((prev) =>
+      setPendingReferences((prev) =>
         [
           ...prev,
           {
@@ -306,7 +310,11 @@ export function AIProvider({
         userId,
         resource,
         open,
-        restoring,
+        // Opening a panel can mount its composer before the restore effect
+        // starts. Keep handoffs queued until that decision has completed.
+        restoring: restoring || !!(open && userId && activeResourceId &&
+          !sessionId && composerDraft === null &&
+          resumeAttempt.current !== `${userId}:${activeResourceId}`),
         contextLoading,
         setOpen,
         sessionId,
@@ -315,10 +323,13 @@ export function AIProvider({
         setComposerDraft,
         references,
         setReferences,
+        pendingReferences,
+        consumePendingReferences: (consumed) =>
+          setPendingReferences((prev) => prev.filter((ref) => !consumed.includes(ref))),
         add,
         addDocument: (document) => {
           if (!userId || (document.kind !== "document" && !document.knowledgeBook)) return;
-          setReferences((prev) =>
+          setPendingReferences((prev) =>
             [
               ...prev.filter((r) => r.resourceId !== document.id || !!r.anchor),
               {
@@ -407,7 +418,7 @@ export function AIReferenceButton({ anchor }: { anchor?: unknown }) {
       onMouseDown={(e) => e.preventDefault()}
       onClick={() => ai.add(anchor)}
     >
-      <AtSign size={17} />
+      <Sparkles size={17} />
     </button>
   );
 }
