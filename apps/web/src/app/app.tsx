@@ -49,6 +49,7 @@ import { setCurrentUserId } from "@web/shared/components/user-mention.js";
 import { lazy, Suspense, useEffect, useLayoutEffect, useState, useRef, useMemo, useSyncExternalStore } from "react";
 import { loadBootstrap } from "@web/shared/bootstrap.js";
 import { documentFavicon } from "@web/shared/utils/document-favicon.js";
+import { splitTitleIcon } from "@web/shared/utils/resource-title.js";
 import { loadWebPlugins } from "@web/plugins/load.js";
 import { cacheStartupDocument, clearDocumentStartupCache, documentStartupCacheKey, forgetStartupDocument, invalidateStartupIdentity, readDocumentStartup, readStartupAccount } from "@web/shared/document-startup-cache.js";
 import { BookOpen, Plus, Search, Users, Settings, Bell, ShieldCheck, ThumbsUp, LogOut, FolderOpen, ArrowLeft, PanelLeft, LockKeyhole, UserRound, BookOpenCheck } from "lucide-react";
@@ -497,7 +498,7 @@ function WorkspaceApp() {
   useEffect(() => {
     if (!bootstrap?.siteName) return;
     const siteTitle = t("app.documentTitle", { site: bootstrap.siteName });
-    const resourceTitle = currentDetail?.resource.title.trim() ?? "";
+    const { text: resourceTitle } = splitTitleIcon(currentDetail?.resource.title.trim() ?? "");
     document.title = resourceId && resourceTitle ? resourceTitle : siteTitle;
   }, [bootstrap?.siteName, t, resourceId, currentDetail?.resource.title]);
   useEffect(() => {
