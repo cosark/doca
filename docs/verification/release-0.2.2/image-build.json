@@ -1,0 +1,14 @@
+{
+  "candidate": "smartdoca/doca:0.2.2-candidate",
+  "platforms": [
+    "linux/amd64",
+    "linux/arm64"
+  ],
+  "indexDigest": "sha256:e7c9d945d5263a325238b27726641e685edff50207dc14f272b95b09b8fd5dce",
+  "node": "22-bookworm-slim",
+  "dependencyInstall": "Frozen lockfile; existing supply-chain policies verified 2046 entries on each architecture; npm metadata retries completed without disabling validation.",
+  "buildPassed": true,
+  "runtimeSourceCommit": "103e4941fa11461a81f10b2524cf2627be17fcda",
+  "arm64Manifest": "sha256:b6ae7f02133464b61c01e8f9ac4292bb48b477244cf947b29db40f2255ac53a3",
+  "note": "The separately loaded arm64 verification image and final multi-architecture index contain this exact same arm64 manifest."
+}

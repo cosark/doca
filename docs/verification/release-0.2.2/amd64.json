@@ -1,0 +1,20 @@
+{
+  "arch": "amd64",
+  "passed": true,
+  "health": true,
+  "hostValidation": true,
+  "compression": [
+    "gzip",
+    "br"
+  ],
+  "bootstrapLogin": true,
+  "restart": true,
+  "gracefulStop": true,
+  "runtime": {
+    "version": "0.2.2",
+    "canvas": "0.5.5",
+    "uid": 1000,
+    "model": true
+  },
+  "releasedUpgrade": null
+}
