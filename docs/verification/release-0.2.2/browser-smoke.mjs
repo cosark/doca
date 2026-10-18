@@ -9,6 +9,7 @@ import { chromium } from "playwright-core";
 import { openDatabase } from "../../../packages/db/src/index.ts";
 import { createUser } from "../../../packages/core/src/modules/identity/passwords.ts";
 import { createContent } from "../../../packages/core/src/workflows/resources.ts";
+import { readAIDocument } from "../../../packages/core/src/workflows/ai-documents.ts";
 
 const root = await mkdtemp(join(tmpdir(), "doca-release022-browser-"));
 process.env.DOCA_CREDENTIAL_MASTER_KEY = randomBytes(32).toString("hex");
@@ -35,6 +36,7 @@ try {
   const book = await content.create(actor, { kind: "document", format: "rich_text", title: "📚 doca问题跟进" });
   const rocket = await content.create(actor, { kind: "document", format: "canvas", title: "🚀 基础信息" });
   const plain = await content.create(actor, { kind: "document", format: "rich_text", title: "普通文档" });
+  for (const resource of [book, rocket, plain]) await readAIDocument(db, { actor }, resource.id);
   const before = await db.selectFrom("document_states").selectAll().where("resource_id", "in", [book.id, rocket.id, plain.id]).orderBy("resource_id").execute();
   app = await createApp(db, {
     origin, staticDirectory: resolve("apps/web/dist"),
