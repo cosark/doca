@@ -1,3 +1,4 @@
+import { useCanvasRichExtensions } from "./canvas-rich-extensions.js";
 import { useEffect, useState } from "react";
 import { useI18n } from "@web/shared/i18n.js";
 import * as Y from "yjs";
@@ -36,6 +37,7 @@ export default function SurfacePreview({
   audit?: boolean;
 }) {
   const { t, locale } = useI18n();
+  const richTextExtensions = useCanvasRichExtensions();
   const attachmentPreview = useAttachmentPreview({ trash, audit });
   const [model, setModel] = useState<
       CanvasModel | ExlsxCollaborationSession | Y.Doc | null
@@ -116,9 +118,11 @@ export default function SurfacePreview({
           hostManaged
           mode="readonly"
           showHeader={false}
+          richTextExtensions={richTextExtensions}
           className="doca-canvas"
           resources={{ resolveUrl: resolve }}
           onResourcePreview={attachmentPreview.onCanvasResourcePreview}
+          onAttachmentPreview={attachmentPreview.onCanvasAttachmentPreview}
         />
       ) : model ? (
         <SpreadsheetEditor

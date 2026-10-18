@@ -1,6 +1,7 @@
+import { TitleInput } from "./title-input.js";
 import { useI18n } from "@web/shared/i18n.js";
 import { Feedback } from "@web/shared/components/feedback.js";
-import { useEffect, useRef, useState } from "react";
+import { useEffect, useId, useRef, useState } from "react";
 import { ImagePlus, Upload, Paperclip, Download, FolderOpen, X } from "lucide-react";
 import { api, assetUrl, uploadFile, roleRank, type FileItem, type Resource } from "@web/shared/api.js";
 import { Dialog } from "@web/features/documents/dialogs.js";
@@ -118,6 +119,7 @@ export function ResourceActionDialog({
 }) {
 const { t } = useI18n();
 
+  const titleId = useId();
   const [title, setTitle] = useState(resource.title),
     [busy, setBusy] = useState(false),
     [error, setError] = useState("");
@@ -159,21 +161,24 @@ const { t } = useI18n();
         }}
       >
         {action === "rename" ? (
-          <label>
-            {resource.knowledgeBook
-              ? t("books.name")
-              : resource.kind === "library"
-              ? t("library.libraryName")
-              : t("library.documentName")}
-            <input
+          <>
+            <label htmlFor={titleId}>
+              {resource.knowledgeBook
+                ? t("books.name")
+                : resource.kind === "library"
+                  ? t("library.libraryName")
+                  : t("library.documentName")}
+            </label>
+            <TitleInput
+              id={titleId}
               autoFocus
               required
               maxLength={160}
               value={title}
-              onChange={(e) => setTitle(e.target.value)}
+              onValueChange={setTitle}
               onFocus={(e) => e.target.select()}
             />
-          </label>
+          </>
         ) : (
           <p>
             {action === "trash"

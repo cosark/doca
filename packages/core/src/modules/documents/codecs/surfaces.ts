@@ -1,3 +1,5 @@
+import { canvasInlineElements } from "../canvas-inline.js";
+import { indexDocumentReferences } from "../references.js";
 import { checkDocumentSize } from "../../access/operation-policy.js";
 import {
   projectExlsxWorkbook,
@@ -434,6 +436,17 @@ export async function exchangeSurface(
     await enqueueKnowledge(tx, "document", id);
     if (embeddedMedia)
       await detachUnreferencedDocumentFiles(tx, id, embeddedMedia);
+    if (resource.format === "canvas") {
+      const readAtoms = (bytes: Uint8Array) => {
+        const model = CanvasModel.restore({ codec: CANVAS_CODEC, schemaVersion: 1, epochId: loaded.epochId, update: bytes });
+        try { return canvasInlineElements(model.getValue()); } finally { model.dispose(); }
+      };
+      const before = readAtoms(loaded.update), after = readAtoms(encoded);
+      const users = (atoms: typeof after) => new Set(atoms.flatMap(atom => atom.userId ? [atom.userId] : []));
+      await validateNewMentions(tx, actor!, users(after), users(before));
+      await notify(tx, actor!, resource, "document.mentioned", [...users(after)].filter(userId => !users(before).has(userId)), undefined, `document:${id}:${seq}`);
+      await indexDocumentReferences(tx, id, after);
+    }
     if (resource.format === "spreadsheet") {
       const users = (snapshot: any) => {
         const ids = new Set<string>();

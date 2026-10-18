@@ -1,0 +1,56 @@
+{
+  "slate": {
+    "old": "0.4.22",
+    "new": "0.4.23",
+    "exportsEqual": true,
+    "dependenciesEqual": false,
+    "entries": {
+      "codec.js": {
+        "equal": true,
+        "sha256": "ee322155901c2c6e8c20055c5b3b97be53c56ad697cadc23face455dad870d00"
+      },
+      "yjs.js": {
+        "equal": true,
+        "sha256": "e0111a9035c4046f5d57786332042007648a047c716cc08f985e736f258aa2ed"
+      },
+      "headless.js": {
+        "equal": true,
+        "sha256": "bfb051fad9ba2e99c2aeacd502a6ee23a14b7f492e7fb8889d504696d634aa84"
+      },
+      "conversion.js": {
+        "equal": true,
+        "sha256": "1aa0d719e674407af6b659fb560ffe4c024196da461c44d1b5699473c2e69916"
+      },
+      "index.d.ts": {
+        "equal": true,
+        "sha256": "3af3538916522115a5b1511dc49fc6ee10f46886f3087fddd43348cbfcc5dd8d"
+      }
+    }
+  },
+  "canvas": {
+    "old": "0.5.2",
+    "new": "0.5.3",
+    "exportsEqual": true,
+    "dependenciesEqual": true,
+    "entries": {
+      "model.js": {
+        "equal": true,
+        "sha256": "52ad3682cc54f34b46b59eb9f0ff9cb22a28ac35dddc4f73083099ea75ed3b0f"
+      },
+      "types/sdk/types.d.ts": {
+        "equal": false,
+        "sha256": "f51e0fc26c06ed250db55d854bae88cd5bf278c7e026eb76a24ed66203caef64"
+      }
+    }
+  },
+  "canvas054": {
+    "version": "0.5.4",
+    "gitHead": "f18448aace86e1e388a362a2fcd2bc1329d9ea82",
+    "integrity": "sha512-pQaDoii1++oDkCYLRTQXWDAIGdPqIn9BCDOJ7LZimI/wp+/1JxYed1SNw6OfuPSHMJytVPRoaks2FlsFNy3HQQ==",
+    "npm": "https://www.npmjs.com/package/@smartdoca/canvas/v/0.5.4",
+    "modelSha256": "52ad3682cc54f34b46b59eb9f0ff9cb22a28ac35dddc4f73083099ea75ed3b0f",
+    "installedModelMatchesRegistry": true,
+    "sourcePullRequest": "https://github.com/smartdoca/canvas/pull/9",
+    "release": "https://github.com/smartdoca/canvas/releases/tag/v0.5.4"
+  }
+}

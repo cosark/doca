@@ -1,3 +1,4 @@
+import { activeResourceAudience, resourceAccessState } from "./resource-access-state.js";
 import { policyFields, type PolicyField } from "./inheritance.js";
 import { effectiveResource } from "../access/inheritance.js";
 import { sql, type RawBuilder, type Transaction } from "kysely";
@@ -156,14 +157,10 @@ export async function accessContext(
 ) {
   await activeActor(db, actor);
   let resources = await loadResources(db, ids, subtrees);
-  return {
-    resources,
-    grants: await effectiveGrants(
-      db,
-      resources.map((r) => r.id),
-    ),
-    actor,
-  };
+  const grants = await effectiveGrants(db, resources.map(r => r.id));
+  const activeUserIds = await activeResourceAudience(db, resources, grants);
+  if (actor) activeUserIds.add(actor.id);
+  return { resources, grants, activeUserIds, actor };
 }
 
 export async function authorize(
@@ -205,6 +202,7 @@ export function projectResource(
   actor: Actor | null,
   resources: Resource[],
   grants: Awaited<ReturnType<typeof effectiveGrants>>,
+  activeUserIds: ReadonlySet<string>,
   managerInfoVisible = false,
 ) {
   const visible = (id: string | null) => {
@@ -215,6 +213,7 @@ export function projectResource(
   };
   return {
     ...resource,
+    access_state: resourceAccessState(resource, resources, grants, activeUserIds),
     visibility:
       resource.visibility === "invited" && resource.requests_enabled
         ? ("requestable" as const)

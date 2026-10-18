@@ -1,0 +1,17 @@
+{
+  "command": "pnpm typecheck && pnpm test --maxWorkers=4 && pnpm build",
+  "passed": true,
+  "testFiles": {
+    "passed": 289,
+    "skipped": 3,
+    "total": 292
+  },
+  "tests": {
+    "passed": 2944,
+    "skipped": 10,
+    "total": 2954
+  },
+  "durationSeconds": 248.43,
+  "node": "26.0.0",
+  "note": "An earlier unconstrained run alongside both image builds hit existing timed tests and was interrupted. This complete bounded-concurrency rerun passed without test changes or timeout increases. Production images independently build and run on Node 22."
+}
