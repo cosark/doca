@@ -1,0 +1,24 @@
+{
+  "arch": "arm64",
+  "passed": true,
+  "health": true,
+  "hostValidation": true,
+  "compression": [
+    "gzip",
+    "br"
+  ],
+  "bootstrapLogin": true,
+  "restart": true,
+  "gracefulStop": true,
+  "runtime": {
+    "version": "0.2.1",
+    "canvas": "0.5.5",
+    "uid": 1000,
+    "model": true
+  },
+  "releasedUpgrade": {
+    "from": "0.1.32",
+    "oldCanvas": "0.5.4",
+    "originalContentCheckpointEpochAndSequencePreserved": true
+  }
+}

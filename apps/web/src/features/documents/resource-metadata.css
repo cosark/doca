@@ -12,19 +12,26 @@
   vertical-align: middle;
 }
 .resource-access-tag.is-private {
-  color: #fff;
-  background: #c93237;
-  border-color: #c93237;
+  color: #b33b45;
+  background: #fdf0f1;
+  border-color: #f5d9dd;
 }
 .resource-access-tag.is-collaborative {
-  color: #fff;
-  background: #2465d8;
-  border-color: #2465d8;
+  color: #3565c7;
+  background: #edf3ff;
+  border-color: #d9e5fc;
 }
 .resource-access-tag.is-public {
-  color: #fff;
-  background: #15803d;
-  border-color: #15803d;
+  color: #287b4f;
+  background: #edf8f1;
+  border-color: #d8eddf;
+}
+.document-name-line > .resource-access-tag,
+.resource-title-line > .resource-access-tag {
+  font-size: 11px;
+  line-height: 16px;
+  padding-inline: 4px;
+  border-radius: 3px;
 }
 .resource-title-line {
   display: flex;

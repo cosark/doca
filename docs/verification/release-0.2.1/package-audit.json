@@ -1,0 +1,45 @@
+{
+  "canvas055": {
+    "version": "0.5.5",
+    "previous": "0.5.4",
+    "integrity": "sha512-WbnrtQMo81xeCF58p5kjDxsCypXaJhU7nK0h9lDyiZapxem9LJQVWu6dP0D3ltW774I5rHnM/dFsevg4itjgMA==",
+    "modelSha256": "52ad3682cc54f34b46b59eb9f0ff9cb22a28ac35dddc4f73083099ea75ed3b0f",
+    "exportsEqual": true,
+    "dependenciesEqual": true,
+    "declarationsEqual": true,
+    "declarationFiles": 117,
+    "sourceCommit": "302ebdfe288cad846b49858337e27cb8f943314f",
+    "npm": "https://www.npmjs.com/package/@smartdoca/canvas/v/0.5.5",
+    "release": "https://github.com/smartdoca/canvas/releases/tag/v0.5.5",
+    "entries": {
+      "dist/model.js": {
+        "equal": true,
+        "sha256": "52ad3682cc54f34b46b59eb9f0ff9cb22a28ac35dddc4f73083099ea75ed3b0f"
+      },
+      "dist/io.js": {
+        "equal": true,
+        "sha256": "e162d4a03420a8084200bb429f1927c23b45052a64fb2f534b2369721f863ad7"
+      },
+      "dist/types/index.d.ts": {
+        "equal": true,
+        "sha256": "34c5b4de7e189d2edc9c77e8d5ee0e3706e2f58faa24b46a1e493dfaa11dc5d1"
+      },
+      "dist/types/sdk/types.d.ts": {
+        "equal": true,
+        "sha256": "45898796a79bdf247dc146f797bace00b70fc717eeea700021a636ffa0d258cd"
+      },
+      "dist/index.js": {
+        "equal": false,
+        "sha256": "f6ab84c347e7e9cf87e0ab27b1e47a47babe9fa835f1be4fe18088105aad194c"
+      },
+      "dist/index.css": {
+        "equal": false,
+        "sha256": "4c822dfe8227cf25c8a6303c887350d4a6ab2e0e67640b425bdbda8f22e85a04"
+      }
+    },
+    "installedModelMatchesRegistry": true,
+    "dependencySource": "official npm registry exact version in manifest and lockfile; no file, archive or Git reference",
+    "matchedSourceBuildFiles": 143,
+    "sourceBuildMatchesRegistry": true
+  }
+}
