@@ -24,3 +24,10 @@ Library creation and renaming use the same emoji/text control. Library cards rep
 ![Library title emoji replaces the original icon](library-emoji-card.png)
 
 [Canvas integration browser checks](canvas-browser.json) pass against installed npm 0.5.5: host-owned user search, native mention and authorized document paste, durable ACK and reference indexing, atomic undo/redo, rich attachment upload and actual host file preview, readonly/reload, and 60 seconds without content writes. The Slate 0.4.23 Leafer workspace also opens, cancels and refreshes previews without rewriting content.
+
+
+The [multi-architecture candidate](image-build.json) passes [arm64](arm64.json) and [amd64](amd64.json) checks: health/version, Host validation, gzip/Brotli assets, bootstrap/login, model loading, document creation, restart and graceful shutdown as UID 1000. The arm64 check starts the actual released 0.1.32 image (Canvas 0.5.4), writes a native Canvas document, then upgrades the same isolated volume to 0.2.1. Original content, the complete checkpoint row, epoch and sequence compare exactly. amd64 runs under emulation.
+
+[Runtime audits](runtime-arm64.json) ([amd64](runtime-amd64.json)) match all 420 source/manifest files and the official npm Canvas model hash on each architecture. The [renderer check](renderer.json) produces a real PDF with Chromium's sandbox and the checked-in seccomp policy enabled. Reproduce using [image smoke](image-smoke.mjs), [runtime audit](runtime-audit.mjs) and [renderer smoke](renderer-smoke.mjs); scripts remove only their own synthetic containers and volumes.
+
+Database CI passes on PostgreSQL 17 and 18 on source commit `39d3cf1010ca2132ccf1f643f139431455bf7784`: [workflow](https://github.com/smartdoca/doca/actions/runs/39103601961). [Documentation CI](https://github.com/smartdoca/doca/actions/runs/39103602005) passes. Registry digest, final merge/tag and release workflow are recorded on the GitHub Release after publication. No production/user data is used. These checks do not establish every canvas operation, arbitrary concurrency convergence, all native devices or Office layout fidelity.

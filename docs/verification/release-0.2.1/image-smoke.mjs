@@ -147,8 +147,10 @@ try {
     "apps/server/src/bootstrap/admin.ts",
   );
   await login();
-  let retained;
+  let retained, oldCanvas;
   if (previous) {
+    oldCanvas = await docker("exec", name, "node", "-p", "require('./package.json').dependencies['@smartdoca/canvas']");
+    assert.equal(oldCanvas, "0.5.4");
     retained = JSON.parse(
       await docker(
         "exec",
@@ -251,7 +253,7 @@ console.log(JSON.stringify({version:p.version,canvas:p.dependencies['@smartdoca/
     releasedUpgrade: previous
       ? {
           from: "0.1.32",
-          oldCanvas: "0.5.2",
+          oldCanvas,
           originalContentCheckpointEpochAndSequencePreserved: true,
         }
       : null,
