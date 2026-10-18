@@ -7,7 +7,7 @@ import "@web/features/documents/document-icons.css";
 import "./resource-metadata.css";
 
 export function FileIcon({ r, size = "regular" }: {
-  r: Pick<Resource, "kind" | "format"> & { title?: string };
+  r: Pick<Resource, "kind"> & { format?: Resource["format"] | null; title?: string };
   size?: "regular" | "compact";
 }) {
   const icon = r.title ? splitTitleIcon(r.title).icon : null;

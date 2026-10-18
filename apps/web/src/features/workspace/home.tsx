@@ -204,8 +204,7 @@ export function WorkspaceHome({ name }: { name: string }) {
                     item.id,
                   ])}
                 >
-                  {(item.kind === "document" || item.kind === "library") &&
-                  item.format !== null ? (
+                  {(item.kind === "library" || (item.kind === "document" && item.format !== null)) ? (
                     <FileIcon r={{ kind: item.kind, format: item.format, title: item.title }} />
                   ) : (
                     <span

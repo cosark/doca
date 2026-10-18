@@ -1,0 +1,55 @@
+{
+  "result": "passed",
+  "canvas": "0.5.5",
+  "consecutiveFinalRuns": 3,
+  "runs": [
+    {
+      "run": 1,
+      "result": "passed",
+      "checks": [
+        "home titles have one emoji icon and colored access tags",
+        "document list uses a separate access column, never a title tag",
+        "only the top-left document title has a tag; rich body headings remain native and unchanged",
+        "all 24 title emojis appear in the rich toolbar; native title insertion persists, converges and causes no peer echo",
+        "picker replaces the icon, accepts a full ZWJ emoji and persists through reload",
+        "a rejected title save retains the draft and can be retried",
+        "390px and 800px effective zoom viewport retain the document title and tag without page errors",
+        "library creation and renaming keep one editable emoji; cards and home replace the type icon, removal restores it",
+        "English narrow access tags stay in their column, and 60 seconds idle produces zero content writes"
+      ],
+      "errors": []
+    },
+    {
+      "run": 2,
+      "result": "passed",
+      "checks": [
+        "home titles have one emoji icon and colored access tags",
+        "document list uses a separate access column, never a title tag",
+        "only the top-left document title has a tag; rich body headings remain native and unchanged",
+        "all 24 title emojis appear in the rich toolbar; native title insertion persists, converges and causes no peer echo",
+        "picker replaces the icon, accepts a full ZWJ emoji and persists through reload",
+        "a rejected title save retains the draft and can be retried",
+        "390px and 800px effective zoom viewport retain the document title and tag without page errors",
+        "library creation and renaming keep one editable emoji; cards and home replace the type icon, removal restores it",
+        "English narrow access tags stay in their column, and 60 seconds idle produces zero content writes"
+      ],
+      "errors": []
+    },
+    {
+      "run": 3,
+      "result": "passed",
+      "checks": [
+        "home titles have one emoji icon and colored access tags",
+        "document list uses a separate access column, never a title tag",
+        "only the top-left document title has a tag; rich body headings remain native and unchanged",
+        "all 24 title emojis appear in the rich toolbar; native title insertion persists, converges and causes no peer echo",
+        "picker replaces the icon, accepts a full ZWJ emoji and persists through reload",
+        "a rejected title save retains the draft and can be retried",
+        "390px and 800px effective zoom viewport retain the document title and tag without page errors",
+        "library creation and renaming keep one editable emoji; cards and home replace the type icon, removal restores it",
+        "English narrow access tags stay in their column, and 60 seconds idle produces zero content writes"
+      ],
+      "errors": []
+    }
+  ]
+}

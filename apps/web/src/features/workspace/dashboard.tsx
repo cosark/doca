@@ -521,8 +521,10 @@ export function Dashboard({
                       alt=""
                     />
                   )}
-                  <BookOpen size={30} />
-                  <strong>{r.title}</strong>
+                  {splitTitleIcon(r.title).icon ? (
+                    <span className="library-title-emoji" aria-hidden="true">{splitTitleIcon(r.title).icon}</span>
+                  ) : <BookOpen size={30} />}
+                  <strong title={r.title}>{splitTitleIcon(r.title).text}</strong>
                   <span>
                     {t("home.libraries")} ·{" "}
                     {r.owner_id && (

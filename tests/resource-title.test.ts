@@ -3,6 +3,7 @@ import {
   splitTitleIcon,
   titleIcon,
   withTitleIcon,
+  titleEditParts,
 } from "@web/shared/utils/resource-title.js";
 
 it.each(["📊", "👩🏽‍💻", "🇨🇳", "1️⃣", "🗂️", "👨‍👩‍👧‍👦"])(
@@ -30,4 +31,30 @@ it("preserves the original stored title and rejects multiple/manual non-icons", 
   expect(titleIcon("🚀🎯")).toBeNull();
   expect(titleIcon("1")).toBeNull();
   expect(titleIcon("title")).toBeNull();
+});
+
+it("separates an existing icon without changing original title bytes", () => {
+  expect(titleEditParts("👩🏽‍💻  团队记录")).toEqual({
+    icon: "👩🏽‍💻",
+    prefix: "👩🏽‍💻  ",
+    text: "团队记录",
+  });
+  expect(titleEditParts("🗓️ 问题跟踪")).toEqual({
+    icon: "🗓️",
+    prefix: "🗓️ ",
+    text: "问题跟踪",
+  });
+});
+it("keeps an icon in the selector while its new title draft is empty", () => {
+  expect(titleEditParts("🚀 ")).toEqual({
+    icon: "🚀",
+    prefix: "🚀 ",
+    text: "",
+  });
+  expect(splitTitleIcon("🚀 ")).toEqual({ icon: null, text: "🚀 " });
+  expect(titleEditParts("🚀计划")).toEqual({
+    icon: null,
+    prefix: "",
+    text: "🚀计划",
+  });
 });

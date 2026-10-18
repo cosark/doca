@@ -21,6 +21,19 @@ export function splitTitleIcon(title: string): {
   return { icon: first, text: remaining.replace(/^[ \t\u00a0]+/u, "") };
 }
 
+/** Editing also permits an icon with an empty text draft; it does not rewrite the title. */
+export function titleEditParts(title: string) {
+  const first = segmenter.segment(title)[Symbol.iterator]().next()
+    .value?.segment;
+  const space =
+    first && titleIcon(first)
+      ? /^[ \t\u00a0]+/u.exec(title.slice(first.length))?.[0]
+      : undefined;
+  if (!first || !space) return { icon: null, text: title, prefix: "" };
+  const prefix = first + space;
+  return { icon: first, text: title.slice(prefix.length), prefix };
+}
+
 export function withTitleIcon(title: string, icon: string | null) {
   const { text } = splitTitleIcon(title);
   return icon ? `${icon} ${text}` : text;

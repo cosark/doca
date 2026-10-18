@@ -156,8 +156,8 @@ importers:
         specifier: ^0.34.52
         version: 0.34.52
       '@smartdoca/canvas':
-        specifier: 0.5.4
-        version: 0.5.4(react-dom@19.2.8(react@19.2.8))(react@19.2.8)
+        specifier: 0.5.5
+        version: 0.5.5(react-dom@19.2.8(react@19.2.8))(react@19.2.8)
       '@smartdoca/files-capability':
         specifier: workspace:*
         version: link:packages/files-capability
@@ -3788,8 +3788,8 @@ packages:
       slate: '>=0.70.0'
       yjs: 13.6.32
 
-  '@smartdoca/canvas@0.5.4':
-    resolution: {integrity: sha512-pQaDoii1++oDkCYLRTQXWDAIGdPqIn9BCDOJ7LZimI/wp+/1JxYed1SNw6OfuPSHMJytVPRoaks2FlsFNy3HQQ==}
+  '@smartdoca/canvas@0.5.5':
+    resolution: {integrity: sha512-WbnrtQMo81xeCF58p5kjDxsCypXaJhU7nK0h9lDyiZapxem9LJQVWu6dP0D3ltW774I5rHnM/dFsevg4itjgMA==}
     engines: {node: '>=20', yarn: '>=1.22'}
     peerDependencies:
       react: '>=18.2.0'
@@ -13610,7 +13610,7 @@ snapshots:
       y-protocols: 1.0.7(yjs@13.6.32)
       yjs: 13.6.32
 
-  '@smartdoca/canvas@0.5.4(react-dom@19.2.8(react@19.2.8))(react@19.2.8)':
+  '@smartdoca/canvas@0.5.5(react-dom@19.2.8(react@19.2.8))(react@19.2.8)':
     dependencies:
       '@icon-park/react': 1.4.2(react-dom@19.2.8(react@19.2.8))(react@19.2.8)
       '@leafer-in/arrow': 2.1.0(@leafer-in/interface@2.1.0(@leafer-ui/interface@2.1.0)(@leafer/interface@2.1.0))(@leafer-ui/draw@2.1.0)(@leafer-ui/interface@2.1.0)

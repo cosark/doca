@@ -1,52 +1,21 @@
 import { useEffect, useId, useRef, useState, type ComponentProps } from "react";
 import { SmilePlus } from "lucide-react";
 import { useI18n } from "@web/shared/i18n.js";
-import {
-  splitTitleIcon,
-  titleIcon,
-  withTitleIcon,
-} from "@web/shared/utils/resource-title.js";
+import { TITLE_EMOJI_OPTIONS } from "@web/shared/title-emoji.js";
+import { titleEditParts, titleIcon } from "@web/shared/utils/resource-title.js";
 import "./resource-metadata.css";
 
-const icons = [
-  "📄",
-  "📝",
-  "📚",
-  "📋",
-  "📊",
-  "📈",
-  "🎯",
-  "💡",
-  "🚀",
-  "🧭",
-  "🗂️",
-  "🗓️",
-  "✅",
-  "⭐",
-  "🔖",
-  "📌",
-  "🧩",
-  "🎨",
-  "🛠️",
-  "💻",
-  "🔬",
-  "🌱",
-  "💬",
-  "🤝",
-];
-
 function TitleIconPicker({
-  value,
+  current,
   onChange,
 }: {
-  value: string;
-  onChange(value: string): void;
+  current: string | null;
+  onChange(icon: string | null): void;
 }) {
   const { t } = useI18n(),
     root = useRef<HTMLDetailsElement>(null),
     [custom, setCustom] = useState("");
-  const current = splitTitleIcon(value).icon,
-    labelId = useId();
+  const labelId = useId();
   useEffect(() => {
     const close = (event: PointerEvent) => {
       if (!root.current?.contains(event.target as Node) && root.current)
@@ -56,11 +25,11 @@ function TitleIconPicker({
     return () => document.removeEventListener("pointerdown", close);
   }, []);
   const choose = (icon: string | null) => {
-    onChange(withTitleIcon(value, icon));
+    onChange(icon);
     if (root.current) root.current.open = false;
     setCustom("");
     root.current?.parentElement
-      ?.querySelector<HTMLInputElement>(":scope > input")
+      ?.querySelector<HTMLInputElement>(':scope > input:not([type="hidden"])')
       ?.focus();
   };
   return (
@@ -91,7 +60,7 @@ function TitleIconPicker({
       >
         <strong id={labelId}>{t("titleIcon.choose")}</strong>
         <div className="title-icon-grid">
-          {icons.map((icon) => (
+          {TITLE_EMOJI_OPTIONS.map((icon) => (
             <button
               type="button"
               key={icon}
@@ -147,19 +116,42 @@ function TitleIconPicker({
 export function TitleInput({
   value,
   onValueChange,
+  name,
   ...props
 }: Omit<ComponentProps<"input">, "value" | "onChange" | "defaultValue"> & {
   value: string;
   onValueChange(value: string): void;
 }) {
+  const parts = titleEditParts(value);
   return (
     <div className="resource-title-field">
-      <TitleIconPicker value={value} onChange={onValueChange} />
+      <TitleIconPicker
+        current={parts.icon}
+        onChange={(icon) =>
+          onValueChange(icon ? `${icon} ${parts.text}` : parts.text)
+        }
+      />
       <input
         {...props}
-        value={value}
-        onChange={(event) => onValueChange(event.target.value)}
+        maxLength={
+          props.maxLength === undefined
+            ? undefined
+            : Math.max(0, props.maxLength - parts.prefix.length)
+        }
+        value={parts.text}
+        onChange={(event) => {
+          const text = event.target.value;
+          onValueChange(titleEditParts(text).icon ? text : parts.prefix + text);
+        }}
       />
+      {name && (
+        <input
+          type="hidden"
+          name={name}
+          value={value}
+          disabled={props.disabled}
+        />
+      )}
     </div>
   );
 }

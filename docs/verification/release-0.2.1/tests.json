@@ -1,0 +1,17 @@
+{
+  "command": "pnpm typecheck && pnpm test --maxWorkers=4 && pnpm build",
+  "passed": true,
+  "canvas": "0.5.5",
+  "testFiles": {
+    "passed": 290,
+    "skipped": 3,
+    "total": 293
+  },
+  "tests": {
+    "passed": 2948,
+    "skipped": 10,
+    "total": 2958
+  },
+  "node": "26.0.0",
+  "note": "Final frozen offline install, typecheck, complete suite and Web build passed in sequence. Earlier package-resolution failures occurred while npm installation overlapped the suite; no assertion or timeout was relaxed. Production images are checked separately on Node 22."
+}
