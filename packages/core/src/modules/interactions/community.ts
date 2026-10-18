@@ -10,7 +10,6 @@ import { accessContext, accessibleQuery } from "../access/queries.js";
 import { emitIntegrationEvent } from "../automation/events.js";
 import { queueMobilePush } from "../mobile/push.js";
 import { createUserDirectory } from "../discovery/users.js";
-import { directoryIds } from "../discovery/directory.js";
 import type { Actor } from "../identity/passwords.js";
 import { authorizeFileFolder } from "../access/file-access.js";
 import { AppError } from "../../shared/errors.js";

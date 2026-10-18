@@ -679,6 +679,7 @@ it("application source stays grouped by runtime and responsibility", async () =>
     "bootstrap",
     "jobs",
     "plugins",
+    "renderers",
     "routes",
     "services",
   ]);

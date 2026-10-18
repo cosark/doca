@@ -11,8 +11,6 @@ import type {
   MonitoringLogs,
   MonitoringPageQuery,
   MonitoringAIUsage,
-  MonitoringAIUsageQuery,
-  MonitoringAuditQuery,
 } from "@smartdoca/plugin-sdk/monitoring";
 import type { PluginRequestContext } from "@smartdoca/plugin-sdk/platform";
 import { fail } from "@core/shared/errors.js";

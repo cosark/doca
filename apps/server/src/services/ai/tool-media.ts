@@ -172,6 +172,15 @@ function describeImages(part: any, values: any[]) {
         toolImage: index + 1,
         label,
         kind: boundedText(facts?.kind),
+        ...(part.toolName === "canvas_view" ? {
+          viewId: boundedText(facts?.viewId),
+          resourceId: boundedText(facts?.resourceId),
+          seq: facts?.seq,
+          epochId: boundedText(facts?.epochId),
+          snapshotHash: boundedText(facts?.snapshotHash),
+          pixelsPerUnit: facts?.pixelsPerUnit,
+          contentBounds: safeCoordinates(facts?.contentBounds),
+        } : {}),
         state: boundedText(facts?.state),
         view: boundedText(annotation?.view),
         coordinateSpace: boundedText(
@@ -408,7 +417,7 @@ export function hoistToolImages(
           ...olderVisualText(message.content),
           {
             type: "text",
-            text: "较早视觉输入本轮未重复传输，来源与参考ID仍有效，需要查看时用 image_view/attachment_read 分批读取。",
+            text: "较早视觉输入本轮未重复传输，来源与参考ID仍有效，需要查看时用 image_view/attachment_read 分批读取，画板用 canvas_view 重新查看。",
           },
         ],
       };
@@ -515,7 +524,9 @@ export function hoistToolImages(
                                       part.toolName === "image_mask_view" ||
                                       part.toolName === "image_mask_refine"
                                     ? `本工具的${missing}张蒙版覆盖诊断尚未传入本轮视觉输入，不能合成。请单独调用 image_mask_view 重看已保存的同一 maskReceiptId；image_view 和文字坐标不能替代完整蒙版诊断。`
-                                    : `本工具的${missing}张图像尚未传入本轮视觉输入；请使用对应 referenceImageId/assetId 调用 image_view 分批查看，不能宣称已经看过。`
+                                    : part.toolName === "canvas_view"
+                                      ? `本工具的画板图片尚未传入视觉输入，请单独重新调用 canvas_view，resourceId=${boundedText(parseFacts(values)?.resourceId)}，保持相同 elementIds/region。不能凭文字回执宣称已经看过。`
+                                      : `本工具的${missing}张图像尚未传入本轮视觉输入；请使用对应 referenceImageId/assetId 调用 image_view 分批查看，不能宣称已经看过。`
                     : "本工具全部图像已传入本轮视觉输入，逐图来源见图片前的标签。",
                 },
               }),

@@ -13,7 +13,6 @@ import {
   thumbnailFor,
 } from "../services/stored-objects.js";
 import { sendFileContent } from "../services/file-content.js";
-import { attachmentMime } from "../services/ai/attachments.js";
 import {
   beginFileExtract,
   loadFileExtract,
@@ -37,7 +36,6 @@ import { transact } from "@db/transactions.js";
 import {
   createStorage,
   storageConfigForProfile,
-  type StorageConfig,
   type StorageRuntime,
 } from "../adapters/storage.js";
 

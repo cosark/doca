@@ -14,7 +14,6 @@ import {
 } from "@core/modules/ai/config.js";
 import { imageProfileForModel, imageModelIdForOperation, imageSizeForRatio, validImageSize, type ImageOperation } from "@core/modules/ai/image-model-catalog.js";
 import { invokeImageProvider, imageProviderPixels, validateImageProviderInput, ImageProviderHttpError, type ImageProviderOutput } from "./image-provider-adapters.js";
-import { checkAttachments } from "./attachments.js";
 import { visualSourceAccess } from "./session-attachments.js";
 import { editRegionsSchema, preserveOutsideRegions, restoreViewport } from "./image-edit-regions.js";
 import { prepareImageEdit, imageEditPatch, cropImageReferences, referenceCropsSchema } from "./image-edit-adapter.js";

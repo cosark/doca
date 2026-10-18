@@ -2,6 +2,7 @@ import { randomUUID } from "node:crypto";
 import { z } from "zod";
 import type { CanvasModel, SceneNode } from "@smartdoca/canvas/model";
 import { fail } from "../../shared/errors.js";
+import { nativeCanvasElement } from "../../shared/canvas-elements.js";
 
 // Host AI workflows compose the shipped public CanvasModel commands. These are
 // not extra editor-package exports or another persistence/transport channel.
@@ -135,6 +136,7 @@ export const canvasWorkflowSchemas = [
       "section",
     ]),
     title: z.string().max(200),
+    children: z.array(z.record(z.string(), z.unknown())).max(1000).optional(),
   }),
   z.strictObject({ type: z.literal("table"), id, command: canvasTableCommand }),
 ] as const;
@@ -761,6 +763,7 @@ function container(op: any): N {
           data: { containerPart: "title" },
         },
       ),
+      ...(op.children ? op.children.map(nativeCanvasElement) : []),
     ],
   };
 }

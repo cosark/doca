@@ -12,7 +12,6 @@ import { AppError, fail } from "@core/shared/errors.js";
 import {
   createKnowledgeBook,
   listKnowledgeBooks,
-  bookNow,
   queueBookRun,
 } from "@core/modules/knowledge-books/management.js";
 import { executeBookCommand } from "@core/modules/knowledge-books/commands.js";

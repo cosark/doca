@@ -13,7 +13,7 @@ import {
   authorizeFileItem,
 } from "../access/file-access.js";
 
-import { AppError, fail } from "../../shared/errors.js";
+import { AppError } from "../../shared/errors.js";
 
 export async function recordActivity(
   db: DB,

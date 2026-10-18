@@ -9,14 +9,15 @@
     "node": ">=22"
   },
   "scripts": {
-    "dev": "tsx watch apps/server/src/main.ts --dev",
-    "dev:workspace": "tsx watch apps/server/src/main.ts --dev",
+    "dev": "pnpm build:canvas-render && tsx watch apps/server/src/main.ts --dev",
+    "dev:workspace": "pnpm build:canvas-render && tsx watch apps/server/src/main.ts --dev",
     "start": "tsx apps/server/src/main.ts",
     "bootstrap": "tsx apps/server/src/bootstrap/admin.ts",
     "admin:reset-password": "tsx apps/server/src/bootstrap/reset-admin-password.ts",
     "history:upgrade": "tsx apps/server/src/bootstrap/history-storage.ts upgrade",
     "history:rollback": "tsx apps/server/src/bootstrap/history-storage.ts rollback",
-    "build": "vite build --config apps/web/vite.config.ts",
+    "build": "pnpm build:canvas-render && vite build --config apps/web/vite.config.ts",
+    "build:canvas-render": "vite build --config apps/server/canvas-render.vite.config.ts",
     "typecheck": "tsc --noEmit",
     "test": "vitest run",
     "check": "pnpm typecheck && pnpm test && pnpm build",

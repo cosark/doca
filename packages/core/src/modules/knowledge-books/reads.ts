@@ -1,7 +1,6 @@
 import {
   bookPayloadReference,
   readBookPayload,
-  type PayloadSummary,
 } from "./payload-storage.js";
 import { authorize } from "../access/queries.js";
 import { AppError } from "../../shared/errors.js";
@@ -17,7 +16,6 @@ import {
   bookConfigurationSchema,
   bookFeedbackInputSchema,
   type BookArtifact,
-  type Evidence,
 } from "./protocol.js";
 import {
   canReadBookFeedback,

@@ -11,7 +11,6 @@ import {
   Clock3,
   ListTodo,
   Sparkles,
-  Bot,
   FolderOpen,
   RefreshCw,
 } from "lucide-react";

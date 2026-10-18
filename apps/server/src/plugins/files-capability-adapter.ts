@@ -32,7 +32,6 @@ import { transact } from "@db/transactions.js";
 import {
   createStorage,
   storageConfigForProfile,
-  type StorageConfig,
   type StorageRuntime,
 } from "../adapters/storage.js";
 import { storeUserFile } from "../services/ai/file-write.js";

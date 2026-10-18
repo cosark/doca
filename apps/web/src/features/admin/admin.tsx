@@ -47,7 +47,7 @@ import { DistributionSettings } from "@web/features/settings/distribution-settin
 import { FileRecognitionSettings } from "@web/features/admin/file-recognition-settings.js";
 import { useI18n } from "@web/shared/i18n.js";
 import type { MessageKey } from "@doca/i18n";
-import { pluginMessage, webPluginRegistry } from "@web/plugins/registry.js";
+import { webPluginRegistry } from "@web/plugins/registry.js";
 
 type Member = {
   id: string;

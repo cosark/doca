@@ -5,7 +5,6 @@ import { processProjections } from "@core/modules/automation/jobs.js";
 import {
   createStorage,
   storageConfigForProfile,
-  type StorageConfig,
   type StorageRuntime,
 } from "../adapters/storage.js";
 import {

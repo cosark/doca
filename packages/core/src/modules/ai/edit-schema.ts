@@ -534,7 +534,8 @@ export function editToolSchema(format: DocumentFormat) {
           : format === "canvas"
             ? wireOperation.extend({
                 x: z.number().optional(), y: z.number().optional(),
-                parentId: z.string().nullable().optional(), beforeId: optionalId,
+                parentId: z.string().nullable().optional().describe("add/place 的真实父容器 ID。UI 内容必须填所属设备容器 ID，不能省略或填 null 放到根层；不要把 parentId 写进 element.data。"), beforeId: optionalId,
+                children: z.array(canvas).max(1000).optional().describe("createContainer 的原生内容节点数组。新建 APP/手机/平板/网页 UI 时将整页内容放在这里，一次创建真实父子层级；所有坐标相对该容器，嵌套分组用节点自身的 children。"),
                 ids: ids.optional(), index: index.optional(), deleteCount: index.optional(),
                 nodes: z.array(z.any()).optional(), edges: z.array(z.any()).optional(),
                 topic: z.any().optional(), layout: z.enum(["right", "left", "balanced"]).optional(),
@@ -996,6 +997,7 @@ export function validateEditOperations(format: string, operations: any[]) {
         element.children?.forEach((n: any) => check(n));
       };
       if (operation.type === "add") check(operation.element);
+      if (operation.type === "createContainer") operation.children?.forEach((n: any) => check(n));
       if (operation.type === "patch") check(operation.patch, true);
     }
   }

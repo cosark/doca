@@ -1,4 +1,3 @@
-import { fetchWebPage } from "../services/ai/web-fetch.js";
 import { Type } from "@sinclair/typebox";
 import type { FastifyInstance, FastifyRequest } from "fastify";
 import type { Actor } from "@core/modules/identity/passwords.js";

@@ -501,25 +501,6 @@ body.ai-panel-resizing {
   color: #838997;
   line-height: 1.7;
 }
-.ai-resource-picker {
-  padding: 10px 0;
-  font-size: 12px;
-}
-.ai-resource-picker > input {
-  width: 100%;
-  box-sizing: border-box;
-}
-.ai-resource-picker > div {
-  max-height: 180px;
-  overflow: auto;
-  padding: 8px 0;
-}
-.ai-resource-picker label {
-  display: flex;
-  gap: 6px;
-  align-items: center;
-  padding: 5px 0;
-}
 .ai-settings {
   min-width: 320px;
   max-width: 800px;

@@ -8,6 +8,7 @@ import type {
 } from "@smartdoca/sheet";
 import { lookupUsers, mentionHandle, mentionLabel, type MentionUser } from "@web/features/comments/rich-comments.js";
 import { setUserCardsSuppressed, UserBadge } from "@web/shared/components/user-badge.js";
+import { useMentionMenuPosition } from "@web/shared/mention-menu-position.js";
 
 type MentionKeyboard = MutableRefObject<((event: KeyboardEvent) => void) | null>;
 /** Mount in the host before the SDK installs its global capture shortcuts. */
@@ -49,6 +50,24 @@ const { t } = useI18n();
   // getNativeText returns a new wrapper. Resubscribing on every render resets
   // the retained draft and immediately schedules another popup position update.
   const api = useMemo(() => handle.getNativeText(), [handle]);
+  const menuRef = useMentionMenuPosition(query !== null, () => {
+    const state = api?.getState();
+    if (!state) return null;
+    const cell = handle.getRangeRect({
+      sheetId: state.cell.sheetId,
+      startRow: state.cell.row,
+      endRow: state.cell.row,
+      startColumn: state.cell.column,
+      endColumn: state.cell.column,
+    });
+    if (!cell) return null;
+    const input = editingInput.current?.matches('input,textarea,[contenteditable="true"]')
+      ? editingInput.current.getBoundingClientRect()
+      : null;
+    return input && input.width > 0 && input.height > 0
+      ? { left: cell.left, top: Math.min(cell.top, input.top), bottom: Math.max(cell.bottom, input.bottom) }
+      : cell;
+  });
   queryRef.current = query;
   const nodeKey = (event: SpreadsheetInlineNodeEvent) =>
     `${event.cell.sheetId}:${event.cell.row}:${event.cell.column}:${event.node.type}:${event.node.refId}`;
@@ -246,11 +265,8 @@ const { t } = useI18n();
     );
   return createPortal(
     <aside
+      ref={menuRef}
       className="sheet-native-candidates"
-      style={{
-        left: Math.max(8, Math.min(rect.left, innerWidth - 280)),
-        top: Math.max(140, Math.min(rect.bottom + 6, innerHeight - 260)),
-      }}
     >
       {query !== null ? (
         <div role="listbox" aria-label="选择提及用户">

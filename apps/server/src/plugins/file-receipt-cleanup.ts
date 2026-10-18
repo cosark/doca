@@ -3,7 +3,6 @@ import { transact } from "@db/transactions.js";
 import {
   createStorage,
   storageConfigForProfile,
-  type StorageConfig,
   type StorageRuntime,
 } from "../adapters/storage.js";
 import { findReceipt, lockFileActor } from "./file-receipts.js";

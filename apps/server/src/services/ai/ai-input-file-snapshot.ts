@@ -11,8 +11,6 @@ import { folderInSearch } from "@core/modules/discovery/catalog.js";
 import { AppError, fail } from "@core/shared/errors.js";
 import {
   knowledgeFolderKind,
-  projectKnowledgeSessionFiles,
-  requireKnowledgeFolder,
 } from "@core/modules/knowledge/file-folders.js";
 import {
   aiSessionIdFromFolderId,

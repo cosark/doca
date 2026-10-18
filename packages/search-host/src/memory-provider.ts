@@ -1,3 +1,4 @@
+import { compareText, copyDescriptor } from "./internals.js";
 import type {
   SearchAliasSwap,
   SearchIndexMetadata,
@@ -16,21 +17,6 @@ interface MemoryIndex {
 
 export interface InMemorySearchProviderOptions {
   readonly now?: () => Date;
-}
-
-function compareText(left: string, right: string): number {
-  return left < right ? -1 : left > right ? 1 : 0;
-}
-
-function copyDescriptor(
-  descriptor: SearchSourceDescriptor,
-): SearchSourceDescriptor {
-  return {
-    pluginId: descriptor.pluginId,
-    sourceId: descriptor.sourceId,
-    schemaVersion: descriptor.schemaVersion,
-    renderer: { ...descriptor.renderer },
-  };
 }
 
 function copyProjection(projection: SearchProjection): SearchProjection {

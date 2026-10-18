@@ -3,7 +3,6 @@ import { composeComment } from "@web/features/comments/comment-body.js";
 import { useEffect, useRef, useState } from "react";
 import {
   ImagePlus,
-  FolderOpen,
   Send,
   X,
   Pencil,
@@ -30,7 +29,6 @@ import type {
 } from "@core/modules/interactions/community.js";
 import { UserBadge } from "@web/shared/components/user-badge.js";
 import { UserMention } from "@web/shared/components/user-mention.js";
-import { Avatar } from "@web/features/account/profile.js";
 import { relativeTime } from "@web/features/documents/document-experience.js";
 import "@web/features/comments/rich-comments.css";
 import { EmojiPicker } from "@web/shared/components/emoji-picker.js";

@@ -7,7 +7,6 @@ import {
   normalizeUsername,
   validUsername,
   validManualUsername,
-  profilePolicy,
   type ProfileField,
   type ProfilePolicy,
 } from "./naming.js";

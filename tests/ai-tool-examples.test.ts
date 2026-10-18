@@ -34,6 +34,7 @@ const required = [
   "file_download",
   "file_create",
   "document_read",
+  "canvas_view",
   "review_document_read",
   "submit_review",
   "document_create",

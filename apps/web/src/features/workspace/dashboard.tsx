@@ -7,11 +7,7 @@ import { DocumentAuthor } from "@web/features/documents/document-author.js";
 import { Fragment, useEffect, useRef, useState } from "react";
 import {
   BookOpen,
-  BookOpenCheck,
-  Bot,
   FileText,
-  Table2,
-  Presentation,
   Plus,
   Search,
   FolderOpen,
@@ -19,8 +15,6 @@ import {
   MoreHorizontal,
   ArrowUpDown,
   ArrowUpRight,
-  ImagePlus,
-  Pencil,
   Settings,
   Upload,
 } from "lucide-react";
@@ -35,7 +29,6 @@ import { GlobalSearch } from "@web/features/search/search.js";
 export { GlobalSearch } from "@web/features/search/search.js";
 import { FileIcon, TypeFilter } from "@web/features/documents/document-controls.js";
 import { DocumentReactionButtons, type ReactionChange } from "@web/features/documents/document-reactions.js";
-import { HoverTip } from "@web/shared/components/hover-tip.js";
 import { CoverDialog, ResourceActionDialog } from "@web/features/documents/uploads.js";
 import { Dialog } from "@web/features/documents/dialogs.js";
 import { assetUrl } from "@web/shared/api.js";

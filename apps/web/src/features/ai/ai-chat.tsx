@@ -29,7 +29,6 @@ import {
   type ComposerDraft,
 } from "./ai-composer-draft.js";
 import { FileDeliveryCard } from "@web/features/ai/ai-file-card.js";
-import { renderPluginAIBlock } from "@web/plugins/registry.js";
 import {
   readPageState,
   writePageState,
@@ -60,7 +59,6 @@ import {
   type RefObject,
 } from "react";
 import {
-  Sparkles,
   Plus,
   PanelRightClose,
   Maximize2,
@@ -70,14 +68,12 @@ import {
   Folder,
   FolderOpen,
   Link2,
-  Bot,
   File as FileIcon,
   Settings,
   MessageSquare,
   Archive,
   Trash2,
   AtSign,
-  Paperclip,
   Globe,
   ShieldCheck,
   ArrowDown,
@@ -88,7 +84,6 @@ import {
 import {
   api,
   assetUrl,
-  fileUrl,
   type FileItem,
   type Resource,
 } from "@web/shared/api.js";
@@ -176,8 +171,6 @@ import {
 import {
   readConversationCache,
   writeConversationCache,
-  readSessionListCache,
-  writeSessionListCache,
 } from "@web/features/ai/ai-local-cache.js";
 import "@web/features/ai/ai.css";
 const AIAnswer = lazy(() => import("@web/features/ai/ai-markdown.js"));

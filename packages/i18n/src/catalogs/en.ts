@@ -371,6 +371,7 @@ export const en = {
   "books.provenance.execution": "Execution",
 
   "common.uploading": "Uploading…",
+  "ai.progress.tool.canvasView": "Inspect canvas image",
   "ai.progress.tool.imageReferenceGenerate": "Generate from reference images",
   "ai.progress.tool.imageEditSaved": "Revise saved image",
   "ai.progress.tool.imageSceneInspect": "Check source scene and requirements",

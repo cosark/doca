@@ -4,7 +4,6 @@ import { api } from "@web/shared/api.js";
 import { Select } from "@web/shared/components/select.js";
 import { Feedback } from "@web/shared/components/feedback.js";
 import { PersonPicker } from "@web/features/documents/person-picker.js";
-import { realtime } from "@web/features/documents/realtime.js";
 import {
   resourceDistribution,
   publicResourceKinds,
@@ -299,83 +298,5 @@ export function DistributionSettings() {
       </section>
       <Feedback message={error} tone="error" />
     </>
-  );
-}
-
-export function Invitations({ changed }: { changed: () => void }) {
-  const { t } = useI18n();
-  const [items, setItems] = useState<
-      {
-        id: string;
-        title: string;
-        kind: string;
-        state: string;
-        role: string;
-        version: number;
-      }[]
-    >([]),
-    [error, setError] = useState(""),
-    [busy, setBusy] = useState(false);
-  const load = () =>
-    api<{ items: typeof items }>("/me/invitations").then((d) =>
-      setItems(d.items),
-    );
-  useEffect(() => {
-    void load().catch((e) => setError(e.message));
-    return realtime.subscribe((m) => {
-      if (["notifications.changed", "connected"].includes(m.type))
-        void load().catch(() => {});
-    });
-  }, []);
-  return (
-    <details className="invitation-inbox">
-      <summary>
-        {t("invitations.pending")}
-        {items.length ? ` · ${items.length}` : ""}
-      </summary>
-      <div>
-        {!items.length && <p className="subtle">{t("invitations.empty")}</p>}
-        {items.map((i) => (
-          <div className="invitation-row" key={i.id}>
-            <span>
-              <strong>{i.title}</strong>
-              <small>
-                {i.kind === "library"
-                  ? t("policy.library")
-                  : t("policy.document")}{" "}
-                ·{" "}
-                {i.state === "pending"
-                  ? t("invitations.acceptHelp")
-                  : t("invitations.joinHelp")}
-              </small>
-            </span>
-            {[true, false].map((accept) => (
-              <button
-                key={String(accept)}
-                disabled={busy}
-                onClick={async () => {
-                  setBusy(true);
-                  try {
-                    await api(`/me/invitations/${i.id}`, "POST", {
-                      accept,
-                      version: i.version,
-                    });
-                    await load();
-                    changed();
-                  } catch (e) {
-                    setError((e as Error).message);
-                  } finally {
-                    setBusy(false);
-                  }
-                }}
-              >
-                {accept ? t("invitations.accept") : t("invitations.decline")}
-              </button>
-            ))}
-          </div>
-        ))}
-        <Feedback message={error} tone="error" />
-      </div>
-    </details>
   );
 }

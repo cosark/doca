@@ -1,6 +1,6 @@
 import { htmlLang } from "@doca/i18n";
 import "@web/features/documents/permissions.css";
-import { useEffect, useState } from "react";
+import { useState } from "react";
 import { api } from "@web/shared/api.js";
 import { UserBadge } from "@web/shared/components/user-badge.js";
 import { Select } from "@web/shared/components/select.js";
@@ -33,7 +33,7 @@ export type Manager = {
   role?: string;
 };
 export function Administrators({ items = [] }: { items?: Manager[] }) {
-const { t, locale } = useI18n();
+  const { t } = useI18n();
 
   return items.length > 0 ? (
     <div className="access-administrators">
@@ -176,54 +176,5 @@ export function InvitationRows({
       ))}
       {error && <Feedback tone="error" message={error} />}
     </>
-  );
-}
-export function DocumentInvitations({
-  id,
-  isOwner,
-  changed,
-}: {
-  id: string;
-  isOwner: boolean;
-  changed: () => Promise<void>;
-}) {
-const { t, locale } = useI18n();
-
-  const [items, setItems] = useState<Invitation[]>([]),
-    [error, setError] = useState(""),
-    [all, setAll] = useState(false);
-  async function load() {
-    const r = await api<{ items: Invitation[] }>(
-      `/resources/${id}/invitations`,
-    );
-    setItems(r.items);
-  }
-  useEffect(() => {
-    void load().catch((e) => setError(e.message));
-  }, [id]);
-  return (
-    <section>
-      <p className="subtle">{t("accessUi.manageHelp")}</p>
-      <label className="permissions-filter">
-        <input
-          type="checkbox"
-          checked={all}
-          onChange={(e) => setAll(e.target.checked)}
-        />{t("accessUi.includeEnded")}</label>
-      <InvitationRows
-        items={items.filter((i) => all || i.state === "pending")}
-        isOwner={isOwner}
-        refresh={async () => {
-          await load();
-          await changed();
-        }}
-      />
-      {!items.some((i) => all || i.state === "pending") && (
-        <p className="permissions-empty">
-          {all ? t("accessUi.noInvitations") : t("accessUi.noPending")}
-        </p>
-      )}
-      {error && <Feedback tone="error" message={error} />}
-    </section>
   );
 }

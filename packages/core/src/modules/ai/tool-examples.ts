@@ -16,6 +16,11 @@ const editBase = {
 };
 
 export const TOOL_EXAMPLES: Record<string, Record<string, unknown>[]> = {
+  canvas_view: [
+    { resourceId: SAMPLE.doc },
+    { resourceId: SAMPLE.doc, elementIds: ["从 document_read 读取的对象ID"] },
+    { resourceId: SAMPLE.doc, region: { x: 0, y: 0, width: 800, height: 600 } },
+  ],
   knowledge_book: [
     { action: "list", offset: 0 },
     { action: "read", bookId: SAMPLE.doc },
@@ -364,7 +369,7 @@ export const TOOL_EXAMPLES: Record<string, Record<string, unknown>[]> = {
       edges:[{id:"e1",sourceId:"start",targetId:"finish",mode:"elbow"}]}] },
     { ...editBase, operations: [{type:"createMindmap",id:"new-mind",x:500,y:300,layout:"balanced",topic:{id:"root",text:"项目",children:[{id:"design",text:"设计"},{id:"dev",text:"开发"}]}}] },
     { ...editBase, operations: [{type:"createTable",id:"new-table",x:60,y:60,cells:[["任务","负责人"],["设计","小林"]]},{type:"table",id:"new-table",command:{kind:"cell",row:1,column:1,text:"小周"}}] },
-    { ...editBase, operations: [{type:"createContainer",id:"new-phone",x:60,y:60,containerType:"phone",title:"首页"},{type:"add",parentId:"new-phone",element:{id:"new-card",tag:"Rect",x:24,y:120,width:342,height:160,cornerRadius:16,fill:"#eaf1ff"}}] },
+    { ...editBase, operations: [{type:"createContainer",id:"new-phone",x:60,y:60,containerType:"phone",title:"首页",children:[{id:"new-card",tag:"Rect",x:24,y:120,width:342,height:160,cornerRadius:16,fill:"#eaf1ff"},{id:"new-heading",tag:"Text",x:40,y:140,width:310,height:32,text:"今日阅读",fontSize:24,fill:"#1f2329"}]}] },
   ],
   presentation_edit: [
     { ...editBase, operations: [{type:"table",slideId:"已读取的页面ID",id:"已读取的表格ID",command:{kind:"style",rows:["已读取的rowIds[0]"],columns:["已读取的columnIds[0]"],style:{bold:true,backgroundColor:"#eaf1ff"}}}] },

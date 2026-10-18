@@ -8,8 +8,6 @@ import {
   ShieldCheck,
   Sparkles,
   Search,
-  FileText,
-  Link2,
   Trash2,
   Plus,
   Layers,
@@ -43,7 +41,6 @@ import type {
   BookFeedbackInput,
   BookSourceInput,
   BookSourceBinding,
-  BookWorkflow,
 } from "@core/modules/knowledge-books/protocol.js";
 import { BookRunList, type BookRunSummary } from "./book-run-list.js";
 import { BookRunPipeline, type BookPipelineRun } from "./book-run-pipeline.js";

@@ -90,9 +90,3 @@ export async function* extractPdfPages(body: Buffer): AsyncGenerator<PdfPart> {
     await doc.destroy();
   }
 }
-
-export async function extractPdfPartsRich(body: Buffer): Promise<PdfPart[]> {
-  const parts: PdfPart[] = [];
-  for await (const part of extractPdfPages(body)) parts.push(part);
-  return parts;
-}

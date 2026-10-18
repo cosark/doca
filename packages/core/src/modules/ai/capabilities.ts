@@ -81,7 +81,7 @@ function compactEditingGuide(format: string, skillId?: string) {
         : format === "presentation"
           ? '删除元素用 {type:"remove",slideId,ids:[元素ID]}；样式用 {type:"formatText",slideId,ids:[元素ID],marks:{color:"#2563eb"}}；背景用 {type:"slideProperty",slideId,field:"background",value:"#ffffff"}。改正文用 {type:"replaceText",slideId,id,query:"原段落准确文字",text:"新文字"}；query 不跨段落。禁止 patch.paragraphs，SDK 不支持；省略 slideId/id 会全稿替换。不要用 blockId、elementId 或 params 代替 ids/marks。'
           : format === "canvas"
-            ? '流程图优先 createFlowchart，思维导图用 createMindmap，表格用 createTable/table，手机和平板 UI 用 createContainer（phone/tablet）后 add 元素并带 parentId。坐标均为父容器内像素。原生关联放 data.kind/parentId/sourceId/targetId；不能用普通 Rect 加文字冒充原生节点。table 使用零基行列，修改前按 elementId 读取完整表格。data 为整字段替换，patch 时保留原有元数据。'
+            ? '流程图优先 createFlowchart，思维导图用 createMindmap，表格用 createTable/table，APP/手机/平板/网页 UI 用 createContainer（phone/tablet/web），将整页元素一次放在 children 数组内形成真实父子层级；不能把空设备壳和内容放到同层。后续 add 内容必须在操作顶层带所属容器 parentId。坐标均为父容器内像素。原生关联放 data.kind/parentId/sourceId/targetId；不能用普通 Rect 加文字冒充原生节点。table 使用零基行列，修改前按 elementId 读取完整表格。data 为整字段替换，patch 时保留原有元数据。'
             : "";
   return `editTool=${format}_edit。可用命令：${ops.join("、")}。${extra}完整手册 load_skill id=${skillId ?? format}。`.trim();
 }
@@ -94,6 +94,7 @@ export function documentCapabilities(format: string) {
   return {
     format,
     editTool: `${format}_edit`,
+    ...(format === "canvas" ? { viewTool: "canvas_view" } : {}),
     loadSkill: skill?.id,
     operations: commands[key] ?? [],
     nativeDiagrams: format === "rich_text" ? ["flowchart", "mindmap"] : [],
@@ -159,6 +160,7 @@ export function documentReadCapabilities(
 ): Partial<Pick<ReturnType<typeof documentCapabilities>, "editTool" | "operations" | "nativeDiagrams" | "loadSkill" | "note" | "editingGuide"> & {
   spreadsheetHint: ReturnType<typeof spreadsheetReadHint>;
   nativeTables: ReturnType<typeof canvasTableSummary>;
+  visualRead?: { tool: string; instruction: string };
 }> {
   if (offset !== 0) return {};
   const caps = documentCapabilities(format);
@@ -170,6 +172,10 @@ export function documentReadCapabilities(
     note: caps.note,
     editingGuide: caps.editingGuide,
     ...(format === "canvas" ? {nativeTables: canvasTableSummary(value)} : {}),
+    ...(format === "canvas" ? { visualRead: {
+      tool: "canvas_view",
+      instruction: "有视觉要求时，修改前先看整板，保存后再查看整板和必要局部。JSON 只能验证结构，不能代替看图。",
+    } } : {}),
     spreadsheetHint:
       format === "spreadsheet" ? spreadsheetReadHint(value as any) : undefined,
   };

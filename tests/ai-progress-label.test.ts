@@ -69,6 +69,15 @@ it("labels the candidate-region tool in both locales on web and mobile", async (
   }
 });
 
+it("labels canvas visual reads on web and mobile", async () => {
+  const mobile = await import("../apps/mobile/src/ai-progress-label.js");
+  const event = { id: "canvas", at: "2026-10-18T00:00:00.000Z", kind: "tool", code: "tool_call", data: { toolName: "canvas_view" }, status: "success" } as AIProgressEvent;
+  for (const label of [aiEventLabel, mobile.aiEventLabel]) {
+    expect(label(event, createTranslator("zh"))).toBe("查看画板画面");
+    expect(label(event, createTranslator("en"))).toBe("Inspect canvas image");
+  }
+});
+
 it("uses safe labels for missing, future and inherited object keys", async () => {
   const mobile = await import("../apps/mobile/src/ai-progress-label.js");
   const web = await import("../apps/web/src/features/ai/ai-progress-label.js");

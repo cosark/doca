@@ -18,7 +18,6 @@ import { uploadLimits, validateObjectKey } from "../services/storage-policy.js";
 import {
   parseFileStoreEnvironment,
   configuredFileStore,
-  type HostFileStoreConfiguration,
 } from "../services/file-store-config.js";
 import { fail } from "@core/shared/errors.js";
 

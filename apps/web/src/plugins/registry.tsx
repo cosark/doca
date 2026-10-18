@@ -1,5 +1,5 @@
 import { FileText } from "lucide-react";
-import { BookOpen, FolderOpen, Home, Users, type LucideIcon } from "lucide-react";
+import { BookOpen, FolderOpen, Users, type LucideIcon } from "lucide-react";
 import type { ReactNode } from "react";
 import type { PluginPageHeader } from "./page-header.js";
 import type {

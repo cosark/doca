@@ -23,14 +23,14 @@ import {
   thumbnailFor,
 } from "../services/stored-objects.js";
 import { sendFileContent } from "../services/file-content.js";
-import { createHash, randomBytes, randomUUID } from "node:crypto";
+import { randomUUID } from "node:crypto";
 import { Type } from "@sinclair/typebox";
 import type { FastifyInstance, FastifyRequest } from "fastify";
 import { authorize } from "@core/modules/access/queries.js";
 import { createFolderSharing } from "@core/modules/access/folder-sharing.js";
 import type { Actor } from "@core/modules/identity/passwords.js";
-import { AppError, fail } from "@core/shared/errors.js";
-import { isRetiredKnowledgeSessionFile, knowledgeFolderKind, knowledgeFileLocation, projectKnowledgeSessionFiles, readKnowledgeSessionFolder, requireKnowledgeFolder } from "@core/modules/knowledge/file-folders.js";
+import { fail } from "@core/shared/errors.js";
+import { isRetiredKnowledgeSessionFile, knowledgeFolderKind, knowledgeFileLocation, readKnowledgeSessionFolder } from "@core/modules/knowledge/file-folders.js";
 import {
   isCopyOnlyParent,
   normalizeFolderParentId,

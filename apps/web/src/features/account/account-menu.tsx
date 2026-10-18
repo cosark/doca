@@ -1,10 +1,9 @@
 import { NavigationArea } from "@web/plugins/navigation.js";
-import { useEffect, useRef, useState } from "react";
+import { useEffect, useRef } from "react";
 import { Tooltip } from "antd";
-import { UserRound, Settings, ShieldCheck, House, LogOut } from "lucide-react";
-import { api, type Me, type User } from "@web/shared/api.js";
+import { House, LogOut } from "lucide-react";
+import type { Me, User } from "@web/shared/api.js";
 import { Avatar } from "@web/features/account/profile.js";
-import { htmlLang } from "@doca/i18n";
 import { useI18n } from "@web/shared/i18n.js";
 export function AccountMenu({
   user,
@@ -21,9 +20,8 @@ export function AccountMenu({
   refresh: () => Promise<void>;
   showWorkspaceLink?: boolean;
 }) {
-  const { locale, t } = useI18n();
-  const root = useRef<HTMLDetailsElement>(null),
-    [busy, setBusy] = useState(false);
+  const { t } = useI18n();
+  const root = useRef<HTMLDetailsElement>(null);
   const close = () => {
     if (root.current) root.current.open = false;
   };

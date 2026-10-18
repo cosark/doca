@@ -11,7 +11,6 @@ import {
   storageConfigForProfile,
   storageRuntime,
   type StorageRuntime,
-  type StorageConfig,
 } from "../../adapters/storage.js";
 import { storageObjectIdForAsset } from "./file-extract.js";
 import { modelImage } from "./model-image.js";

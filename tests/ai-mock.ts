@@ -283,7 +283,23 @@ export function mockAI(
         );
       });
     const messages: any[] = body.messages;
-    const lastUser = messages.findLastIndex((m) => m.role === "user");
+    const isReview = body.tools?.some(
+      (tool: any) => tool.function?.name === "submit_review",
+    );
+    // Hoisted image frames are additional user messages, not a new review request.
+    const lastUser = messages.findLastIndex((m) => {
+      if (m.role !== "user") return false;
+      if (!isReview) return true;
+      try {
+        const text = Array.isArray(m.content)
+          ? m.content.filter((part: any) => part.type === "text")
+              .map((part: any) => part.text).join("\n")
+          : m.content;
+        return Array.isArray(JSON.parse(text).artifacts);
+      } catch {
+        return false;
+      }
+    });
     const userContent = messages[lastUser]?.content;
     const combined = Array.isArray(userContent)
       ? userContent
@@ -302,7 +318,10 @@ export function mockAI(
       .filter((m) => m.role === "tool")
       .map((m) => {
         try {
-          return JSON.parse(m.content);
+          const value = JSON.parse(m.content);
+          return Array.isArray(value)
+            ? JSON.parse(value.find(part => part.type === "text").text)
+            : value;
         } catch {
           return { error: String(m.content) };
         }
@@ -326,9 +345,7 @@ export function mockAI(
       role: "assistant",
       content: "这是模拟 AI 的回答，用于验证会话、页面和积分。",
     };
-    if (
-      body.tools?.some((t: any) => t.function?.name === "submit_review")
-    ) {
+    if (isReview) {
       const request = JSON.parse(prompt);
       const reads = results.filter((r) => r.resource);
       const current = reads.at(-1);
@@ -342,13 +359,18 @@ export function mockAI(
         const remaining = request.artifacts.find(
           (id: string) => !reads.some((r) => r.resource.id === id),
         );
+        const unseenCanvas = reads.find((r) => r.resource.format === "canvas" &&
+          !results.some(result => result.kind === "canvas_view" &&
+            result.resourceId === r.resource.id && result.view === "overview"));
         message = remaining
           ? call("document_read", {
               resourceId: remaining,
               offset: 0,
               limit: 30000,
             })
-          : results.some((r) => r.accepted)
+          : unseenCanvas
+            ? call("canvas_view", { resourceId: unseenCanvas.resource.id })
+            : results.some((r) => r.accepted)
             ? { role: "assistant", content: "模拟验收已完成。" }
             : call("submit_review", {
                 verdict: request.artifacts.length ? "pass" : "revise",

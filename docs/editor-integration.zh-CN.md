@@ -125,3 +125,9 @@ AI 读取/编辑回执补充有界的当前原生表格事实，包括最终行�
 Doca 0.1.31 锁定正式 npm 包 `@smartdoca/canvas` 0.5.2，替代上文临时 0.5.0 tarball；临时包退出运行依赖和构建路径，上一源代码快照保留恢复依据。公开导出、依赖和声明签名相同，声明差异只有一处表格布局注释；模型运行代码逐字节一致。不增加历史读取器、原场景转换、字段补写、codec/schema 变更或 checkpoint/outbox 替换。
 
 新包修复连续中文输入、平移缩放时工具条跟随，并按内容撑高表格行。文字与行几何通过同一原生协同撤销事务保存。宿主继续使用稳定模型、已认证资源与 presence 回调、持久化 ACK 队列。源码、浏览器、镜像及发布证据位于 `docs/verification/release-0.1.31/`；此前 0.5.0 记录保留为当时的验收依据，不代表 0.5.2 全部操作均已验证。
+
+## Canvas 附件预览回调 — 2026-10-18 / Canvas 0.5.3
+
+AidCanvas 源码新增可选 `CanvasEditorProps.onAttachmentPreview(resource: CanvasResource): void | Promise<void>`，沿用 slatetsx 的宿主预览命名。独立附件、富文本内附件和文件工具栏共用此回调；每次点击读取最新 props。附件优先调用它，未提供时调用现有 `onResourcePreview`；图片继续调用 `onResourcePreview`。同步异常和 Promise 失败交给 `onError`。预览只传稳定资源元数据，不解析地址、不写内容或触发协同事务；下载仍由宿主 `resources.resolveDownloadUrl` 鉴权。只读允许这些宿主操作。
+
+此可选 API 已随 [`@smartdoca/canvas` 0.5.3](https://www.npmjs.com/package/@smartdoca/canvas/v/0.5.3) 发布，之前的 0.5.2 类型声明不包含它。公开 tarball 与已测试的 Node 22/npm 10 产物逐字节一致；隔离 React 18 宿主的公共类型检查和四项浏览器场景通过，覆盖最新回调、异常、只读鉴权、对端内容不变及窄屏文件工具栏跟随。Canvas 演示和示例宿主接入；生产 Doca 保持已安装的 0.5.2 包和既有适配器。本轮未修改 Doca 运行时、依赖锁、资产权限、schema、codec、checkpoint 或传输；后续升级产物和适配需要单独验收。

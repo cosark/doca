@@ -13,7 +13,7 @@ import { archiveInvitation, invitationState } from "../access/invitations.js";
 import { protectManagers } from "./context.js";
 import { randomUUID } from "node:crypto";
 import { Doc, encodeStateAsUpdate } from "@smartdoca/slate/yjs";
-import { sql, type Transaction } from "kysely";
+import type { Transaction } from "kysely";
 import type { DB, Resource, Schema } from "../../../../db/src/index.js";
 import { fail } from "../../shared/errors.js";
 import { purgeHistoryArchives, queueHistoryRetention } from "../history/archive.js";

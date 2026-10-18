@@ -300,6 +300,7 @@ export function orderSessionEvents(
 export class SessionEventLog {
   readonly sessionId: string;
   #events: SessionEvent[] = [];
+  readonly #eventIds = new Set<string>();
 
   constructor(sessionId: string, events: readonly SessionEvent[] = []) {
     if (!sessionId) throw new TypeError("sessionId must not be empty");
@@ -330,15 +331,15 @@ export class SessionEventLog {
         "Event ID does not match its session and sequence",
       );
     }
-    if (this.#events.some((item) => item.id === event.id)) {
+    if (this.#eventIds.has(event.id)) {
       throw new ProtocolInvariantError(
         "duplicate_event",
         `Event ${event.id} has already been appended`,
       );
     }
-    this.#events.push(
-      freezeJson(event, "event") as unknown as SessionEvent,
-    );
+    const committed = freezeJson(event, "event") as unknown as SessionEvent;
+    this.#events.push(committed);
+    this.#eventIds.add(committed.id);
   }
 
   snapshot(): readonly SessionEvent[] {

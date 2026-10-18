@@ -1,4 +1,5 @@
 import { searchSourceKey, validateSearchSourceDescriptor } from "./naming.js";
+import { compareText } from "./internals.js";
 import type {
   MaybePromise,
   SearchSource,
@@ -32,10 +33,6 @@ interface RegistryEntry<TContext> {
   readonly token: symbol;
   readonly source: SearchSource<TContext, any>;
   release(): Promise<void>;
-}
-
-function compareText(left: string, right: string): number {
-  return left < right ? -1 : left > right ? 1 : 0;
 }
 
 /**

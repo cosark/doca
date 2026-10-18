@@ -9,7 +9,6 @@ import type { Actor } from "../identity/passwords.js";
 import { isResourceOwnerLike, ranks, type Grant } from "./policy.js";
 import { accessContext, activeActor, authorize } from "./queries.js";
 import { emitIntegrationEvent } from "../automation/events.js";
-import { notify } from "../interactions/community.js";
 import { syncInvitationTicket, syncTicket } from "../tickets/store.js";
 export function expiry(value: string | null | undefined) {
   if (!value) return null;

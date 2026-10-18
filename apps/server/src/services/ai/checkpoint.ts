@@ -39,7 +39,7 @@ export function checkpointMessages(messages: any[]) {
     if (output?.type !== "content" || !Array.isArray(output.value)) return output;
     const values = output.value.filter((part: any) => !["media", "file"].includes(part.type));
     if (values.length === output.value.length) return output;
-    return { ...output, value: [...values, { type: "text", text: "图像像素未复制进检查点；来源、文件与 referenceImageId 仍然有效。需要看图时调用 attachment_read/file_read，生成结果用 image_show，无需用户重传。" }] };
+    return { ...output, value: [...values, { type: "text", text: "图像像素未复制进检查点；来源、文件与 referenceImageId 仍然有效。需要看图时调用 attachment_read/file_read，生成结果用 image_show，画板用 canvas_view 重新查看，无需用户重传。" }] };
   };
   return messages.map(message => !Array.isArray(message.content) ? message : ({ ...message, content: message.content.map((part: any) => {
     // Mastra attaches modelOutput to both the call and its result.

@@ -11,7 +11,7 @@
 | `createFlowchart` | id/x/y、带 id/text/x/y/width/height/shape 的 nodes、带 id/sourceId/targetId/mode/可选 label 的 edges；生成 diagram-node/body/label 和绑定端点的 connector |
 | `createMindmap` | id/x/y、递归 topic{id,text,children?}、layout=right/left/balanced；生成 mindmap/mind-node/mind-edge，逻辑关系保存在 data.parentId |
 | `createTable` | id/x/y、矩形 cells 字符串矩阵、可选完整 columnWidths/rowHeights；生成 board-table/table-cell/原生 Text |
-| `createContainer` | id/x/y/containerType/title；phone、tablet、web、wide、standard、a4、section，生成原生 frame 容器 |
+| `createContainer` | id/x/y/containerType/title、可选原生 children 数组；phone、tablet、web、wide、standard、a4、section，生成原生 frame 容器 |
 | `table` | id 为原生表格分组 ID，command 为下表命令 |
 
 表格行列从 0 开始，区域端点均包含：
@@ -29,7 +29,7 @@
 
 画布表格最多 100 行、30 列。富文本格合并尚不支持，会明确拒绝，不能清除格式绕过保护。原生表格结构必须走 `table`，直接 add/remove/place 子节点、ungroup 表格或 patch.data 覆盖行列会拒绝；整表移动、删除及基础原生绘图仍可用。
 
-手机为 390×844，tablet 为 820×1180；内容用 `add` 并指定容器 `parentId`，坐标相对父容器。手机顶部 100、底部 30 像素避开设备装饰，平板顶部留 60 像素。图案用原生可编辑 Path/Polygon/Star/Ellipse/Text 等组合。Polygon/Line 的 points 只接受当前原生扁平数字数组或 `{x,y}` 对象数组，不接受嵌套点对；Path 使用 path 字段，SVG 的 d 会明确报错。原生合法的 parentId:null 表示根节点，无输入猜测或转换。
+手机为 390×844，tablet 为 820×1180。新建 APP/手机/平板/网页 UI 时，用 `createContainer.children` 一次写入整页原生内容，嵌套组件沿用节点的 `children`；后续追加用 `add`，在操作顶层指定所属容器 `parentId`。空设备壳和同层内容不构成页面层级。坐标相对父容器，移动容器会携带整页内容；outline 显式返回实际结构 `parentId` 供核对。子节点递归使用与 `add` 相同的类型/属性校验，失败整批不写入。沿用当前 Canvas schema 1，无旧场景转换。手机顶部 100、底部 30 像素避开设备装饰，平板顶部留 60 像素。图案用原生可编辑 Path/Polygon/Star/Ellipse/Text 等组合。Polygon/Line 的 points 只接受当前原生扁平数字数组或 `{x,y}` 对象数组，不接受嵌套点对；Path 使用 path 字段，SVG 的 d 会明确报错。原生合法的 parentId:null 表示根节点，无输入猜测或转换。
 
 Rect/Ellipse/Star 默认 x/y 为外接矩形左上角。中心为 `(400,400)`、直径 280 的圆应传 `x:260,y:260,width:280,height:280`，不能直接传圆心。文字居中明确提供包围盒和 textAlign；skill 先规划主体边界，再安排五官、装饰和标签。
 
@@ -56,6 +56,24 @@ Rect/Ellipse/Star 默认 x/y 为外接矩形左上角。中心为 `(400,400)`、
 
 独立 AI 验收通过当前 SDK 的流式接口完整消费模型输出，减少长响应期间网关空闲超时；只读工具、固定快照、完整读取和 submit_review 校验仍沿用原规则。部分响应、截断或未提交有效记录都不能算通过。
 
+## 画板视觉读取与验收
+
+`canvas_view` 把保存的画板通过当前已安装组件的原生 SVG 导出与隔离 Chromium 渲染为 PNG，图片作为真正的模型视觉输入传输，JSON 回执只保存来源、版本、世界坐标和导出警告。执行 AI 与独立验收 AI 都有此只读工具：
+
+- `{resourceId}` 看完整画板；
+- `{resourceId,elementIds:["对象ID"]}` 看对象及子树，保留祖先变换；
+- `{resourceId,region:{x,y,width,height}}` 看世界坐标局部，不能同时传 elementIds。
+
+图片最长边 1600 像素，最多 2 倍放大；`sourceRect` 与 `pixelsPerUnit` 给出图像到画板的映射。现有画板的视觉修改先看图，再按 ID 读取完整对象并编辑；保存后再看整板与必要细节，检查遮挡、溢出、错位和可读性。空板返回明确标识的白色视图。
+
+验收的 JSON 和图片读取共用每轮固定快照。通过前，每份画板成果必须完整读取原生内容，并有同一快照的整板图片实际送达模型、模型响应成功结束的证据。局部图、未传输的图片、文字回执以及执行 AI 的自述都不能替代。当前任务须选择已启用图片理解的模型；没有视觉能力、渲染器缺失或渲染失败时不得声称视觉验收通过。
+
+这是内容的原生导出视图，不含编辑器工具栏、光标或当前未提交草稿。字体、描边及不受支持的效果可能和浏览器编辑器存在差异，原生导出警告原样提供，不能宣称所有编辑器效果完全一致。其他文档格式仍只做原生内容与保存检查。
+
+`pnpm build`、`pnpm dev` 和 `pnpm dev:workspace` 会先生成服务端浏览器渲染包，也可单独运行 `pnpm build:canvas-render`。复用 PDF 的 Chromium 配置 `DOCA_PDF_CHROMIUM`；Docker 已包含 Chromium 和中文字体。每次渲染使用独立、启用沙箱且禁用网络的浏览器，只向其提供通过宿主权限检查的图片字节，不带用户登录信息。图片只在当前任务内存中存在，不创建资产、文档版本或新保存通道。没有编辑器升级、存储格式转换、数据库变更或新增历史兼容规则。
+
+隔离测试 `tests/ai-canvas-view.test.ts` 使用真实 Chromium 验证像素、负坐标、选区、裁切、导出警告、权限及无写入；模拟模型的完整任务验证实际多模态请求、未看图拒绝通过、固定快照和协作者后续修改。尚未用外部真实模型验证审美判断质量。
+
 ## 用户已确认的清理范围
 
 删除画布/PPT 工具的旧参数别名、元素类型猜测、扁平文本重建、缺失 ID/rotation 补写以及像素/EMU 自动判断。当前接口之外的调用明确失败，不自动转换。富文本和电子表格的既有规范化不在本次清理范围内。
@@ -76,4 +94,4 @@ pnpm exec tsx scripts/qa-ai-native-creativity.mts
 
 密钥文件由操作者在仓库外创建并限制权限，完成后删除。脚本不保存请求头、密钥或用户数据；模型跟踪、原生投影、真实截图、PPTX 往返和报告写到指定的已忽略 artifacts 目录。可用 `DOCA_QA_CASES=ppt,flowchart,mindmap,table,ui,pattern` 选择场景，用 `DOCA_QA_PORT` 分离独立运行。
 
-独立 AI 验收器当前只验证保存和原生内容；结构检查不能冒充视觉验收。实际画面需另行检查生成的浏览器截图。生产环境、Office/WPS 视觉往返和全部输入法不属于此脚本的验证结论。
+独立 AI 验收器对画板同时检查保存内容与 `canvas_view` 图像；其他格式仍只验证保存和原生内容，结构检查不能冒充视觉验收。脚本生成的完整浏览器截图可补充检查编辑器与原生导出差异。生产环境、Office/WPS 视觉往返和全部输入法不属于此脚本的验证结论。
