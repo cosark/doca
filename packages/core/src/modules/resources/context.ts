@@ -1,3 +1,4 @@
+import { resourceAccessState } from "../access/resource-access-state.js";
 import { effectiveResource } from "../access/inheritance.js";
 import type { Transaction } from "kysely";
 import { randomUUID } from "node:crypto";
@@ -42,6 +43,7 @@ export interface Context {
   resources: Resource[];
   grants: Grant[];
   actor: Actor | null;
+  activeUserIds: ReadonlySet<string>;
   managerInfoVisible?: boolean;
   distribution?: Distribution;
 }
@@ -81,6 +83,7 @@ export function project(ctx: Context, r: Resource) {
       : null;
   return {
     ...r,
+    access_state: resourceAccessState(r, ctx.resources, ctx.grants, ctx.activeUserIds),
     visibility:
       r.visibility === "invited" && r.requests_enabled
         ? ("requestable" as const)

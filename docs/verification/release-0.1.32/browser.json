@@ -1,0 +1,13 @@
+{
+  "result": "passed",
+  "checks": [
+    "Slate 0.4.23 Leafer workspace opens, cancels and refreshes its preview without content writes",
+    "host user directory, native mention, authorized document paste, durable ACK and reference index",
+    "host keyboard undo and redo preserve atomic inline identity",
+    "Canvas attachment preview callback opens the authorized host file viewer",
+    "uploaded rich attachment and native inline references survive reload and readonly",
+    "60-second idle across two real host pages produces zero writes"
+  ],
+  "errors": [],
+  "idleSeconds": 60
+}

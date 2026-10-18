@@ -1,3 +1,5 @@
+import { ResourceAccessTag } from "@web/features/documents/resource-access-tag.js";
+import { splitTitleIcon } from "@web/shared/utils/resource-title.js";
 import { CollectionAction } from "@web/features/discovery/collection-action.js";
 import { useI18n } from "@web/shared/i18n.js";
 import { htmlLang } from "@doca/i18n";
@@ -239,6 +241,7 @@ export function Dashboard({
   const tableHeader = (
     <div className="document-table-head">
       <span>{t("home.titleColumn")}</span>
+      <span className="table-access">{t("resourceAccess.column")}</span>
       <span>{t("home.location")}</span>
       <span>{t("home.owner")}</span>
       <button onClick={() => setSort("created_at")}>{t("home.created")}</button>
@@ -582,7 +585,7 @@ export function Dashboard({
                     }}
                   >
                     <FileIcon r={r} />
-                    <span>{r.title}</span>
+                    <span className="resource-title-text" title={r.title}>{splitTitleIcon(r.title).text}</span>
                   </button>
                   {home && (
                     <span className="table-row-actions">
@@ -598,6 +601,7 @@ export function Dashboard({
                     </span>
                   )}
                 </div>
+                <span className="table-access">{r.kind === "document" && <ResourceAccessTag state={r.access_state} />}</span>
                 <span
                   className={`table-location ${r.inLibrary || r.library_id || r.kind === "library" ? "in-library" : "personal"}`}
                   title={

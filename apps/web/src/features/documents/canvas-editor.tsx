@@ -1,3 +1,4 @@
+import { useCanvasRichExtensions } from "./canvas-rich-extensions.js";
 import { useI18n } from "@web/shared/i18n.js";
 import { useAI } from "@web/features/ai/ai-context.js";
 import { useDocumentReadOnly } from "@web/features/documents/document-mode.js";
@@ -106,6 +107,7 @@ export default function CanvasDocument({
 }) {
   const { locale, t } = useI18n();
   const ai = useAI();
+  const richTextExtensions = useCanvasRichExtensions();
   const attachmentPreview = useAttachmentPreview();
   const aiRef = useRef(ai);
   aiRef.current = ai;
@@ -358,9 +360,11 @@ export default function CanvasDocument({
               autoSave={false}
               mode={editable ? "edit" : "readonly"}
               showHeader={false}
-              className="doca-canvas"
+              richTextExtensions={richTextExtensions}
+          className="doca-canvas"
               resources={resources}
               onResourcePreview={attachmentPreview.onCanvasResourcePreview}
+              onAttachmentPreview={attachmentPreview.onCanvasAttachmentPreview}
               anchors={[
                 ...(showCommentMarks
                   ? anchors

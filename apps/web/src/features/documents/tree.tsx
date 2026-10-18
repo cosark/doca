@@ -1,3 +1,4 @@
+import { splitTitleIcon } from "@web/shared/utils/resource-title.js";
 import { useI18n } from "@web/shared/i18n.js";
 import { Feedback } from "@web/shared/components/feedback.js";
 import { createPortal } from "react-dom";
@@ -268,7 +269,7 @@ export function DocumentTree({
             }}
           >
             <FileIcon r={r} size="compact" />
-            <span>{r.title}</span>
+            <span>{splitTitleIcon(r.title).text}</span>
           </button>
           {roleRank(r.role) >= 3 && (
             <button
