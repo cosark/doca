@@ -7,10 +7,8 @@ import { Dialog } from "@web/features/documents/dialogs.js";
 import { Select } from "@web/shared/components/select.js";
 import {
   VerificationField,
-  compactProofs,
   useFieldLabels,
   type AccountOptions,
-  type Proofs,
 } from "@web/features/auth/account-fields.js";
 export function AccountPolicySettings({
   section = "login",
@@ -322,30 +320,7 @@ const fieldLabels = useFieldLabels();
     </div>
   );
 }
-function MappingAdd({ add }: { add: (key: string) => void }) {
-const { t, locale } = useI18n();
 
-  const [value, setValue] = useState("");
-  return (
-    <div className="verification-code">
-      <input
-        aria-label={t("accountPolicy.newSource")}
-        placeholder={t("accountPolicy.sourceExample")}
-        value={value}
-        maxLength={64}
-        onChange={(e) => setValue(e.target.value)}
-      />
-      <button
-        type="button"
-        disabled={!value.trim()}
-        onClick={() => {
-          add(value.trim());
-          setValue("");
-        }}
-      >{t("accountPolicy.addMapping")}</button>
-    </div>
-  );
-}
 export function AccountContacts() {
 const { t, locale } = useI18n();
 

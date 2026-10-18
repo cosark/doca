@@ -792,9 +792,13 @@ it("displays reasoning from the OpenAI Responses API without any interface setti
   }
 }, 30000);
 it("runs model tool loops for all five native formats and blocks revoked conversation sources", async () => {
+  await (await import("vite")).build({ configFile: "apps/server/canvas-render.vite.config.ts", logLevel: "silent" });
   const c = await configured();
   c.models[0]!.maxOutput = 100_000;
-  await saveAIConfig(db, c, 1);
+  await saveAIConfig(db, {
+    ...c,
+    models: c.models.map(model => ({ ...model, vision: true })),
+  }, 1);
   const calls: any[] = [],
     origin = "http://localhost:39132";
   const sockets: WebSocket[] = [];
@@ -899,7 +903,7 @@ it("runs model tool loops for all five native formats and blocks revoked convers
           break;
         await new Promise((r) => setTimeout(r, 40));
       }
-      expect(result.jobs[0].status, JSON.stringify({ result, calls })).toBe(
+      expect(result.jobs[0].status, JSON.stringify(result.jobs[0])).toBe(
         "completed",
       );
       expect(result.operations).toHaveLength(1);
@@ -927,16 +931,17 @@ it("runs model tool loops for all five native formats and blocks revoked convers
           .statusCode,
       ).toBe(403);
     }
-    expect(calls).toHaveLength(30);
+    expect(calls).toHaveLength(31);
     const audits = calls.filter((c) =>
       c.tools.some((t: any) => t.function.name === "submit_review"),
     );
-    expect(audits).toHaveLength(15);
+    expect(audits).toHaveLength(16);
     expect(
       audits.every((c) =>
         c.tools.every((t: any) =>
           [
             "document_read",
+            "canvas_view",
             "submit_review",
             "web_fetch",
             "web_search",

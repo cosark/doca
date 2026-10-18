@@ -61,14 +61,6 @@ export const systemFolderIds = new Set<string>(
   systemFolders.map((folder) => folder.id),
 );
 
-export const systemLocations = systemFolders.map((folder) => ({
-  type: "system" as const,
-  id: folder.id,
-  name: folder.name,
-  writable: folder.writable,
-  copyOnly: folder.copyOnly,
-}));
-
 export function isFileUuid(value: string) {
   return uuid.test(value);
 }
@@ -227,16 +219,6 @@ export function describeFileParent(parent: FileParent) {
         ? "文档附件，只读，只能复制出去。"
         : null,
   };
-}
-
-export function howToBrowse(parent: FileParent) {
-  return { folderId: parent.id };
-}
-
-export function howToWrite(parent: FileParent) {
-  const info = describeFileParent(parent);
-  if (!info.writable) return null;
-  return { folderId: parent.id };
 }
 
 export function describeFileCopy(parentType: string, parentId: string) {

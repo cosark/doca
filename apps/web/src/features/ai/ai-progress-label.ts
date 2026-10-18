@@ -113,6 +113,7 @@ const toolKeys = {
   rich_text_edit: "ai.progress.tool.richTextEdit",
   markdown_edit: "ai.progress.tool.markdownEdit",
   canvas_edit: "ai.progress.tool.canvasEdit",
+  canvas_view: "ai.progress.tool.canvasView",
   presentation_edit: "ai.progress.tool.presentationEdit",
   spreadsheet_edit: "ai.progress.tool.spreadsheetEdit",
   resource_manage: "ai.progress.tool.resourceManage",

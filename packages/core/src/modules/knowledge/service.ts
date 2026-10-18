@@ -739,16 +739,3 @@ function extractMarkdown(result: string | null | undefined) {
     return "";
   }
 }
-
-export function extractPlainFileText(filename: string, body: Buffer) {
-  const pdf = filename.toLowerCase().endsWith(".pdf") || body.subarray(0, 5).toString() === "%PDF-";
-  if (!pdf) return "";
-  const raw = body.toString("latin1");
-  const parts: string[] = [];
-  for (const match of raw.matchAll(/\((?:\\.|[^\\)]){2,200}\)/g)) {
-    const text = match[0].slice(1, -1).replace(/\\n/g, "\n").replace(/\\([()\\])/g, "$1");
-    if (/[\p{L}\p{N}]/u.test(text)) parts.push(text);
-    if (parts.join("").length > 20000) break;
-  }
-  return parts.join(" ").replace(/\s+/g, " ").trim().slice(0, 20000);
-}

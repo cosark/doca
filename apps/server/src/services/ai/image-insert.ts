@@ -20,7 +20,6 @@ import {
   storageConfigForProfile,
   storageRuntime,
   type StorageRuntime,
-  type StorageConfig,
 } from "../../adapters/storage.js";
 
 function floatingImageSize(width?: number, height?: number) {

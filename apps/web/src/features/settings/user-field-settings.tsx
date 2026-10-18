@@ -6,7 +6,6 @@ import { Select } from "@web/shared/components/select.js";
 import { Feedback } from "@web/shared/components/feedback.js";
 import {
   userFields,
-  type UserFields,
 } from "@core/modules/identity/field-policy.js";
 export function UserFieldSettings({
   security = false,

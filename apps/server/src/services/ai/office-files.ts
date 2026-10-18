@@ -17,10 +17,6 @@ const extByFormat: Record<ExportFormat, string> = {
   pdf: "pdf",
 };
 
-export function exportMime(format: ExportFormat) {
-  return mimeByFormat[format];
-}
-
 export function withExportExtension(name: string, format: ExportFormat) {
   const ext = extByFormat[format];
   const trimmed = name.replace(/[\x00-\x1f\x7f/\\]/g, "_").trim() || "未命名";

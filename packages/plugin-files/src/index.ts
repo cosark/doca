@@ -8,7 +8,6 @@ import {
   type ServiceToken,
 } from "@smartdoca/plugin-sdk";
 import {
-  FILES_SERVICE_ID,
   defineFilesServiceV1,
   type FilesServiceV1,
 } from "@smartdoca/files-capability";

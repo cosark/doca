@@ -12,6 +12,7 @@ import {
 import { lookupUsers, mentionHandle, mentionLabel, type MentionUser } from "@web/features/comments/rich-comments.js";
 import { UserBadge } from "@web/shared/components/user-badge.js";
 import { UserMention } from "@web/shared/components/user-mention.js";
+import { useMentionMenuPosition } from "@web/shared/mention-menu-position.js";
 export const mentionUrl = (id: string) => `#/u/${id}`;
 import { mentionCodec } from "@core/modules/documents/codecs/rich-runtime.js";
 export const mentionPlugin = createAtomicInlineExtension({
@@ -56,13 +57,19 @@ const { t } = useI18n();
   const [target, setTarget] = useState<{
     range: Range;
     q: string;
-    left: number;
-    top: number;
   } | null>(null);
   const [users, setUsers] = useState<MentionUser[]>([]),
     [index, setIndex] = useState(0),
     [error, setError] = useState("");
   const suppressed = useRef("");
+  const menuRef = useMentionMenuPosition(!!target, () => {
+    if (!target || !handle) return null;
+    try {
+      return ReactEditor.toDOMRange(handle.editor, target.range).getBoundingClientRect();
+    } catch {
+      return null;
+    }
+  });
   useEffect(() => {
     const editor = handle?.editor,
       s = editor?.selection;
@@ -105,13 +112,10 @@ const { t } = useI18n();
         setTarget(null);
         return;
       }
-      const range = { anchor: start, focus: s.anchor },
-        r = ReactEditor.toDOMRange(editor, range).getBoundingClientRect();
+      const range = { anchor: start, focus: s.anchor };
       setTarget({
         range,
         q: match[1]!,
-        left: Math.max(8, Math.min(r.left, innerWidth - 290)),
-        top: Math.max(8, Math.min(r.bottom + 8, innerHeight - 300)),
       });
     } catch {
       setTarget(null);
@@ -199,10 +203,10 @@ const { t } = useI18n();
   return target
     ? createPortal(
         <div
+          ref={menuRef}
           className="document-mention-menu"
           role="listbox"
           aria-label={t("comment.mention")}
-          style={{ left: target.left, top: target.top }}
           onMouseDown={(e) => e.preventDefault()}
         >
           {users.map((u, i) => {

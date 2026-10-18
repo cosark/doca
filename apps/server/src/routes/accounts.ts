@@ -14,7 +14,6 @@ import { transact } from "@db/transactions.js";
 import { fail } from "@core/shared/errors.js";
 import { mobileSession, sessionExpiresAt } from "../app/mobile-client.js";
 import {
-  createUser,
   hashPassword,
   recordLogin,
   tokenHash,

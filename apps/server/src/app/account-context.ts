@@ -3,7 +3,7 @@ import type { FastifyRequest } from "fastify";
 import type { Actor } from "@core/modules/identity/passwords.js";
 import { tokenHash } from "@core/modules/identity/passwords.js";
 import type { DB } from "@db/index.js";
-import { fail } from "@core/shared/errors.js";
+
 export type AccountContext = {
   providerReady?: (ref: string) => boolean;
   origin: URL;

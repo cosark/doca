@@ -31,15 +31,12 @@ import { DocumentPeople } from "@web/features/documents/document-people.js";
 import { DocumentName } from "@web/features/documents/document-name.js";
 import {
   AccessGate,
-  AccessTasks,
-  RequestAccess,
-  TodoIcon,
 } from "@web/features/documents/access-tasks.js";
 import { LibraryFavorite } from "@web/features/documents/library-favorite.js";
 import { DocumentReferences } from "@web/features/documents/document-references.js";
 import { PinnedDocuments } from "@web/features/workspace/pinned-nav.js";
 import { DocumentReactionButtons } from "@web/features/documents/document-reactions.js";
-import { LibrarySettings, LibraryLanding, LibrarySystemPage, librarySettingsUrl, librarySystemUrl } from "@web/features/documents/library.js";
+import { LibrarySettings, LibraryLanding, LibrarySystemPage, librarySettingsUrl } from "@web/features/documents/library.js";
 import {
   CommentComposer,
   CommentMessage,
@@ -49,11 +46,12 @@ import { Select } from "@web/shared/components/select.js";
 import { realtime } from "@web/features/documents/realtime.js";
 import { UserBadge } from "@web/shared/components/user-badge.js";
 import { setCurrentUserId } from "@web/shared/components/user-mention.js";
-import React, { lazy, Suspense, useEffect, useLayoutEffect, useState, useRef, useMemo, useSyncExternalStore } from "react";
+import { lazy, Suspense, useEffect, useLayoutEffect, useState, useRef, useMemo, useSyncExternalStore } from "react";
 import { loadBootstrap } from "@web/shared/bootstrap.js";
+import { documentFavicon } from "@web/shared/utils/document-favicon.js";
 import { loadWebPlugins } from "@web/plugins/load.js";
 import { cacheStartupDocument, clearDocumentStartupCache, documentStartupCacheKey, forgetStartupDocument, invalidateStartupIdentity, readDocumentStartup, readStartupAccount } from "@web/shared/document-startup-cache.js";
-import { BookOpen, Sparkles, Plus, Search, Clock, Users, Trash2, Settings, Bell, MoreHorizontal, ShieldCheck, ThumbsUp, LogOut, FolderOpen, ArrowLeft, Home, PanelLeft, LockKeyhole, UserRound, BookOpenCheck, Network, MessageSquare } from "lucide-react";
+import { BookOpen, Plus, Search, Users, Settings, Bell, ShieldCheck, ThumbsUp, LogOut, FolderOpen, ArrowLeft, PanelLeft, LockKeyhole, UserRound, BookOpenCheck } from "lucide-react";
 import {
   api,
   roleRank,
@@ -70,18 +68,16 @@ import {
   TransferDialog,
   MoveDialog,
 } from "@web/features/documents/dialogs.js";
-import { AuthCompletion, ExternalLoginOptions } from "@web/features/auth/authentication.js";
+import { AuthCompletion } from "@web/features/auth/authentication.js";
 import { DocumentTree } from "@web/features/documents/tree.js";
 import { Dashboard, GlobalSearch } from "@web/features/workspace/dashboard.js";
 import { Avatar, Profile, PersonalSettings } from "@web/features/account/profile.js";
 import { CoverDialog, ResourceActionDialog } from "@web/features/documents/uploads.js";
 import "@web/styles/globals.css";
-import { FileIcon } from "@web/features/documents/document-controls.js";
 import type { FileLocation } from "@web/features/files/files.js";
 import { MobileTicketRedeem, postMobileEditor } from "@web/features/mobile/ticket-redeem.js";
 import { SubscribeLibraryHost } from "@web/features/knowledge/subscribe-library.js";
 import {
-  pluginInstalled,
   pluginMessage,
   webPluginRegistry,
 } from "@web/plugins/registry.js";
@@ -504,6 +500,14 @@ function WorkspaceApp() {
     const resourceTitle = currentDetail?.resource.title.trim() ?? "";
     document.title = resourceId && resourceTitle ? resourceTitle : siteTitle;
   }, [bootstrap?.siteName, t, resourceId, currentDetail?.resource.title]);
+  useEffect(() => {
+    const href = documentFavicon(currentDetail?.resource.title ?? "");
+    const icon = document.querySelector<HTMLLinkElement>('link[rel="icon"]');
+    if (!href || !icon) return;
+    const originalHref = icon.href;
+    icon.href = href;
+    return () => { icon.href = originalHref; };
+  }, [currentDetail?.resource.title]);
   useEffect(() => {
     if (!bootstrap?.user) return;
     const beat = () => {

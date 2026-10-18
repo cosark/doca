@@ -1,0 +1,25 @@
+{
+  "sandbox": true,
+  "pdfBytes": 30730,
+  "canvas": {
+    "width": 470,
+    "height": 342,
+    "sourceRect": {
+      "x": -108,
+      "y": -8,
+      "width": 235,
+      "height": 171
+    },
+    "warnings": [
+      {
+        "code": "FONT_NOT_EMBEDDED_SYSTEM_FALLBACK",
+        "message": "FONT_NOT_EMBEDDED_SYSTEM_FALLBACK",
+        "elementId": "label"
+      }
+    ],
+    "selection": true,
+    "regionPixels": true,
+    "sourceUnchanged": true
+  },
+  "passed": true
+}

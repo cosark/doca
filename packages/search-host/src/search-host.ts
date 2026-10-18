@@ -5,6 +5,7 @@ import {
   type SearchIndexNames,
 } from "./naming.js";
 import { SearchSourceRegistry } from "./registry.js";
+import { compareText, copyDescriptor } from "./internals.js";
 import type {
   FederatedSearchResult,
   SearchFailureStage,
@@ -115,21 +116,6 @@ interface RankedValue {
 interface SourceQueryResult {
   readonly values: readonly RankedValue[];
   readonly failure?: SearchSourceFailure;
-}
-
-function compareText(left: string, right: string): number {
-  return left < right ? -1 : left > right ? 1 : 0;
-}
-
-function copyDescriptor(
-  descriptor: SearchSourceDescriptor,
-): SearchSourceDescriptor {
-  return {
-    pluginId: descriptor.pluginId,
-    sourceId: descriptor.sourceId,
-    schemaVersion: descriptor.schemaVersion,
-    renderer: { ...descriptor.renderer },
-  };
 }
 
 function validatePagination(offset: number, limit: number): void {

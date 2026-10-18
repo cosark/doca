@@ -3,7 +3,6 @@ import type { Actor } from "../identity/passwords.js";
 import type { BookArtifact } from "./protocol.js";
 import { bookNodeInputs } from "./protocol.js";
 import {
-  readKnowledgeBook,
   readBookRun,
   readBookRelease,
   readKnowledgeBookSummary,
@@ -12,22 +11,6 @@ import {
 } from "./reads.js";
 import { bookFail as fail } from "./errors.js";
 
-/** Small manifests let a personal assistant inspect a large book page by page. */
-export function bookArtifactManifest(artifact: BookArtifact | null) {
-  if (!artifact) return null;
-  return {
-    pages: artifact.pages.map((page) => ({
-      id: page.id,
-      title: page.title,
-      path: page.path,
-      paragraphCount: page.paragraphs.length,
-    })),
-    checks: artifact.checks,
-    evidenceCount: artifact.evidence.length,
-    claimCount: artifact.claims.length,
-    provenanceNodeCount: artifact.provenance.nodes.length,
-  };
-}
 export async function readBookForAssistant(db: DB, actor: Actor, id: string) {
   const book = await readKnowledgeBookSummary(db, actor, id);
   return {

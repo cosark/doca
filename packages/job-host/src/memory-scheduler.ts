@@ -111,26 +111,22 @@ export class MemoryJobSchedulerAdapter implements JobSchedulerAdapter {
     if (!Number.isFinite(nowMs)) throw new TypeError("Lease time is invalid");
     if (!Number.isSafeInteger(request.leaseMs) || request.leaseMs <= 0)
       throw new TypeError("leaseMs must be a positive safe integer");
-    const candidate = [...this.#jobs.values()]
-      .filter(
-        (job) =>
-          ((job.state === "queued" || job.state === "retry") &&
-            job.availableAt <= request.now) ||
-          (job.state === "leased" &&
-            job.leaseUntil !== undefined &&
-            job.leaseUntil <= request.now),
+    let candidate: MutableJobRecord | undefined;
+    for (const job of this.#jobs.values()) {
+      const ready =
+        ((job.state === "queued" || job.state === "retry") &&
+          job.availableAt <= request.now) ||
+        (job.state === "leased" &&
+          job.leaseUntil !== undefined &&
+          job.leaseUntil <= request.now);
+      if (
+        ready &&
+        (!candidate ||
+          job.availableAt < candidate.availableAt ||
+          (job.availableAt === candidate.availableAt && job.id < candidate.id))
       )
-      .sort((left, right) =>
-        left.availableAt < right.availableAt
-          ? -1
-          : left.availableAt > right.availableAt
-            ? 1
-            : left.id < right.id
-              ? -1
-              : left.id > right.id
-                ? 1
-                : 0,
-      )[0];
+        candidate = job;
+    }
     if (!candidate) return undefined;
 
     candidate.state = "leased";

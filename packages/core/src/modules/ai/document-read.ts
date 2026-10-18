@@ -165,10 +165,11 @@ function markdownOutline(text: string) {
   return { length: text.length, headings, preview: clip(text, 400) };
 }
 
-function canvasNodes(nodes: any[] | undefined, depth = 0): unknown[] {
+function canvasNodes(nodes: any[] | undefined, depth = 0, parentId: string | null = null): unknown[] {
   if (!nodes?.length || depth > 8) return [];
   return nodes.slice(0, 200).map((n) => ({
     id: n?.id,
+    parentId,
     tag: n?.tag,
     name: n?.name,
     kind: n?.data?.kind,
@@ -190,7 +191,7 @@ function canvasNodes(nodes: any[] | undefined, depth = 0): unknown[] {
     height: n?.height,
     text: typeof n?.text === "string" ? clip(n.text, 40) : undefined,
     children: Array.isArray(n?.children)
-      ? canvasNodes(n.children, depth + 1)
+      ? canvasNodes(n.children, depth + 1, n.id)
       : undefined,
   }));
 }

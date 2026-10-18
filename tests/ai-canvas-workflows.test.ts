@@ -201,6 +201,164 @@ it("creates editable native diagrams, topics, tables and device children and res
   }
 });
 
+it("creates complete device UIs as native children and retains the hierarchy on move and restore", async () => {
+  const children = [
+    {
+      id: "card",
+      tag: "Group",
+      x: 24,
+      y: 120,
+      children: [
+        {
+          id: "card-bg",
+          tag: "Rect",
+          x: 0,
+          y: 0,
+          width: 342,
+          height: 160,
+          fill: "#eef4ff",
+        },
+        {
+          id: "heading",
+          tag: "Text",
+          x: 16,
+          y: 20,
+          width: 310,
+          height: 32,
+          text: "今日阅读",
+        },
+      ],
+    },
+  ];
+  const operation = {
+    type: "createContainer",
+    id: "phone-ui",
+    x: 60,
+    y: 80,
+    containerType: "phone",
+    title: "首页",
+    children,
+  };
+  expect(
+    editToolSchema("canvas").safeParse({
+      resourceId,
+      seq: 1,
+      epochId: "epoch",
+      operations: [operation],
+    }).success,
+  ).toBe(true);
+  await edit([operation]);
+  await edit([
+    { type: "patch", id: "phone-ui", patch: { x: 800, y: 200 } },
+    {
+      type: "add",
+      parentId: "phone-ui",
+      element: {
+        id: "button",
+        tag: "Rect",
+        x: 24,
+        y: 700,
+        width: 342,
+        height: 48,
+      },
+    },
+  ]);
+  const saved = (await read()).value as any;
+  expect(saved.scene.children).toHaveLength(1);
+  const phone = saved.scene.children[0];
+  expect(phone).toMatchObject({
+    id: "phone-ui",
+    x: 800,
+    y: 200,
+    data: { containerType: "phone" },
+  });
+  expect(phone.children.find((n: any) => n.id === "card")).toMatchObject({
+    x: 24,
+    y: 120,
+    name: "group",
+    children: [
+      { id: "card-bg", name: "rect", x: 0, y: 0 },
+      { id: "heading", name: "text", text: "今日阅读" },
+    ],
+  });
+  expect(phone.children.some((n: any) => n.id === "button")).toBe(true);
+  const outline = documentReadPayload("canvas", saved).outline as any;
+  expect(outline.children[0].parentId).toBeNull();
+  const card = outline.children[0].children.find((n: any) => n.id === "card");
+  expect(card.parentId).toBe("phone-ui");
+  expect(card.children.every((n: any) => n.parentId === "card")).toBe(true);
+  const loaded = await restoreSurface(db, resourceId, "canvas");
+  const checkpoint = {
+    codec: "aidcanvas-yjs" as const,
+    schemaVersion: 1 as const,
+    epochId: loaded.epochId,
+    update: loaded.update,
+  };
+  const model = CanvasModel.restore(checkpoint),
+    peer = CanvasModel.restore(checkpoint);
+  const local: Uint8Array[] = [],
+    remote: Uint8Array[] = [];
+  model.onLocalUpdate((u) => local.push(u.update));
+  peer.onLocalUpdate((u) => remote.push(u.update));
+  try {
+    expect(model.getValue()).toEqual(saved);
+    model.patch("phone-ui", { x: 1000 });
+    peer.editText("heading", 0, 4, "本周阅读");
+    model.applyUpdate({ ...checkpoint, update: remote[0]! });
+    peer.applyUpdate({ ...checkpoint, update: local[0]! });
+    expect(model.getValue()).toEqual(peer.getValue());
+    expect(local).toHaveLength(1);
+    expect(remote).toHaveLength(1);
+    expect(model.getValue().scene.children).toHaveLength(1);
+    expect(
+      canvasSceneNodes(model.getValue().scene).find((n) => n.id === "heading")
+        ?.text,
+    ).toBe("本周阅读");
+  } finally {
+    model.dispose();
+    peer.dispose();
+  }
+});
+
+it("rejects invalid nested UI content and duplicate IDs without a partial container write", async () => {
+  const before = await read();
+  const container = {
+    type: "createContainer",
+    id: "phone-ui",
+    x: 0,
+    y: 0,
+    containerType: "phone",
+    title: "首页",
+  };
+  await expect(
+    edit([
+      {
+        ...container,
+        children: [
+          {
+            id: "group",
+            tag: "Group",
+            children: [{ id: "path", tag: "Path", d: "M0 0L10 10" }],
+          },
+        ],
+      },
+    ]),
+  ).rejects.toThrow("d");
+  expect(await read()).toEqual(before);
+  await expect(
+    edit([
+      {
+        ...container,
+        children: [
+          { id: "same", tag: "Rect" },
+          { id: "same", tag: "Text", text: "重复" },
+        ],
+      },
+    ]),
+  ).rejects.toThrow();
+  expect(await read()).toEqual(before);
+});
+
 it("deletes logical topic descendants and their edges while retaining unrelated topics", async () => {
   await edit([
     {
@@ -599,6 +757,8 @@ it("routes device UI and canvas tables to the canvas manual without loading spre
     "生成UI设计",
     "画一幅几何图案",
     "操作画布表格",
+    "创建一个 APP 的 UI 设计",
+    "Design a mobile app UI",
   ]) {
     const formats = relevantSkillFormats(prompt);
     expect(formats.has("canvas")).toBe(true);

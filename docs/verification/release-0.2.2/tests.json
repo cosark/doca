@@ -1,0 +1,6 @@
+{
+  "typecheck": true,
+  "tests": { "passed": 2964, "skipped": 10, "filesPassed": 292, "filesSkipped": 3 },
+  "productionBuild": { "web": true, "nativeCanvasRenderer": true },
+  "editorPins": { "canvas": "0.5.5", "slate": "0.4.23", "sheet": "0.2.3", "markdown": "0.4.3", "slides": "0.3.0-alpha.3" }
+}

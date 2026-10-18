@@ -1,0 +1,14 @@
+{
+  "passed": true,
+  "builtWeb": true,
+  "checks": [
+    "built Web opens a book title with its matching tab icon",
+    "client-side navigation replaces the previous emoji icon",
+    "removing the emoji through the real title editor restores the site icon",
+    "ordinary titles keep the site icon",
+    "refresh restores the emoji icon from the current document title",
+    "leaving the document restores the site icon",
+    "opening, navigation and title metadata edits preserve original content checkpoints"
+  ],
+  "pageErrors": []
+}

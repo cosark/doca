@@ -300,6 +300,7 @@ const cases = [
     prompt:
       "在当前画布制作“拾光”阅读记录App的两个原生可编辑UI设计：手机首页和pad阅读工作台，并排放在phone和tablet原生设备容器内。浅底、深文字、蓝色强调；手机包含顶部标题与头像、阅读进度卡、最近阅读列表、主要按钮、底部导航；平板包含侧栏导航、阅读概览、书籍卡片和笔记区。使用Text/Rect等原生矢量元素放入各自容器，至少每个容器12个内容元素，布局完整、留白一致，不使用截图或图片，不额外创建文档。",
     verify(v: any) {
+      assert(v.scene.children.every((n: any) => ["phone", "tablet"].includes(n.data?.containerType)), "UI content must be inside device containers, not root siblings");
       for (const kind of ["phone", "tablet"]) {
         const n = nodes(v).find((n) => n.data?.containerType === kind);
         assert(n, kind);

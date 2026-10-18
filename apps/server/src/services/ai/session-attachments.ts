@@ -1,4 +1,4 @@
-import { createHash, randomUUID } from "node:crypto";
+import { createHash } from "node:crypto";
 import type { DB } from "@db/index.js";
 import type { ToolContext } from "@core/workflows/ai-documents.js";
 import { authorizeFileItem } from "@core/modules/access/file-access.js";

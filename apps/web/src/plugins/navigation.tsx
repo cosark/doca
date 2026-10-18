@@ -32,7 +32,6 @@ import {
   Blocks,
   Compass,
   Webhook,
-  Bot,
 } from "lucide-react";
 import {
   builtinNavigation,

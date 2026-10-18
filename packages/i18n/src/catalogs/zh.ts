@@ -366,6 +366,7 @@ export const zh = {
   "books.provenance.execution": "流程执行",
 
   "common.uploading": "上传中…",
+  "ai.progress.tool.canvasView": "查看画板画面",
   "ai.progress.tool.imageReferenceGenerate": "参考图生图",
   "ai.progress.tool.imageEditSaved": "继续修改成品",
   "ai.progress.tool.imageSceneInspect": "核对原稿与任务要求",

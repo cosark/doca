@@ -5,7 +5,6 @@ import type { Actor } from "../identity/passwords.js";
 import type { PluginRequestContext } from "@smartdoca/plugin-sdk/platform";
 import type {
   TemplateSelection,
-  TemplatePayload,
 } from "@smartdoca/plugin-contracts";
 import {
   createMaterialsService,

@@ -34,7 +34,7 @@ import {
   missingForcedLoginMethod,
 } from "@core/modules/identity/accounts.js";
 import { contactProofs } from "@core/modules/identity/verification.js";
-import { accountBinding, readCookie } from "./account-context.js";
+import { accountBinding } from "./account-context.js";
 import swagger from "@fastify/swagger";
 import { Type, type TSchema } from "@sinclair/typebox";
 import Fastify, { type FastifyRequest, type HTTPMethods } from "fastify";

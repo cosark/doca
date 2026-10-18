@@ -13,7 +13,6 @@ import {
 } from "../access/file-access.js";
 import {
   createContentService,
-  contentReferenceKey,
 } from "../content/service.js";
 import {
   readContentInventory,
@@ -24,7 +23,6 @@ import { bookAccess, bookHash } from "./management.js";
 import {
   bookFeedbackInputSchema,
   type BookFeedbackInput,
-  type BookArtifact,
   bookSourceInputSchema,
   type BookSourceBinding,
   type BookSourceReference,

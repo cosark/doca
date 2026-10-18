@@ -17,7 +17,6 @@ import {
   encodeBookPayload,
   decodeBookPayload,
   decodePayloadObject,
-  payloadHash,
   payloadObjectChildren,
   type PayloadKind,
 } from "./payload-codec.js";
