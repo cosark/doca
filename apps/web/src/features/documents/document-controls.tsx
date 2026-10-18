@@ -1,13 +1,17 @@
+import { splitTitleIcon } from "@web/shared/utils/resource-title.js";
 import { BookOpen, FileText, FileCode2, Table2, Presentation, SquarePen } from "lucide-react";
 import { Select } from "@web/shared/components/select.js";
 import { useI18n } from "@web/shared/i18n.js";
 import type { Resource } from "@web/shared/api.js";
 import "@web/features/documents/document-icons.css";
+import "./resource-metadata.css";
 
 export function FileIcon({ r, size = "regular" }: {
-  r: Pick<Resource, "kind" | "format">;
+  r: Pick<Resource, "kind"> & { format?: Resource["format"] | null; title?: string };
   size?: "regular" | "compact";
 }) {
+  const icon = r.title ? splitTitleIcon(r.title).icon : null;
+  if (icon) return <span className={`file-glyph title-emoji${size === "compact" ? " compact" : ""}`} aria-hidden="true">{icon}</span>;
   const Icon =
     r.kind === "library"
       ? BookOpen

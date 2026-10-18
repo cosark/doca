@@ -1,3 +1,4 @@
+import { splitTitleIcon } from "@web/shared/utils/resource-title.js";
 import { useEffect, useRef, useState } from "react";
 import { createPortal } from "react-dom";
 import { Pin } from "lucide-react";
@@ -127,7 +128,7 @@ export function PinnedDocuments({ refresh }: { refresh: number }) {
                 <div className="sidebar-pin-doc" key={item.id}>
                   <a href={`#/r/${item.id}`} title={item.title} onClick={() => setOpen(false)}>
                     <FileIcon r={item} size="compact" />
-                    <span>{item.title}</span>
+                    <span>{splitTitleIcon(item.title).text}</span>
                   </a>
                   <DocumentReactionButtons resource={item} size={14} onError={setError} />
                 </div>

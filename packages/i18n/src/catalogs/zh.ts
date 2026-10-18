@@ -1,6 +1,19 @@
 import type { MessageKey } from "./en";
 
 export const zh = {
+  "editor.error.canvasInlineInvalid": "画板行内引用无效。",
+  "resourceAccess.column": "权限",
+  "resourceAccess.private": "私有",
+  "resourceAccess.collaborative": "协作",
+  "resourceAccess.public": "公开",
+  "resourceAccess.privateHint": "仅文档所有者有访问权限。",
+  "resourceAccess.collaborativeHint": "其他成员已有访问权限，包含继承权限。",
+  "resourceAccess.publicHint": "已开放给登录用户或互联网访问。",
+  "titleIcon.choose": "选择标题图标",
+  "titleIcon.custom": "粘贴或输入 emoji",
+  "titleIcon.remove": "移除图标",
+  "titleIcon.apply": "应用",
+
   "books.openBook": "打开知识册",
   "books.viewMode": "阅读视图",
   "books.readingMode": "纯阅读",

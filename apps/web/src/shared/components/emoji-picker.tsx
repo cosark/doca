@@ -1,38 +1,42 @@
 import { useEffect, useRef, useState } from "react";
 import { Smile } from "lucide-react";
 import { useI18n } from "@web/shared/i18n.js";
+import { TITLE_EMOJI_OPTIONS } from "@web/shared/title-emoji.js";
 
 const emoji = [
-  "😀",
-  "😄",
-  "😊",
-  "😍",
-  "🥰",
-  "😎",
-  "🤔",
-  "😅",
-  "😂",
-  "🥹",
-  "😭",
-  "😮",
-  "👍",
-  "👎",
-  "👏",
-  "🙌",
-  "🙏",
-  "💪",
-  "❤️",
-  "💛",
-  "🎉",
-  "✨",
-  "🔥",
-  "💡",
-  "✅",
-  "❓",
-  "👀",
-  "🚀",
-  "☕",
-  "🌷",
+  ...new Set([
+    "😀",
+    "😄",
+    "😊",
+    "😍",
+    "🥰",
+    "😎",
+    "🤔",
+    "😅",
+    "😂",
+    "🥹",
+    "😭",
+    "😮",
+    "👍",
+    "👎",
+    "👏",
+    "🙌",
+    "🙏",
+    "💪",
+    "❤️",
+    "💛",
+    "🎉",
+    "✨",
+    "🔥",
+    "💡",
+    "✅",
+    "❓",
+    "👀",
+    "🚀",
+    "☕",
+    "🌷",
+    ...TITLE_EMOJI_OPTIONS,
+  ]),
 ];
 export function EmojiPicker({
   insert,
@@ -72,7 +76,11 @@ export function EmojiPicker({
         <Smile size={17} />
       </button>
       {open && (
-        <span className="emoji-palette" role="dialog" aria-label={t("emoji.choose")}>
+        <span
+          className="emoji-palette"
+          role="dialog"
+          aria-label={t("emoji.choose")}
+        >
           {emoji.map((value) => (
             <button
               type="button"

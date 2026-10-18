@@ -35,6 +35,7 @@ export function decodeSystemError(value: string): SystemErrorReason | undefined 
 type Translator = (key: MessageKey, values?: MessageValues) => string;
 
 const reasonKeys = {
+  canvas_inline_invalid: "editor.error.canvasInlineInvalid",
   history_snapshot_unavailable: "record.snapshot.unavailable",
   book_invalid:"books.error.book_invalid",
   book_forbidden:"books.error.book_forbidden",

@@ -156,6 +156,7 @@ async function anonymousLibraryPage(db: DB, input: ResourceQuery) {
             null,
             ctx.resources,
             ctx.grants,
+            ctx.activeUserIds,
             resourceDistribution(policy, r.kind).managerInfoVisible,
           ),
         );
@@ -460,6 +461,7 @@ async function queryResourcePageUnchecked(
             actor,
             ctx.resources,
             ctx.grants,
+            ctx.activeUserIds,
             resourceDistribution(policy, r.kind).managerInfoVisible,
           ),
         );

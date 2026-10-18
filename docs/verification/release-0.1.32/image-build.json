@@ -1,0 +1,11 @@
+{
+  "candidate": "smartdoca/doca:0.1.32-candidate",
+  "platforms": [
+    "linux/amd64",
+    "linux/arm64"
+  ],
+  "indexDigest": "sha256:d21d6f3d050da39f2a45948ee002ac3ca6145eaaf83ebc776207a4b435091221",
+  "node": "22-bookworm-slim",
+  "dependencyInstall": "frozen lockfile, official npm @smartdoca/canvas@0.5.4",
+  "buildPassed": true
+}

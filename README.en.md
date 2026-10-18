@@ -60,7 +60,7 @@ Rich text for plans and meeting notes, with a library tree, formatting tools, pe
   </tr>
 </table>
 
-<p align="center"><sub>Five editor screenshots updated on 2026-10-17, captured from Doca 0.1.31 with sample content in an isolated local deployment.</sub></p>
+<p align="center"><sub>Five editor screenshots updated on 2026-10-17, captured from Doca 0.1.32 with sample content in an isolated local deployment.</sub></p>
 
 ## What you can do
 
@@ -88,11 +88,11 @@ One deployment has one account system. The default image installs no quick-notes
 
 ## Quick start with Docker
 
-Requires Git, Docker Engine, Docker Compose, and an HTTP(S) origin served by a reverse proxy. This installs the published 0.1.31 image into a fresh database. Existing installations must read the [release requirements](https://smartdoca.github.io/doca/#/en/releases/0.1.31) and preserve their data before changing versions.
+Requires Git, Docker Engine, Docker Compose, and an HTTP(S) origin served by a reverse proxy. This installs the published 0.2.1 image into a fresh database. Existing installations must read the [release requirements](https://smartdoca.github.io/doca/#/en/releases/0.2.1) and preserve their data before changing versions.
 
 ```sh
 # 1. Clone the matching release
-git clone --branch v0.1.31 --depth 1 https://github.com/smartdoca/doca.git
+git clone --branch v0.2.1 --depth 1 https://github.com/smartdoca/doca.git
 cd doca
 
 # 2. Configure the environment
@@ -137,7 +137,7 @@ Open `http://127.0.0.1:39130`. Initialize the administrator with `bash scripts/b
 - [Deployment and configuration](https://smartdoca.github.io/doca/#/en/operations/deployment)
 - [Plugin development](https://smartdoca.github.io/doca/#/en/plugins/plugin-development)
 - [HTTP API](https://smartdoca.github.io/doca/#/en/reference/api); the running application also provides `/api/openapi.json`.
-- [Release notes](https://smartdoca.github.io/doca/#/en/releases/0.1.31)
+- [Release notes](https://smartdoca.github.io/doca/#/en/releases/0.2.1)
 - [Documentation source](docs/README.md)
 
 For a documentation preview, run `pnpm docs:dev` and open `http://127.0.0.1:39140/#/en/`. `pnpm docs:check` verifies bilingual coverage and local links. GitHub Pages setup is in [documentation maintenance](docs/documentation.md).

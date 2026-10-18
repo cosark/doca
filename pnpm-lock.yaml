@@ -62,7 +62,7 @@ overrides:
 patchedDependencies:
   '@mastra/memory@1.29.0': 60d56858970164a4f0b90b5f380282484f93fef17d89ee36db8a8a4d2ceb02ab
   '@smartdoca/markdown@0.4.3': ef72ffab67d6316303352f1f55effff258b20adbababfc9e4857ea222fefe81a
-  '@smartdoca/slate@0.4.22': 9524bc2f432ac385217164e95fc7021301fe7fc711240fed4809281ce3d55cd6
+  '@smartdoca/slate@0.4.23': 9524bc2f432ac385217164e95fc7021301fe7fc711240fed4809281ce3d55cd6
 
 importers:
 
@@ -156,8 +156,8 @@ importers:
         specifier: ^0.34.52
         version: 0.34.52
       '@smartdoca/canvas':
-        specifier: 0.5.2
-        version: 0.5.2(react-dom@19.2.8(react@19.2.8))(react@19.2.8)
+        specifier: 0.5.5
+        version: 0.5.5(react-dom@19.2.8(react@19.2.8))(react@19.2.8)
       '@smartdoca/files-capability':
         specifier: workspace:*
         version: link:packages/files-capability
@@ -180,8 +180,8 @@ importers:
         specifier: 0.2.3
         version: 0.2.3(@types/react-dom@19.2.7(@types/react@19.2.18))(@types/react@19.2.18)(react-dom@19.2.8(react@19.2.8))(react@19.2.8)
       '@smartdoca/slate':
-        specifier: 0.4.22
-        version: 0.4.22(patch_hash=9524bc2f432ac385217164e95fc7021301fe7fc711240fed4809281ce3d55cd6)(katex@0.18.7)(react-dom@19.2.8(react@19.2.8))(react@19.2.8)(slate-dom@0.118.1(slate@0.118.1))(slate-history@0.113.1(slate@0.118.1))(slate-react@0.118.2(react-dom@19.2.8(react@19.2.8))(react@19.2.8)(slate-dom@0.118.1(slate@0.118.1))(slate@0.118.1))(slate@0.118.1)
+        specifier: 0.4.23
+        version: 0.4.23(patch_hash=9524bc2f432ac385217164e95fc7021301fe7fc711240fed4809281ce3d55cd6)(katex@0.18.7)(react-dom@19.2.8(react@19.2.8))(react@19.2.8)(slate-dom@0.118.1(slate@0.118.1))(slate-history@0.113.1(slate@0.118.1))(slate-react@0.118.2(react-dom@19.2.8(react@19.2.8))(react@19.2.8)(slate-dom@0.118.1(slate@0.118.1))(slate@0.118.1))(slate@0.118.1)
       '@smartdoca/slides':
         specifier: 0.3.0-alpha.3
         version: 0.3.0-alpha.3(react-dom@19.2.8(react@19.2.8))(react@19.2.8)
@@ -3788,8 +3788,8 @@ packages:
       slate: '>=0.70.0'
       yjs: 13.6.32
 
-  '@smartdoca/canvas@0.5.2':
-    resolution: {integrity: sha512-x9aNdrhxrIf++hm0KFPnZlHQS76fVVf0SgW2ahGbh2WTlhFpVt7YMztFC2YyJNh0rAAM9iWIa5RUuOGhIV2Vbw==}
+  '@smartdoca/canvas@0.5.5':
+    resolution: {integrity: sha512-WbnrtQMo81xeCF58p5kjDxsCypXaJhU7nK0h9lDyiZapxem9LJQVWu6dP0D3ltW774I5rHnM/dFsevg4itjgMA==}
     engines: {node: '>=20', yarn: '>=1.22'}
     peerDependencies:
       react: '>=18.2.0'
@@ -3808,8 +3808,8 @@ packages:
       react: '>=18'
       react-dom: '>=18'
 
-  '@smartdoca/slate@0.4.22':
-    resolution: {integrity: sha512-vAPAXcffhzYVXnY9DFZztHQ7qHLwCwQnmRtKepSo2sf2uxra8LMnCpgo+ydVGhewnf7gA82zqT1KRy3AuyUfPw==}
+  '@smartdoca/slate@0.4.23':
+    resolution: {integrity: sha512-KPLeXQeDrWACF7rW0B1+uy36JaWYCw8NXjQ2AHIVFaPw5DO8Z5jmlFY58Hx+N0aODbgao33eTVQcc2GmF5Y3jg==}
     peerDependencies:
       katex: ^0.18.7
       react: '>=18.2.0'
@@ -13610,7 +13610,7 @@ snapshots:
       y-protocols: 1.0.7(yjs@13.6.32)
       yjs: 13.6.32
 
-  '@smartdoca/canvas@0.5.2(react-dom@19.2.8(react@19.2.8))(react@19.2.8)':
+  '@smartdoca/canvas@0.5.5(react-dom@19.2.8(react@19.2.8))(react@19.2.8)':
     dependencies:
       '@icon-park/react': 1.4.2(react-dom@19.2.8(react@19.2.8))(react@19.2.8)
       '@leafer-in/arrow': 2.1.0(@leafer-in/interface@2.1.0(@leafer-ui/interface@2.1.0)(@leafer/interface@2.1.0))(@leafer-ui/draw@2.1.0)(@leafer-ui/interface@2.1.0)
@@ -13712,7 +13712,7 @@ snapshots:
       - '@types/react'
       - '@types/react-dom'
 
-  '@smartdoca/slate@0.4.22(patch_hash=9524bc2f432ac385217164e95fc7021301fe7fc711240fed4809281ce3d55cd6)(katex@0.18.7)(react-dom@19.2.8(react@19.2.8))(react@19.2.8)(slate-dom@0.118.1(slate@0.118.1))(slate-history@0.113.1(slate@0.118.1))(slate-react@0.118.2(react-dom@19.2.8(react@19.2.8))(react@19.2.8)(slate-dom@0.118.1(slate@0.118.1))(slate@0.118.1))(slate@0.118.1)':
+  '@smartdoca/slate@0.4.23(patch_hash=9524bc2f432ac385217164e95fc7021301fe7fc711240fed4809281ce3d55cd6)(katex@0.18.7)(react-dom@19.2.8(react@19.2.8))(react@19.2.8)(slate-dom@0.118.1(slate@0.118.1))(slate-history@0.113.1(slate@0.118.1))(slate-react@0.118.2(react-dom@19.2.8(react@19.2.8))(react@19.2.8)(slate-dom@0.118.1(slate@0.118.1))(slate@0.118.1))(slate@0.118.1)':
     dependencies:
       '@antv/x6': 2.19.2
       '@antv/x6-plugin-clipboard': 2.1.6(@antv/x6@2.19.2)
@@ -13723,8 +13723,14 @@ snapshots:
       '@antv/x6-plugin-selection': 2.2.2(@antv/x6@2.19.2)
       '@antv/x6-plugin-snapline': 2.1.7(@antv/x6@2.19.2)
       '@antv/x6-plugin-transform': 2.1.8(@antv/x6@2.19.2)
+      '@leafer-in/interface': 2.1.0(@leafer-ui/interface@2.1.0)(@leafer/interface@2.1.0)
+      '@leafer-in/viewport': 2.1.0(@leafer-in/interface@2.1.0(@leafer-ui/interface@2.1.0)(@leafer/interface@2.1.0))(@leafer-ui/core@2.1.0)(@leafer-ui/interface@2.1.0)
+      '@leafer-ui/core': 2.1.0
+      '@leafer-ui/interface': 2.1.0
+      '@leafer/interface': 2.1.0
       '@xmldom/xmldom': 0.8.15
       jszip: 3.10.2
+      leafer-ui: 2.1.0
       lucide-react: 0.542.0(react@19.2.8)
       prismjs: 1.30.0
       react: 19.2.8

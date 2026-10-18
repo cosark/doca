@@ -1,0 +1,13 @@
+{
+  "candidate": "smartdoca/doca:0.2.1-candidate",
+  "platforms": [
+    "linux/amd64",
+    "linux/arm64"
+  ],
+  "indexDigest": "sha256:95976ef753d85729352d269764b33d804ee4dcfbc2d34543f99814ee5a3cbf04",
+  "node": "22-bookworm-slim",
+  "dependencyInstall": "frozen lockfile, official npm @smartdoca/canvas@0.5.5; both architectures verified all 2046 supply-chain entries",
+  "buildPassed": true,
+  "sourceCommit": "39d3cf1010ca2132ccf1f643f139431455bf7784",
+  "note": "Transient npm metadata timeouts recovered through the existing retry policy; no dependency validation was bypassed."
+}

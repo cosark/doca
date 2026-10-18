@@ -1,3 +1,5 @@
+import { ResourceAccessTag } from "@web/features/documents/resource-access-tag.js";
+import { TitleInput } from "@web/features/documents/title-input.js";
 import { PluginSlot } from "@web/plugins/extensions.js";
 import { PluginPageHeader } from "@web/plugins/page-header.js";
 import { extensionViews } from "@web/plugins/extension-ui.js";
@@ -202,6 +204,7 @@ function WorkspaceApp() {
     [createMode, setCreateMode] = useState<"create" | "import">("create"),
     [loading, setLoading] = useState(false),
     [modal, setModal] = useState(""),
+    [resourceTitle, setResourceTitle] = useState(""),
     [searchSeed, setSearchSeed] = useState(""),
     [shareInvitation, setShareInvitation] = useState<ShareInvitation | null>(null),
     [targets, setTargets] = useState<Resource[]>([]),
@@ -211,6 +214,10 @@ function WorkspaceApp() {
       parentId: string | null;
       libraryId: string | null;
     }>({ kind: "document", parentId: null, libraryId: null });
+  useEffect(() => {
+    if (modal === "create") setResourceTitle("");
+    else if (modal === "rename") setResourceTitle(detail?.resource.title ?? "");
+  }, [modal, detail?.resource.id]);
   const bootstrapRef = useRef(bootstrap);
   bootstrapRef.current = bootstrap;
   useEffect(() => {
@@ -1241,6 +1248,7 @@ function WorkspaceApp() {
                     <strong title={headerTitle}>{headerTitle}</strong>
                   )}
                 </div>
+                {resourceId && detail?.resource.id === resourceId && detail.resource.kind === "document" && <ResourceAccessTag state={detail.resource.access_state} />}
                 {resourceId &&
                   detail &&
                   detail.resource.kind === "document" &&
@@ -1578,17 +1586,8 @@ function WorkspaceApp() {
               });
             }}
           >
-            <label>
-              {t("shell.name")}
-              <input
-                name="title"
-                required
-                autoFocus
-                maxLength={160}
-                defaultValue={modal === "rename" ? detail?.resource.title : ""}
-                placeholder={t("shell.namePlaceholder")}
-              />
-            </label>
+            <label htmlFor="resource-dialog-title">{t("shell.name")}</label>
+            <TitleInput id="resource-dialog-title" name="title" required autoFocus maxLength={160} value={resourceTitle} onValueChange={setResourceTitle} placeholder={t("shell.namePlaceholder")} />
             {modal === "create" && creation.kind === "document" && (
               <label>
                 {t("shell.docType")}

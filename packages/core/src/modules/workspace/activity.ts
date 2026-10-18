@@ -1,3 +1,4 @@
+import { resourceAccessState, type ResourceAccessState } from "../access/resource-access-state.js";
 import { sql } from "kysely";
 import type { DB } from "@db/index.js";
 import type { Resource } from "@db/schema.js";
@@ -51,6 +52,7 @@ export type RecentItem = {
   format: Resource["format"] | null;
   inLibrary: boolean;
   libraryName: string | null;
+  access_state?: ResourceAccessState;
 };
 export async function recentActivity(
   db: DB,
@@ -90,13 +92,15 @@ export async function recentActivity(
     for (const row of rows.rows) {
       input.signal?.throwIfAborted();
       let isPublic = false;
+      let access_state: ResourceAccessState | undefined;
       let format: RecentItem["format"] = null;
       let inLibrary = false;
       let libraryName: string | null = null;
       let href = `#/r/${row.id}`;
       try {
         if (row.kind === "document" || row.kind === "library") {
-          const { resource } = await authorize(db, actor, row.id);
+          const { resource, resources, grants, activeUserIds } = await authorize(db, actor, row.id);
+          access_state = resourceAccessState(resource, resources, grants, activeUserIds);
           format = resource.format;
           inLibrary = !!resource.library_id;
           if (resource.library_id) {
@@ -188,7 +192,7 @@ export async function recentActivity(
               .where("resource_kind", "=", row.kind)
               .where("resource_id", "=", row.id)
               .executeTakeFirst();
-      items.push({ ...row, collected: !!saved, public: isPublic, href, format, inLibrary, libraryName });
+      items.push({ ...row, collected: !!saved, public: isPublic, href, format, inLibrary, libraryName, ...(access_state ? { access_state } : {}) });
       if (items.length === limit + 1) break;
     }
   }

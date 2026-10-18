@@ -26,6 +26,7 @@ export interface Bootstrap {
   plugins: { id: string; version: string }[];
 }
 export interface Resource {
+  access_state?: "private" | "collaborative" | "public";
   knowledgeBook?: boolean;
   can_remove?: boolean;
   last_editor_id?: string | null;

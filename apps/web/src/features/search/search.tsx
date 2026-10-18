@@ -1,3 +1,4 @@
+import { splitTitleIcon } from "@web/shared/utils/resource-title.js";
 import { openSearchDocument } from "./document-search-navigation.js";
 import { searchableSources, contentQuerySources } from "./content-search.js";
 import type { ContentItem, ContentSourceDescriptor } from "@smartdoca/plugin-sdk/content";
@@ -57,8 +58,13 @@ function openFileLocation(location: FileSearchResult["locations"][number]) {
 }
 
 function SearchDocumentIcon({ resource }: { resource: Resource }) {
+  if (splitTitleIcon(resource.title).icon) return <FileIcon r={resource} />;
   if (resource.cover_asset_id) return <span className="search-document-cover"><img src={assetUrl(resource.cover_asset_id)} alt="" loading="lazy" /></span>;
   return <FileIcon r={resource} />;
+}
+function MatchedTitle({ title, matches = [] }: { title: string; matches?: SearchMatch[] }) {
+  const { text } = splitTitleIcon(title), offset = title.length - text.length;
+  return <MatchedText text={text} matches={matches.filter(match => match.start + match.length > offset).map(match => ({ start: Math.max(0, match.start - offset), length: match.start + match.length - Math.max(offset, match.start) }))} />;
 }
 function MatchedText({
   text,
@@ -660,7 +666,7 @@ export function SearchPanel({
                     <SearchDocumentIcon resource={r} />
                     <span>
                       <strong>
-                        <MatchedText text={r.title} matches={r.titleMatches} />
+                        <MatchedTitle title={r.title} matches={r.titleMatches} />
                       </strong>
                       <span className="search-result-summary">
                         <MatchedText

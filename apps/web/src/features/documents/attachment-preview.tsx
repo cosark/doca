@@ -44,9 +44,13 @@ export function useAttachmentPreview({
       open(resource.path, resource.name ?? resource.path, resource.mimeType),
     [open],
   );
+  const onCanvasAttachmentPreview = useCallback<
+    NonNullable<CanvasEditorProps["onAttachmentPreview"]>
+  >((resource) => open(resource.path, resource.name ?? resource.path, resource.mimeType), [open]);
   return {
     previewFile,
     onCanvasResourcePreview,
+    onCanvasAttachmentPreview,
     onRichAttachmentPreview,
     onSheetAttachmentPreview,
     dialog: file ? (

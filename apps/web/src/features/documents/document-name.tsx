@@ -1,3 +1,4 @@
+import { TitleInput } from "./title-input.js";
 import { useEffect, useRef, useState } from "react";
 import { api, type Resource } from "@web/shared/api.js";
 import { Feedback } from "@web/shared/components/feedback.js";
@@ -42,7 +43,8 @@ export function DocumentName({
   return (
     <>
       {editing ? (
-        <input
+        <div className="document-name-field" onBlur={event => { if (!event.currentTarget.contains(event.relatedTarget)) void save() }}>
+        <TitleInput
           className="document-name-editor"
           style={{ width }}
           autoFocus
@@ -50,8 +52,7 @@ export function DocumentName({
           value={value}
           aria-label="修改文档标题"
           onFocus={(e) => e.target.select()}
-          onChange={(e) => setValue(e.target.value)}
-          onBlur={() => void save()}
+          onValueChange={setValue}
           onKeyDown={(e) => {
             if (e.nativeEvent.isComposing || e.keyCode === 229) return;
             if (e.key === "Enter") {
@@ -63,7 +64,7 @@ export function DocumentName({
               setEditing(false);
             }
           }}
-        />
+        /></div>
       ) : (
         <button
           className="document-title-edit"

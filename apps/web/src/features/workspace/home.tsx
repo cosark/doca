@@ -1,3 +1,5 @@
+import { ResourceAccessTag } from "@web/features/documents/resource-access-tag.js";
+import { splitTitleIcon } from "@web/shared/utils/resource-title.js";
 import { PluginSlot } from "@web/plugins/extensions.js";
 import { useEffect, useState } from "react";
 import {
@@ -201,9 +203,8 @@ export function WorkspaceHome({ name }: { name: string }) {
                     item.id,
                   ])}
                 >
-                  {(item.kind === "document" || item.kind === "library") &&
-                  item.format !== null ? (
-                    <FileIcon r={{ kind: item.kind, format: item.format }} />
+                  {(item.kind === "library" || (item.kind === "document" && item.format !== null)) ? (
+                    <FileIcon r={{ kind: item.kind, format: item.format, title: item.title }} />
                   ) : (
                     <span
                       className={`file-glyph workspace-glyph-${item.kind}`}
@@ -213,7 +214,7 @@ export function WorkspaceHome({ name }: { name: string }) {
                     </span>
                   )}
                   <a href={item.href}>
-                    <strong>{item.title}</strong>
+                    <div className="resource-title-line"><strong title={item.title}>{item.kind === "document" || item.kind === "library" ? splitTitleIcon(item.title).text : item.title}</strong>{item.kind === "document" && <ResourceAccessTag state={item.access_state} />}</div>
                     <small>
                       <span>
                         {item.kind === "document" && item.format !== null

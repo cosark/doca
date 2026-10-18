@@ -1,5 +1,18 @@
 /** English copy is the source catalog. Every other locale must provide these keys. */
 export const en = {
+  "editor.error.canvasInlineInvalid": "Invalid canvas inline reference.",
+  "resourceAccess.column": "Access",
+  "resourceAccess.private": "Private",
+  "resourceAccess.collaborative": "Collaborative",
+  "resourceAccess.public": "Public",
+  "resourceAccess.privateHint": "Only the owner has access.",
+  "resourceAccess.collaborativeHint": "Other members have access, including inherited permissions.",
+  "resourceAccess.publicHint": "Open access is enabled for signed-in users or the public.",
+  "titleIcon.choose": "Choose a title icon",
+  "titleIcon.custom": "Paste or type an emoji",
+  "titleIcon.remove": "Remove icon",
+  "titleIcon.apply": "Apply",
+
   "books.openBook": "Open book",
   "books.viewMode": "Reading view",
   "books.readingMode": "Read",
