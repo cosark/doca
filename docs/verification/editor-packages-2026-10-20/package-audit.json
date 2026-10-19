@@ -1,0 +1,95 @@
+{
+  "canvas": {
+    "artifacts": [
+      {
+        "version": "0.5.5",
+        "integrity": "sha512-WbnrtQMo81xeCF58p5kjDxsCypXaJhU7nK0h9lDyiZapxem9LJQVWu6dP0D3ltW774I5rHnM/dFsevg4itjgMA==",
+        "sha256": "a31048c5aa52fa18577cb28277edd966591e0e5a7a81991aae7e22a9e199ebd9",
+        "tarball": "https://registry.npmjs.org/@smartdoca/canvas/-/canvas-0.5.5.tgz"
+      },
+      {
+        "version": "0.5.6",
+        "integrity": "sha512-fXTkRI9p7TC9xhmIi7APTEVytxbfeXk6onZFDVctUIGjuDeIBePIQj4Ozau1BDV14qaLdp9y2nTI9ND6uNgoVg==",
+        "sha256": "d22d12a8c921459ac7d5a6ad8d3da267e3be8558fc6bc57fa92586051d2666bc",
+        "tarball": "https://registry.npmjs.org/@smartdoca/canvas/-/canvas-0.5.6.tgz"
+      }
+    ],
+    "exportsEqual": true,
+    "dependenciesEqual": true,
+    "peerDependenciesEqual": true,
+    "changedDeclarations": [
+      "dist/types/i18n/en.d.ts",
+      "dist/types/editor/runtime/thinking/slateRuntime.d.ts",
+      "dist/types/editor/runtime/thinking/scene.d.ts",
+      "dist/types/editor/runtime/thinking/NativeResourcePreviews.d.ts"
+    ],
+    "addedDeclarations": [
+      "dist/types/editor/runtime/thinking/nativeImage.d.ts",
+      "dist/types/editor/runtime/thinking/imageClipboard.d.ts"
+    ],
+    "runtime": {
+      "dist/model.js": {
+        "equal": true,
+        "oldSha256": "52ad3682cc54f34b46b59eb9f0ff9cb22a28ac35dddc4f73083099ea75ed3b0f",
+        "newSha256": "52ad3682cc54f34b46b59eb9f0ff9cb22a28ac35dddc4f73083099ea75ed3b0f"
+      },
+      "dist/io.js": {
+        "equal": false,
+        "oldSha256": "e162d4a03420a8084200bb429f1927c23b45052a64fb2f534b2369721f863ad7",
+        "newSha256": "e980b2c8075e11852a85769927a7e97069944b7adb4914d43e28417c0775a536"
+      }
+    },
+    "dependencyChanges": {},
+    "publicDeclarationEntryEqual": true,
+    "ioDifference": "IO entrypoint changes only its hashed import (io-D9nJGWwK.js \u2192 io-WiZWW6H6.js); shared native scene/render helpers changed. Public converter declarations are unchanged; file regressions are recorded separately."
+  },
+  "sheet": {
+    "artifacts": [
+      {
+        "version": "0.2.3",
+        "integrity": "sha512-zroUR4xwX95I4YDorc23i4cATjMlCfZsVkOA+IDAkgscaRHGqPQUpI/cDKwkMpsvkyzxzDmL4GOsIOKzmzC6KQ==",
+        "sha256": "1d63044f6df55d8d2168bc00e91079d3a80b2e36ad7f9d6f725efacc20a10d41",
+        "tarball": "https://registry.npmjs.org/@smartdoca/sheet/-/sheet-0.2.3.tgz"
+      },
+      {
+        "version": "0.2.4",
+        "integrity": "sha512-CopSi/ja9MyQ+CTvcSgCmHfWrxSQOW+xQIrfMxCtro8jUrRoUTCCkqtlJ4T3stjge07AE2Sg8l+0KLyQB6CIng==",
+        "sha256": "94dfdb587216436ae8df5f4ca9719bf117f885e8dbfd4b20bbfc73990f54ae20",
+        "tarball": "https://registry.npmjs.org/@smartdoca/sheet/-/sheet-0.2.4.tgz"
+      }
+    ],
+    "exportsEqual": true,
+    "dependenciesEqual": false,
+    "peerDependenciesEqual": true,
+    "changedDeclarations": [],
+    "addedDeclarations": [],
+    "runtime": {
+      "dist/model.js": {
+        "equal": true,
+        "oldSha256": "83b86b06dde6ed591be74f2f36a232026b955c73919f4ed00427f558ec1caf1d",
+        "newSha256": "83b86b06dde6ed591be74f2f36a232026b955c73919f4ed00427f558ec1caf1d"
+      },
+      "dist/yjs.js": {
+        "equal": true,
+        "oldSha256": "62f1a731711640f5f7a94ebd9251ea20f5d92ef866de9075cd28817fb9a00579",
+        "newSha256": "62f1a731711640f5f7a94ebd9251ea20f5d92ef866de9075cd28817fb9a00579"
+      },
+      "dist/xlsx.js": {
+        "equal": true,
+        "oldSha256": "fe3386fa923573bd28aac055168d621de8f2abe47ffc501d6d62cc591a10c8cf",
+        "newSha256": "fe3386fa923573bd28aac055168d621de8f2abe47ffc501d6d62cc591a10c8cf"
+      }
+    },
+    "dependencyChanges": {
+      "@univerjs/drawing-ui": {
+        "old": null,
+        "new": "0.25.1"
+      },
+      "@univerjs/sheets-filter": {
+        "old": null,
+        "new": "0.25.1"
+      }
+    },
+    "publicDeclarationEntryEqual": true
+  }
+}

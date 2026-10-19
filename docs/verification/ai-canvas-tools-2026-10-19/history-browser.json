@@ -1,0 +1,72 @@
+{
+  "result": "passed",
+  "checks": [
+    {
+      "surface": "full",
+      "scenario": "snapshot",
+      "loads": 4,
+      "observation": {
+        "seen": true,
+        "disappeared": false,
+        "events": [
+          {
+            "type": "visible",
+            "at": 731
+          }
+        ]
+      }
+    },
+    {
+      "surface": "full",
+      "scenario": "error",
+      "loads": 4,
+      "observation": {
+        "seen": true,
+        "disappeared": false,
+        "events": [
+          {
+            "type": "visible",
+            "at": 566.9000000953674
+          }
+        ]
+      }
+    },
+    {
+      "surface": "canvas",
+      "scenario": "snapshot",
+      "loads": 4,
+      "observation": {
+        "seen": true,
+        "disappeared": false,
+        "events": [
+          {
+            "type": "visible",
+            "at": 610.3999999761581
+          }
+        ]
+      }
+    },
+    {
+      "surface": "canvas",
+      "scenario": "error",
+      "loads": 4,
+      "observation": {
+        "seen": true,
+        "disappeared": false,
+        "events": [
+          {
+            "type": "visible",
+            "at": 550.4000000953674
+          }
+        ]
+      }
+    },
+    {
+      "scenario": "canvas-collapse-upload",
+      "uploads": 1,
+      "sends": 1,
+      "messageId": "f2827b1e-63f7-4713-bb55-339a12525ded"
+    }
+  ],
+  "errors": []
+}

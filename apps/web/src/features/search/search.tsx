@@ -1,5 +1,5 @@
 import { splitTitleIcon } from "@web/shared/utils/resource-title.js";
-import { openSearchDocument } from "./document-search-navigation.js";
+import { openSearchDocument, openSearchTarget } from "./document-search-navigation.js";
 import { searchableSources, contentQuerySources } from "./content-search.js";
 import type { ContentItem, ContentSourceDescriptor } from "@smartdoca/plugin-sdk/content";
 import { htmlLang } from "@doca/i18n";
@@ -47,14 +47,13 @@ type FileSearchResult = {
   locations: Array<{ id: string; name: string; parentType: string; parentId: string; navigation: FileLocation[]; sharedRoot?: { id: string; name: string } | null }>;
 };
 
-function openFileLocation(location: FileSearchResult["locations"][number]) {
+function fileLocationHash(location: FileSearchResult["locations"][number]) {
   if (location.parentType === "document") {
-    window.location.hash = `/r/${location.parentId}`;
-    return;
+    return `#/r/${location.parentId}`;
   }
   const path = encodeURIComponent(JSON.stringify(location.navigation));
   const base = location.sharedRoot ? `/shared-files/${location.sharedRoot.id}?name=${encodeURIComponent(location.sharedRoot.name)}&` : "/files?";
-  window.location.hash = `${base}path=${path}&focus=${encodeURIComponent(location.id)}`;
+  return `#${base}path=${path}&focus=${encodeURIComponent(location.id)}`;
 }
 
 function SearchDocumentIcon({ resource }: { resource: Resource }) {
@@ -147,13 +146,14 @@ type SearchPanelProps = {
   initialQuery?: string;
   select: (resource: Resource, query: string) => void;
   compact?: boolean;
+  onNavigate?: () => void;
 };
 
 export function GlobalSearch({
   close,
   select,
   ...props
-}: Omit<SearchPanelProps, "select" | "compact"> & {
+}: Omit<SearchPanelProps, "select" | "compact" | "onNavigate"> & {
   close: () => void;
   select?: (resource: Resource) => void;
 }) {
@@ -162,6 +162,7 @@ export function GlobalSearch({
     <Dialog title={t("search.title")} close={close} className="search-dialog">
       <SearchPanel
         {...props}
+        onNavigate={close}
         select={(resource, query) => {
           if (select) select(resource);
           else openSearchDocument(resource, query);
@@ -179,6 +180,7 @@ export function SearchPanel({
   initialQuery = "",
   select,
   compact = false,
+  onNavigate,
 }: SearchPanelProps) {
   const { t, locale } = useI18n();
   const [publicDiscovery, setPublicDiscovery] = useState(false);
@@ -414,11 +416,18 @@ export function SearchPanel({
     })().catch(() => { if (!controller.signal.aborted) setContentSearchError(t("content.searchUnavailable")); }).finally(() => { if (!controller.signal.aborted) setContentLoading(false); }), 180);
     return () => { clearTimeout(timer); controller.abort(); };
   }, [compact, contentMode, selectedSourceId, contentSources, filterCount, searchText, waitingForAiQuery, searchAttempt, t]);
+  function navigate(path: string) {
+    openSearchTarget(path);
+    onNavigate?.();
+  }
+  function openFileLocation(location: FileSearchResult["locations"][number]) {
+    navigate(fileLocationHash(location));
+  }
   async function openContent(item: ContentItem) {
     try {
       const target = await api<{ path: string; fingerprint: string } | null>("/content/resolve", "POST", { ref: item.ref, purpose: "search" });
       if (!target) throw new Error(t("content.unavailable"));
-      window.location.hash = target.path;
+      navigate(target.path);
     } catch (reason) { setContentSearchError((reason as Error).message); }
   }
   async function more() {

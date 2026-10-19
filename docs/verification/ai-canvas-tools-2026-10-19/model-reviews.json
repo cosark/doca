@@ -1,0 +1,144 @@
+{
+  "graph": {
+    "status": "completed",
+    "review": {
+      "verdict": "pass",
+      "summary": "画布快照（seq=5）经完整 document_read 与整板+3 处局部 canvas_view 核对：大标题、12 张卡片（表名加粗、中文用途、字段齐全、无溢出）、13 条肘形原生连接器及字段标签全部符合要求，本次走线命令均为 autoRoute/autoLabel 自动计算未传手写端口或 offset。仅存在导出端字体回退（FONT_NOT_EMBEDDED）警告，渲染上文字清晰可读，不构成缺陷，验收通过。",
+      "checks": [
+        {
+          "requirement": "画布内大标题为\"视频制作数据库关系图\"",
+          "criterionIndex": 0,
+          "passed": true,
+          "evidence": "document_read 中存在 id=4a90ae15 的 Text，text=\"视频制作数据库关系图\"，fontWeight 700，位于 group 外顶部（group x80 y140，标题 y60）；整板 canvas_view 显示标题完整可读"
+        },
+        {
+          "requirement": "恰好 12 张卡片且表名各出现一次",
+          "criterionIndex": 1,
+          "passed": true,
+          "evidence": "scene 的 erd-flow Group 下恰好 13 个 Path(id=e1..e13) 与 12 个 diagram-node Frame(users/projects/families/project_nodes/node_runs/logs/materials/video_books/video_book_imports/video_book_dot_progress/pdf_voice_books/voice_analyses)，无多余节点"
+        },
+        {
+          "requirement": "每卡含表名、中文用途、关键字段，表名加粗（richText 局部加粗）",
+          "criterionIndex": 2,
+          "passed": true,
+          "evidence": "逐卡核对 richText：users(用户表/id,name)、projects(项目表/id,owner_id,title)、project_nodes(项目节点表/id,project_id,name)、node_runs(节点运行表/id,node_id,status)、logs(运行日志表/id,project_id,node_id,run_id,message)、materials(项目素材表/id,project_id,url)、families(素材家族表/id,owner_id,name)、video_books(视频书表/id,project_id,source_family_id,data)、video_book_imports(视频书导入表/id,url)、video_book_dot_progress(视频书配音进度表/id,data)、pdf_voice_books(PDF语音书表/id,project_id,data)、voice_analyses(语音分析表/id,project_id,data)；每卡首段子Text bold:true"
+        },
+        {
+          "requirement": "13 条有向连接器及字段标签一一对应",
+          "criterionIndex": 3,
+          "passed": true,
+          "evidence": "edges data: e1 users→projects(owner_id标签)、e2 users→families(owner_id)、e3 projects→project_nodes(project_id)、e4 project_nodes→node_runs(node_id)、e5 projects→logs(project_id)、e6 project_nodes→logs(node_id)、e7 node_runs→logs(run_id)、e8 projects→materials(project_id)、e9 families→video_books(source_family_id)、e10 projects→video_books(project_id)、e11 video_books→video_book_imports(id)、e12 video_books→video_book_dot_progress(id)、e13 projects→pdf_voice_books(project_id)，标签文字均存在且归属正确"
+        },
+        {
+          "requirement": "13 条 edge 均为 mode:elbow、autoRoute:true、autoLabel:true，未传手写端口/offset",
+          "criterionIndex": 4,
+          "passed": true,
+          "evidence": "canvasCommandAudit 显示本次 committed 的 13 条 diagramEdge 全部 automaticRequested=true 且 providedRoutingFields=[]（未传 sourcePort/targetPort/mode/offset）；快照中 mode:elbow 与 from/to/sourceAnchor/targetAnchor 为宿主计算结果"
+        },
+        {
+          "requirement": "voice_analyses 保留为独立表并写明 project_id",
+          "criterionIndex": 5,
+          "passed": true,
+          "evidence": "voice_analyses 为独立 diagram-node Frame(id=voice_analyses)，含\"id, project_id, data\"字段，且 scene 中无任何 edge 以其为 source/target"
+        },
+        {
+          "requirement": "原生肘形连线避让卡片，无手绘箭头/重叠色块，文字不溢出",
+          "criterionIndex": 6,
+          "passed": true,
+          "evidence": "整板 canvas_view inspection：无手绘箭头、无重叠色块、连线不穿卡；局部 region(x700-870,y580-1000) 与 (x600-790,y740-830) 核查标签与肘形走线避让正常，卡片边框填色（蓝/绿/黄/红/紫）渲染正确，文字均在卡片内"
+        }
+      ],
+      "round": 0,
+      "snapshots": [
+        {
+          "resourceId": "4c3374b3-f102-41d0-88bf-2b8dc7d8742c",
+          "seq": 5,
+          "epochId": "8e7cb4bd-72e7-45ce-be59-85f8d1dbb874"
+        }
+      ]
+    }
+  },
+  "modify": {
+    "status": "completed",
+    "review": {
+      "verdict": "pass",
+      "summary": "video_books 卡片宽度380、高度140、填充#fce8e6、边框#d93025均已按原生值保存；内部图形和文字尺寸同步缩放，卡片位置、文字内容、其他卡片及全部对象ID与连接器关系均保留。",
+      "checks": [
+        {
+          "requirement": "video_books 卡片宽度改为380",
+          "criterionIndex": 0,
+          "passed": true,
+          "evidence": "scene 中 id=video_books 的 Frame width=380，内部 diagram-body Rect width=380，selection 视图包围盒与 380 宽一致。"
+        },
+        {
+          "requirement": "video_books 卡片高度改为140",
+          "criterionIndex": 1,
+          "passed": true,
+          "evidence": "scene 中 id=video_books 的 Frame height=140，内部 diagram-body Rect height=140。"
+        },
+        {
+          "requirement": "内部填充改为 #fce8e6",
+          "criterionIndex": 2,
+          "passed": true,
+          "evidence": "video_books 内部 diagram-body Rect 的 fill=\"#fce8e6\"，局部视图中呈浅粉色。"
+        },
+        {
+          "requirement": "边框改为 #d93025",
+          "criterionIndex": 3,
+          "passed": true,
+          "evidence": "video_books 内部 diagram-body Rect 的 stroke=\"#d93025\"，局部视图中呈红色边框。"
+        },
+        {
+          "requirement": "使用 diagramNode 同步内部图形和文字尺寸",
+          "criterionIndex": 4,
+          "passed": true,
+          "evidence": "diagram-body 为 380×140，内部 Text 同步为 width=352、height=116（与 380-28、140-24 内边距一致），文字内容与富文本结构未变。"
+        },
+        {
+          "requirement": "位置保留不移动",
+          "criterionIndex": 5,
+          "passed": true,
+          "evidence": "video_books Frame 仍为 x=760, y=620，与修改前位置相同，未发生位移。"
+        },
+        {
+          "requirement": "标题和文字保留",
+          "criterionIndex": 6,
+          "passed": true,
+          "evidence": "Text 内容仍为 \"video_books\\n视频书表\\nid, project_id, source_family_id, data\"，video_books 段为加粗富文本，无溢出裁切。"
+        },
+        {
+          "requirement": "其他卡片保留",
+          "criterionIndex": 7,
+          "passed": true,
+          "evidence": "users、projects、families、project_nodes、node_runs、logs、materials、video_book_imports、video_book_dot_progress、pdf_voice_books、voice_analyses 共11张卡片的位置、尺寸、填充、边框、文字均与原结构一致，未被改动。"
+        },
+        {
+          "requirement": "连接器关系及端点随原生尺寸绑定同步",
+          "criterionIndex": 8,
+          "passed": true,
+          "evidence": "e9(target=video_books, targetAnchor x=0,y=0.5, to x=760,y=690)、e10(target=video_books)、e11(source=video_books, sourceAnchor x=1,y=0.5, from x=1140,y=690)、e12(source=video_books) 端点均贴合新尺寸边缘，路径随卡片宽度从原 1100 右缘移到 1140 右缘。"
+        },
+        {
+          "requirement": "全部对象ID保留",
+          "criterionIndex": 9,
+          "passed": true,
+          "evidence": "video_books 节点及其子元素（diagram-body id=9d1eb376…、text id=6088c94b…）ID 与原结构一致；未出现重建迹象。"
+        },
+        {
+          "requirement": "不要重建",
+          "criterionIndex": 10,
+          "passed": true,
+          "evidence": "节点 ID、子元素 ID 与修改前一致，仅尺寸与填充/边框属性变化，无新增/删除节点。"
+        }
+      ],
+      "round": 0,
+      "snapshots": [
+        {
+          "resourceId": "4c3374b3-f102-41d0-88bf-2b8dc7d8742c",
+          "seq": 6,
+          "epochId": "8e7cb4bd-72e7-45ce-be59-85f8d1dbb874"
+        }
+      ]
+    }
+  }
+}

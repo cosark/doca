@@ -838,6 +838,10 @@ export async function editAIDocument(
           update = Y.mergeUpdates(updates);
         } catch (error) {
           if (error instanceof AppError) throw error;
+          if (error instanceof Error && error.message === "PARENT_NOT_FOUND")
+            fail(400, '父容器不存在。根节点新增时省略 parentId 或传 null；不能填写 "root"。放入已有容器时使用 document_read 返回的真实容器 ID。', { code: "canvas_parent_not_found" });
+          if (error instanceof Error && error.message === "ELEMENT_ID_REUSE")
+            fail(400, '画布对象 ID 已使用过，删除后也不能重新新增相同 ID。修改现有对象请 patch/text；确需重建时为所有新对象、节点和连线使用全新 ID，并在同一批操作中新增完整替代内容、移除旧对象，失败整批不写入。', { code: "canvas_element_id_reused" });
           fail(400, `画布编辑失败：${error instanceof Error ? error.message : "未知错误"}`);
         } finally {
           model.dispose();

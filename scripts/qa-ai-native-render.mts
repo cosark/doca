@@ -68,6 +68,10 @@ assert(address && typeof address !== "string");
 const web = await createServer({
   configFile: resolve("apps/web/vite.config.ts"),
   server: {
+    // Verify a fixed editor session; concurrent repository edits must not inject
+    // development HMR/reloads into the 60-second content-write observation.
+    hmr: false,
+    watch: { ignored: ["**/*"] },
     host: "127.0.0.1",
     port,
     strictPort: true,

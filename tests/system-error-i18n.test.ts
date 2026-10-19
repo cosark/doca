@@ -36,6 +36,15 @@ it("translates the new candidate-region validation reason in both catalogs", () 
   expect(systemErrorMessage(encoded, createTranslator("en"))).toContain("Use full source-page coordinates");
 });
 
+it.each(["visual_inspection_incomplete", "canvas_diagram_resize_required", "canvas_diagram_overlap"])("translates new canvas inspection errors without changing model feedback: %s", code => {
+  const error = new AppError(422, "保留模型的具体纠正信息", { code });
+  const encoded = systemErrorText(error);
+  expect(decodeSystemError(encoded)).toEqual({ code });
+  expect(systemErrorMessage(encoded, createTranslator("en"))).not.toContain("ai.error.");
+  expect(systemErrorMessage(encoded, createTranslator("zh"))).not.toBe(systemErrorMessage(encoded, createTranslator("en")));
+  expect(error.message).toBe("保留模型的具体纠正信息");
+});
+
 it("leaves old text and untagged JSON unchanged in both languages", () => {
   for (const message of [
     "图片模型认证失败，请检查厂商密钥",

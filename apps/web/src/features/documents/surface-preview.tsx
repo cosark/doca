@@ -120,7 +120,13 @@ export default function SurfacePreview({
           showHeader={false}
           richTextExtensions={richTextExtensions}
           className="doca-canvas"
-          resources={{ resolveUrl: resolve }}
+          resources={{
+            resolveUrl: resolve,
+            resolveDownloadUrl: (path) => {
+              const url = resolve(path);
+              return url ? `${url}${trash || audit ? "&" : "?"}download=1` : "";
+            },
+          }}
           onResourcePreview={attachmentPreview.onCanvasResourcePreview}
           onAttachmentPreview={attachmentPreview.onCanvasAttachmentPreview}
         />

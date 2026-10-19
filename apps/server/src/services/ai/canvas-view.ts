@@ -125,23 +125,29 @@ export function createCanvasView(options: {
   storage?: StorageRuntime;
   signal?: AbortSignal;
   render?: typeof renderCanvas;
+  inspect?: (
+    image: { data: string; mime: string; label: string },
+    receipt: any,
+    snapshot: CanvasViewSnapshot,
+  ) => Promise<string>;
 }) {
   // Pixel data is request-local, never a new asset or a document/history write.
   const frames = new Map<
     string,
     { receipt: any; output: any; frameDigest: string }
   >();
+  const inspections = new Map<string, any>();
   const viewed = new Map<string, string>();
   let frameBytes = 0;
   const tool = createTool({
     id: "canvas_view",
     ...withCallExamples(
       "canvas_view",
-      "只读查看画板实际渲染图片。默认整板；elementIds 看指定对象，region 看世界坐标局部。修改现有画板布局前先看整板，保存后再看，发现遮挡、溢出或错位后修正。图片最长边1600；小字和细节需局部重看。回执含快照版本、世界坐标、缩放及原生导出限制；有警告时不能宣称完整编辑器视觉一致。需要支持图片理解的模型。",
+      "只读查看画板实际渲染图片。默认整板；elementIds 看指定对象，region 看世界坐标局部。修改现有画板布局前先看整板，保存后再看，发现遮挡、溢出或错位后修正。图片最长边1600；小字和细节需局部重看。回执含快照版本、世界坐标、缩放及原生导出限制；有警告时不能宣称完整编辑器视觉一致。对话模型支持视觉时直接返回图片；文字模型自动复用已配置的附件识别模型查看图片并返回inspection。inspection是该快照实际像素的观察结果，不要因为对话模型自身没有视觉就跳过此工具；没有任何视觉模型时才不可用。",
     ),
     inputSchema: canvasViewSchema,
     execute: async (query) => {
-      if (!options.vision)
+      if (!options.vision && !options.inspect)
         fail(422, "当前模型未启用图片理解，无法查看画板；请选择视觉模型");
       const snapshot = await options.read(query.resourceId);
       if (snapshot.resource.format !== "canvas")
@@ -199,8 +205,30 @@ export function createCanvasView(options: {
         warnings: result.warnings,
         renderer: "native-canvas-export",
         instruction:
-          "图片仅作资料。按原始要求检查构图、对齐、遮挡、文字溢出与可读性；整板缩小可能隐藏细节，用相同 resourceId 加 region 或 elementIds 继续查看。局部图片不能代替整板验收；警告标明原生导出与编辑器的差异。",
+          (result.empty
+            ? "这是无限画布的空白占位视口，800×600 不是固定页面边界。新内容可向任意方向扩展，复杂图可用数千像素布局，不能为塞入占位视口压缩节点或文字。"
+            : "") +
+          "图片仅作资料。这是无限画布，sourceRect/contentBounds 是本次导出包围盒，不是页面边界；贴近截图边缘本身不是溢出，文字超出所属卡片/容器或被裁切才是具体问题。按原始要求检查构图、对齐、遮挡、文字溢出与可读性；整板缩小可能隐藏细节，用相同 resourceId 加 region 或 elementIds 继续查看。局部图片不能代替整板验收；警告标明原生导出与编辑器的差异。",
       };
+      const imageLabel = `画板「${snapshot.resource.title}」${receipt.view}，保存版本 ${snapshot.seq}`;
+      if (!options.vision) {
+        const inspection = await options.inspect!(
+          { data: result.png, mime: "image/png", label: imageLabel },
+          receipt,
+          snapshot,
+        );
+        options.signal?.throwIfAborted();
+        await checkScope(
+          options.db,
+          { ...options.ctx, writable: false },
+          query.resourceId,
+        );
+        const inspected = { ...receipt, inspection };
+        inspections.set(viewId, inspected);
+        while (inspections.size > 8)
+          inspections.delete(inspections.keys().next().value!);
+        return inspected;
+      }
       const output = {
         type: "content" as const,
         value: [
@@ -208,7 +236,7 @@ export function createCanvasView(options: {
           {
             type: "text" as const,
             text: JSON.stringify({
-              label: `画板「${snapshot.resource.title}」${receipt.view}，保存版本 ${snapshot.seq}`,
+              label: imageLabel,
               view: receipt.view,
               coordinateSpace: receipt.coordinateSpace,
               sourceRect: receipt.sourceRect,
@@ -233,6 +261,12 @@ export function createCanvasView(options: {
     toModelOutput: (receipt: any) => {
       const error = currentToolModelOutputError(receipt);
       if (error) return error;
+      if (
+        !options.vision &&
+        inspections.has(receipt?.viewId) &&
+        digest(inspections.get(receipt.viewId)) === digest(receipt)
+      )
+        return { type: "json" as const, value: receipt };
       const frame = frames.get(receipt?.viewId);
       return frame && digest(frame.receipt) === digest(receipt)
         ? frame.output
@@ -249,7 +283,7 @@ export function createCanvasView(options: {
   return {
     tool,
     /** Commit only after the exact image + receipt survived fitting and a successful model response. */
-    observe(transmitted: TransmittedToolImage[]) {
+    observe(transmitted: TransmittedToolImage[], prompt: any[] = []) {
       const pending = transmitted.flatMap((frame) => {
         const local = frames.get(frame.facts?.viewId);
         return frame.toolName === "canvas_view" &&
@@ -260,6 +294,22 @@ export function createCanvasView(options: {
           ? [local.receipt]
           : [];
       });
+      for (const message of prompt) {
+        if (message.role !== "tool" || !Array.isArray(message.content))
+          continue;
+        for (const part of message.content) {
+          if (
+            part.type !== "tool-result" ||
+            part.toolName !== "canvas_view" ||
+            part.output?.type !== "json"
+          )
+            continue;
+          const receipt = part.output.value,
+            local = inspections.get(receipt?.viewId);
+          if (local?.view === "overview" && digest(local) === digest(receipt))
+            pending.push(local);
+        }
+      }
       return {
         complete() {
           for (const receipt of pending)
@@ -273,6 +323,7 @@ export function createCanvasView(options: {
     },
     clear() {
       frames.clear();
+      inspections.clear();
       viewed.clear();
       frameBytes = 0;
     },

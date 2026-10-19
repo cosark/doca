@@ -1,0 +1,52 @@
+{
+  "source": "Unmodified official npm @smartdoca/canvas 0.5.5",
+  "tarballSha256": "a31048c5aa52fa18577cb28277edd966591e0e5a7a81991aae7e22a9e199ebd9",
+  "epochId": "canvas-0.5.5-upgrade-fixture",
+  "update": "ASujmZQVACgBBG1ldGEHZXBvY2hJZAF3HGNhbnZhcy0wLjUuNS11cGdyYWRlLWZpeHR1cmUoAQRtZXRhDXNjaGVtYVZlcnNpb24BfQEoAQRtZXRhBG5hbWUBdxZSZWxlYXNlZCAwLjUuNSBmaXh0dXJlJwEIZWxlbWVudHMObGVnYWN5LWRpYWdyYW0BJwCjmZQVAwVwcm9wcwEoAKOZlBUEA3RhZwF3BUZyYW1lKACjmZQVBARuYW1lAXcFZnJhbWUoAKOZlBUEAXgBfaACKACjmZQVBAF5AX24ASgAo5mUFQQFd2lkdGgBfaQGKACjmZQVBAZoZWlnaHQBfbADKACjmZQVBARmaWxsAXcHI2NjNDk0NCcAo5mUFQMEdGV4dAIoAKOZlBUDCXBsYWNlbWVudAF2AgZwYXJlbnR+BHJhbmt9ACgAo5mUFQMHZGVsZXRlZAF5JwEIZWxlbWVudHMLbGVnYWN5LWJvZHkBJwCjmZQVDwVwcm9wcwEoAKOZlBUQA3RhZwF3BFJlY3QoAKOZlBUQBG5hbWUBdwxkaWFncmFtLWJvZHkoAKOZlBUQAXgBfQAoAKOZlBUQAXkBfQAoAKOZlBUQBXdpZHRoAX2YBCgAo5mUFRAGaGVpZ2h0AX2MAigAo5mUFRAMY29ybmVyUmFkaXVzAX0MKACjmZQVEARmaWxsAXcHI2ZmZTVlMygAo5mUFRAGc3Ryb2tlAXcHI2NjNDk0NCcAo5mUFQ8EdGV4dAIoAKOZlBUPCXBsYWNlbWVudAF2AgZwYXJlbnR3DmxlZ2FjeS1kaWFncmFtBHJhbmt9ACgAo5mUFQ8HZGVsZXRlZAF5JwEIZWxlbWVudHMLbGVnYWN5LXRleHQBJwCjmZQVHQVwcm9wcwEoAKOZlBUeA3RhZwF3BFRleHQoAKOZlBUeBG5hbWUBdwR0ZXh0KACjmZQVHgF4AX0OKACjmZQVHgF5AX0MKACjmZQVHgV3aWR0aAF9vAMoAKOZlBUeBmhlaWdodAF9tAEoAKOZlBUeCGZvbnRTaXplAX0UKACjmZQVHgRmaWxsAXcHIzE3MmI0ZCcAo5mUFR0EdGV4dAIEAKOZlBUnIOS/neeVmeaXp+WbvuW9oiAvIGxlZ2FjeSBkaWFncmFtKACjmZQVHQlwbGFjZW1lbnQBdgIGcGFyZW50dw5sZWdhY3ktZGlhZ3JhbQRyYW5rfQEoAKOZlBUdB2RlbGV0ZWQBeQA=",
+  "value": {
+    "version": 1,
+    "name": "Released 0.5.5 fixture",
+    "updatedAt": "",
+    "scene": {
+      "tag": "Leafer",
+      "children": [
+        {
+          "tag": "Frame",
+          "name": "frame",
+          "x": 160,
+          "y": 120,
+          "width": 420,
+          "height": 240,
+          "fill": "#cc4944",
+          "id": "legacy-diagram",
+          "children": [
+            {
+              "tag": "Rect",
+              "name": "diagram-body",
+              "x": 0,
+              "y": 0,
+              "width": 280,
+              "height": 140,
+              "cornerRadius": 12,
+              "fill": "#ffe5e3",
+              "stroke": "#cc4944",
+              "id": "legacy-body"
+            },
+            {
+              "tag": "Text",
+              "name": "text",
+              "x": 14,
+              "y": 12,
+              "width": 252,
+              "height": 116,
+              "fontSize": 20,
+              "fill": "#172b4d",
+              "id": "legacy-text",
+              "text": "保留旧图形 / legacy diagram"
+            }
+          ]
+        }
+      ]
+    }
+  }
+}

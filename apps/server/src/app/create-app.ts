@@ -257,6 +257,8 @@ export async function createApp(db: DB, options: CreateAppOptions) {
     if (bearerUser && presentedBearer)
       await renewMobileSession(db, presentedBearer);
     const path = req.url.split("?")[0]!;
+    if (path === "/api/v1/mcp" && req.headers.origin && req.headers.origin !== origin.origin)
+      fail(403, "Invalid MCP Origin");
     const mobileCredential =
       req.headers["x-doca-client"] === "mobile" &&
       [
@@ -271,7 +273,7 @@ export async function createApp(db: DB, options: CreateAppOptions) {
       !["GET", "HEAD", "OPTIONS"].includes(req.method) &&
       !(
         req.url === "/api/v1/mcp" &&
-        /^Bearer doca_mcp_[a-f0-9]{64}$/.test(req.headers.authorization ?? "")
+        /^Bearer doca_mcp_v1_[a-f0-9]{64}$/.test(req.headers.authorization ?? "")
       ) &&
       !(req.routeOptions.config as { docaPluginExternal?: boolean })
         .docaPluginExternal &&

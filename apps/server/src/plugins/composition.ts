@@ -288,6 +288,8 @@ function aiPlugin(files: FilesServiceV1) {
         const mounted = await mountFastifyAdapter(runtime.api, (api) =>
           registerAI(api, runtime.db, runtime.auth, runtime.admin, {
             ...runtime.options.ai,
+            publicOrigin: runtime.origin.origin,
+            mcpRateLimit: runtime.consumeRateLimit,
             storage: runtime.runtime.storage,
             files,
             notify: runtime.realtime.documentChanged,

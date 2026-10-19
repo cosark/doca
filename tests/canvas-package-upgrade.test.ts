@@ -2,39 +2,39 @@ import { expect, it } from "vitest";
 import { readFileSync } from "node:fs";
 import { CanvasModel } from "@smartdoca/canvas/model";
 import { encodeStateAsUpdate, Doc, applyUpdate } from "yjs";
-it("opens the real released 0.4.3 checkpoint without changing its content or CRDT identities", () => {
-  const fixture = JSON.parse(
-    readFileSync(
-      new URL(
-        "./fixtures/editor-upgrade-2026-10-17/canvas-0.4.3.json",
-        import.meta.url,
-      ),
-      "utf8",
-    ),
-  );
-  const bytes = new Uint8Array(Buffer.from(fixture.update, "base64"));
-  const model = CanvasModel.restore({
-    codec: "aidcanvas-yjs",
-    schemaVersion: 1,
-    epochId: fixture.epochId,
-    update: bytes,
-  });
-  const writes: unknown[] = [];
-  model.onLocalUpdate((u) => writes.push(u));
-  const doc = new Doc();
-  try {
-    applyUpdate(doc, bytes);
-    expect(model.getValue()).toEqual(fixture.value);
-    model.find("中文");
-    model.captureAnchor(["old-text"]);
-    model.setReadOnly(true);
-    expect(model.checkpoint().update).toEqual(encodeStateAsUpdate(doc));
-    expect(writes).toEqual([]);
-  } finally {
-    model.dispose();
-    doc.destroy();
-  }
-});
+it.each([
+  "editor-upgrade-2026-10-17/canvas-0.4.3.json",
+  "editor-upgrade-2026-10-20/canvas-0.5.5.json",
+])(
+  "opens the released %s checkpoint without changing content or CRDT identities",
+  (path) => {
+    const fixture = JSON.parse(
+      readFileSync(new URL(`./fixtures/${path}`, import.meta.url), "utf8"),
+    );
+    const bytes = new Uint8Array(Buffer.from(fixture.update, "base64"));
+    const model = CanvasModel.restore({
+      codec: "aidcanvas-yjs",
+      schemaVersion: 1,
+      epochId: fixture.epochId,
+      update: bytes,
+    });
+    const writes: unknown[] = [];
+    model.onLocalUpdate((u) => writes.push(u));
+    const doc = new Doc();
+    try {
+      applyUpdate(doc, bytes);
+      expect(model.getValue()).toEqual(fixture.value);
+      model.find("中文");
+      model.captureAnchor(["old-text"]);
+      model.setReadOnly(true);
+      expect(model.checkpoint().update).toEqual(encodeStateAsUpdate(doc));
+      expect(writes).toEqual([]);
+    } finally {
+      model.dispose();
+      doc.destroy();
+    }
+  },
+);
 
 it("rejects unbound inline attachments atomically without changing checkpoint or sequence", async () => {
   const { openTestDatabase } = await import("./database.js");

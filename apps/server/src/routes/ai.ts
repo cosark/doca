@@ -10,7 +10,7 @@ import {
   uploadPolicySchema,
   userUploadLimits,
 } from "@core/modules/ai/upload-policy.js";
-import { randomBytes, randomUUID } from "node:crypto";
+import { randomUUID } from "node:crypto";
 import type { FastifyInstance, FastifyRequest } from "fastify";
 import { z } from "zod";
 import {
@@ -28,7 +28,7 @@ import { fetchWebPage } from "../services/ai/web-fetch.js";
 import { createAISessionEventStore, type DB } from "@db/index.js";
 import { transact } from "@db/transactions.js";
 import { AppError, fail } from "@core/shared/errors.js";
-import { tokenHash, type Actor } from "@core/modules/identity/passwords.js";
+import type { Actor } from "@core/modules/identity/passwords.js";
 import { authorize } from "@core/modules/access/queries.js";
 import { requireCapability } from "@core/modules/access/operation-policy.js";
 import {
@@ -1286,6 +1286,10 @@ export async function registerAI(
           fail(409, "请先停止该会话的运行任务");
         await m.memory.deleteThread(s.id);
         await deleteAISessionFiles(tx, actor.id, s.id);
+        await tx.deleteFrom("mcp_tool_calls")
+          .where("context_id", "in", tx.selectFrom("mcp_contexts").select("id").where("session_id", "=", s.id))
+          .execute();
+        await tx.deleteFrom("mcp_contexts").where("session_id", "=", s.id).execute();
         await tx.deleteFrom("ai_jobs").where("session_id", "=", s.id).execute();
         await tx.deleteFrom("ai_sessions").where("id", "=", s.id).execute();
       });
@@ -1689,68 +1693,6 @@ export async function registerAI(
       return { ok: true };
     },
   );
-  api.get("/api/v1/ai/mcp-keys", async (req) =>
-    db
-      .selectFrom("ai_mcp_keys")
-      .select([
-        "id",
-        "name",
-        "resource_ids",
-        "writable",
-        "expires_at",
-        "created_at",
-      ])
-      .where("user_id", "=", auth(req).id)
-      .execute(),
-  );
-  api.post("/api/v1/ai/mcp-keys", async (req) => {
-    const actor = auth(req),
-      body = parse(
-        z.object({
-          name: z.string().min(1).max(80),
-          resourceIds: z.array(id).min(1).max(50),
-          writable: z.boolean(),
-          days: z.number().int().min(1).max(365),
-        }),
-        req.body,
-      );
-    if (body.writable) await requireCapability(db, actor.id, "mcp.write");
-    for (const r of body.resourceIds)
-      await authorize(db, actor, r, body.writable ? 3 : 1);
-    const token = "doca_mcp_" + randomBytes(32).toString("hex"),
-      keyId = randomUUID();
-    await db
-      .insertInto("ai_mcp_keys")
-      .values({
-        id: keyId,
-        user_id: actor.id,
-        name: body.name,
-        token_hash: tokenHash(token),
-        resource_ids: JSON.stringify(body.resourceIds),
-        writable: Number(body.writable),
-        expires_at: new Date(Date.now() + body.days * 86400000).toISOString(),
-        created_at: new Date().toISOString(),
-      })
-      .execute();
-    return { id: keyId, token };
-  });
-  api.delete<{ Params: { id: string } }>(
-    "/api/v1/ai/mcp-keys/:id",
-    async (req) => {
-      await db
-        .deleteFrom("ai_mcp_keys")
-        .where("id", "=", req.params.id)
-        .where("user_id", "=", auth(req).id)
-        .execute();
-      return { ok: true };
-    },
-  );
-  await registerAIMcp(
-    api,
-    db,
-    options.notify,
-    options.search,
-    options.contributions,
-  );
+  await registerAIMcp(api, db, auth, admin, runner, options);
   return runner;
 }

@@ -27,9 +27,13 @@ export function openSearchDocument(
   resource: { id: string; kind: string },
   query: string,
 ): void {
-  const hash = searchDocumentHash(resource, query);
+  openSearchTarget(searchDocumentHash(resource, query));
+}
+
+export function openSearchTarget(path: string): void {
+  const hash = path.startsWith("#") ? path : `#${path}`;
   if (window.location.hash === hash) {
-    // A second click on the same result must reopen find even after it was closed.
+    // Selecting the current target must still notify navigation listeners.
     window.dispatchEvent(new HashChangeEvent("hashchange"));
   } else window.location.hash = hash;
 }

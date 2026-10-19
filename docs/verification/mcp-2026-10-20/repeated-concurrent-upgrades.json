@@ -1,0 +1,105 @@
+{
+  "passed": true,
+  "releasedVersion": "0.2.4",
+  "results": [
+    {
+      "engine": "sqlite",
+      "concurrentStarts": 3,
+      "starts": [
+        {
+          "index": 0,
+          "passed": true,
+          "releasedVersion": "0.2.4",
+          "engine": "sqlite",
+          "retainedTables": 120,
+          "newTablesEmpty": true,
+          "legacyRecordPreservedAndCredentialRejected": true
+        },
+        {
+          "index": 1,
+          "passed": true,
+          "releasedVersion": "0.2.4",
+          "engine": "sqlite",
+          "retainedTables": 120,
+          "newTablesEmpty": true,
+          "legacyRecordPreservedAndCredentialRejected": true
+        },
+        {
+          "index": 2,
+          "passed": true,
+          "releasedVersion": "0.2.4",
+          "engine": "sqlite",
+          "retainedTables": 120,
+          "newTablesEmpty": true,
+          "legacyRecordPreservedAndCredentialRejected": true
+        }
+      ]
+    },
+    {
+      "engine": "pg17",
+      "concurrentStarts": 3,
+      "starts": [
+        {
+          "index": 0,
+          "passed": true,
+          "releasedVersion": "0.2.4",
+          "engine": "postgres",
+          "retainedTables": 120,
+          "newTablesEmpty": true,
+          "legacyRecordPreservedAndCredentialRejected": true
+        },
+        {
+          "index": 1,
+          "passed": true,
+          "releasedVersion": "0.2.4",
+          "engine": "postgres",
+          "retainedTables": 120,
+          "newTablesEmpty": true,
+          "legacyRecordPreservedAndCredentialRejected": true
+        },
+        {
+          "index": 2,
+          "passed": true,
+          "releasedVersion": "0.2.4",
+          "engine": "postgres",
+          "retainedTables": 120,
+          "newTablesEmpty": true,
+          "legacyRecordPreservedAndCredentialRejected": true
+        }
+      ]
+    },
+    {
+      "engine": "pg18",
+      "concurrentStarts": 3,
+      "starts": [
+        {
+          "index": 0,
+          "passed": true,
+          "releasedVersion": "0.2.4",
+          "engine": "postgres",
+          "retainedTables": 120,
+          "newTablesEmpty": true,
+          "legacyRecordPreservedAndCredentialRejected": true
+        },
+        {
+          "index": 1,
+          "passed": true,
+          "releasedVersion": "0.2.4",
+          "engine": "postgres",
+          "retainedTables": 120,
+          "newTablesEmpty": true,
+          "legacyRecordPreservedAndCredentialRejected": true
+        },
+        {
+          "index": 2,
+          "passed": true,
+          "releasedVersion": "0.2.4",
+          "engine": "postgres",
+          "retainedTables": 120,
+          "newTablesEmpty": true,
+          "legacyRecordPreservedAndCredentialRejected": true
+        }
+      ]
+    }
+  ]
+}

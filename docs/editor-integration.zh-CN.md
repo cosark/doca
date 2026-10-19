@@ -8,11 +8,11 @@
 
 | 格式 | 当前安装包 | 宿主入口 |
 | --- | --- | --- |
-| 富文本 | @smartdoca/slate 0.4.20 | document-editor.tsx |
+| 富文本 | @smartdoca/slate 0.4.23 | document-editor.tsx |
 | Markdown | @smartdoca/markdown 0.4.3 | markdown-editor.tsx |
-| 表格 | @smartdoca/sheet 0.2.3 | spreadsheet-editor.tsx |
-| 画布 | @smartdoca/canvas 0.4.3 | canvas-editor.tsx |
-| 幻灯片 | @smartdoca/slides 0.3.0-alpha.2 | presentation-editor.tsx |
+| 表格 | @smartdoca/sheet 0.2.4 | spreadsheet-editor.tsx |
+| 画布 | @smartdoca/canvas 0.5.6 | canvas-editor.tsx |
+| 幻灯片 | @smartdoca/slides 0.3.0-alpha.3 | presentation-editor.tsx |
 
 入口位于 [文档 feature](../apps/web/src/features/documents)。包负责模型、编辑命令、撤销、格式渲染、选择与转换；宿主负责身份、ACL、上传下载、引用、用户卡片、导航、评论和协同连接。语言只影响界面，不翻译用户正文，不重建编辑器。
 
@@ -144,3 +144,13 @@ Active and readonly/history/trash/audit surfaces supply stable `onAttachmentPrev
 ## Canvas 0.5.5 host integration — 2026-10-18
 
 Doca 0.2.1 pins the official npm `@smartdoca/canvas` 0.5.5. This patch removes the rich paragraph menu's code-block action and scopes inline/suggestion CSS under the canvas root. Public exports, dependencies, declarations, model and codec remain unchanged from 0.5.4. The host continues the existing inline and resource callbacks; this integration adds no adapter, persisted-format conversion, history rewrite or new compatibility behavior. The title/emoji and access-tag changes are host presentation only. Published-package hashes and isolated browser/image checks are recorded in `docs/verification/release-0.2.1/`.
+
+## Canvas 0.5.6 与 Sheet 0.2.4 对接 — 2026-10-20
+
+当前代码锁定正式 npm 包 `@smartdoca/canvas` 0.5.6、`@smartdoca/sheet` 0.2.4。公开入口及宿主使用的声明不变；Canvas model 和 Sheet model/Yjs/XLSX 与上一版逐字节一致。Canvas 私有渲染声明和 IO 分包引用有变化；Sheet 将已有 0.25.1 运行时的 `@univerjs/drawing-ui`、`@univerjs/sheets-filter` 声明为直接依赖。
+
+用户明确同意上游对旧图形的视图规则：包含 diagram-body、仅有 frame/diagram-node 名称且没有冲突 kind/显式容器角色的包装识别为图形，隐藏重复外框填充/描边和生成的 Frame 标题，并令图形、文字尺寸跟随包装；显式容器和无形状名的自定义路径保留其角色与轮廓。已有椭圆/菱形端点按新轮廓显示，原四个中点端口索引不变并新增八个端口。打开、选中、视口变化和关闭不得回写原模型/checkpoint；显式缩放或编辑通过原生协同事务与撤销栈保存。不批量转换、不补字段、不变更 DDL、schema/codec、epoch、checkpoint 或待确认消息身份。Canvas 保持 aidcanvas-yjs/schema 1，Sheet 保持 exlsx-cell-registers/schema 6，未知版本继续精确拒绝。
+
+Canvas 图片先选中再预览；复制 PNG 像素通过宿主 resolveDownloadUrl 鉴权，阅读模式也可用。历史/回收站预览保留原有访问参数，服务端仍拒绝不支持的审计资源访问。Sheet 使用包内原生筛选渲染及当前内联图片几何/预览，不修复传入的文档数据。资产 UUID、ACL、临时 presence、永久锚点、持久 ACK 和原 update 保持原归属。已有历史读取器、虚拟工作表恢复、规范化代码和已批准显示默认值仅审计，不扩展其兼容行为。
+
+回退依据为原 Canvas 0.5.5 / Sheet 0.2.3 制品、依赖和锁文件（源码提交 589a3589820770d218bea418fe7c93cd10583f95）；制品身份见 docs/verification/editor-packages-2026-10-20/package-audit.json。服务端与 Web 一起更新，回退前保留后续写入，不承诺旧界面与新图形行为一致。验证只使用隔离数据库/文档，未部署；通过项目及未覆盖范围见[接入验证](verification/editor-packages-2026-10-20/README.md)。

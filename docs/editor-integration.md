@@ -8,11 +8,11 @@ The current checkout integrates five editors. Use actual installed exports; targ
 
 | Format | Installed package | Host entry |
 | --- | --- | --- |
-| Rich text | @smartdoca/slate 0.4.20 | document-editor.tsx |
+| Rich text | @smartdoca/slate 0.4.23 | document-editor.tsx |
 | Markdown | @smartdoca/markdown 0.4.3 | markdown-editor.tsx |
-| Spreadsheet | @smartdoca/sheet 0.2.3 | spreadsheet-editor.tsx |
-| Canvas | @smartdoca/canvas 0.4.3 | canvas-editor.tsx |
-| Slides | @smartdoca/slides 0.3.0-alpha.2 | presentation-editor.tsx |
+| Spreadsheet | @smartdoca/sheet 0.2.4 | spreadsheet-editor.tsx |
+| Canvas | @smartdoca/canvas 0.5.6 | canvas-editor.tsx |
+| Slides | @smartdoca/slides 0.3.0-alpha.3 | presentation-editor.tsx |
 
 Entries are in the [document feature](../apps/web/src/features/documents). Packages own models, editing commands, undo, rendering, selections, and conversion. The host owns identity, ACLs, uploads/downloads, references, user cards, navigation, comments, and collaboration transport. Locale updates chrome without translating content or rebuilding the editor.
 
@@ -156,3 +156,13 @@ Active and readonly/history/trash/audit surfaces supply stable `onAttachmentPrev
 ## Canvas 0.5.5 host integration — 2026-10-18
 
 Doca 0.2.1 pins the official npm `@smartdoca/canvas` 0.5.5. This patch removes the rich paragraph menu's code-block action and scopes inline/suggestion CSS under the canvas root. Public exports, dependencies, declarations, model and codec remain unchanged from 0.5.4. The host continues the existing inline and resource callbacks; this integration adds no adapter, persisted-format conversion, history rewrite or new compatibility behavior. The title/emoji and access-tag changes are host presentation only. Published-package hashes and isolated browser/image checks are recorded in `docs/verification/release-0.2.1/`.
+
+## Canvas 0.5.6 and Sheet 0.2.4 integration — 2026-10-20
+
+The current checkout pins the official npm artifacts `@smartdoca/canvas` 0.5.6 and `@smartdoca/sheet` 0.2.4. Public entrypoint maps and host-facing declarations are unchanged. Canvas model bytes and Sheet model/Yjs/XLSX bytes match the preceding artifacts. Canvas has changed private rendering declarations and IO bundle references; Sheet explicitly adds `@univerjs/drawing-ui` and `@univerjs/sheets-filter` at the already locked 0.25.1 runtime. No host-source imports or second save channel are introduced.
+
+The owner explicitly approved the upstream Canvas view rules for existing diagrams: a named `frame`/`diagram-node` wrapper with a `diagram-body`, without an explicit conflicting kind/container role, is recognized as a diagram; its duplicate wrapper fill/stroke and generated `Frame` label are suppressed and body/text geometry follows the wrapper. Native explicit containers and unnamed custom paths retain their role/outline. Existing ellipse/diamond endpoint anchors follow the current outline; the four original midpoint port indices remain stable while eight new ports are added. Opening, selecting, viewport changes and closing must not rewrite the original model/checkpoint. Explicit resize/edit operations use the native collaborative transaction and undo stack. No batch conversion, field backfill, DDL, schema/codec adapter, epoch/checkpoint replacement or pending-message reset is authorized. Canvas remains `aidcanvas-yjs` schema 1; Sheet remains `exlsx-cell-registers` schema 6, with exact current-schema rejection.
+
+Canvas images now select first and preview on the next click. PNG clipboard copying uses the host's `resolveDownloadUrl` authorization, including readonly views; snapshot/trash preview adapters preserve their existing access flags, and the server continues rejecting unsupported audit asset access. Sheet uses the shipped native filter renderer and live inline-image geometry/preview; image rendering does not repair incoming document data. Asset UUIDs, ACL checks, transient presence, permanent anchors, durable ACKs and original updates keep their existing ownership.
+
+Existing historical readers, virtual worksheet recovery, normalization helpers and approved display defaults remain in their established paths; they were audited but are not redesigned or extended here. Retain the preceding Canvas 0.5.5 / Sheet 0.2.3 registry artifacts, package pins and lockfile from source revision `589a3589820770d218bea418fe7c93cd10583f95`; artifact identities are recorded in `docs/verification/editor-packages-2026-10-20/package-audit.json`. Update server and Web together. Preserve subsequent writes before rollback; the earlier UI is not guaranteed to render newer diagram interactions identically. No user database or document is used for verification and no deployment is performed. See the [integration verification](verification/editor-packages-2026-10-20/README.md) for passed cases and limits.

@@ -26,6 +26,35 @@ export type CanvasRenderResult = {
 };
 
 let active = 0;
+const waiting: { start(): void }[] = [];
+async function acquireRender(signal?: AbortSignal) {
+  if (active < 2) {
+    active++;
+    return;
+  }
+  if (waiting.length >= 4) fail(429, "canvas_render_busy");
+  await new Promise<void>((resolve, reject) => {
+    const abort = () => {
+      const index = waiting.indexOf(entry);
+      if (index >= 0) waiting.splice(index, 1);
+      reject(signal!.reason);
+    };
+    const entry = {
+      start() {
+        signal?.removeEventListener("abort", abort);
+        active++;
+        resolve();
+      },
+    };
+    waiting.push(entry);
+    signal?.addEventListener("abort", abort, { once: true });
+    if (signal?.aborted) abort();
+  });
+}
+function releaseRender() {
+  active--;
+  waiting.shift()?.start();
+}
 let bundle: Promise<string> | undefined;
 async function rendererBundle() {
   bundle ??= readFile(
@@ -44,10 +73,9 @@ export async function renderCanvas(
   signal?: AbortSignal,
 ): Promise<CanvasRenderResult> {
   signal?.throwIfAborted();
-  if (active >= 2) fail(429, "canvas_render_busy");
   if (Buffer.byteLength(JSON.stringify(input)) > 48 * 1024 * 1024)
     fail(413, "canvas_render_too_large");
-  active++;
+  await acquireRender(signal);
   let browser: Awaited<ReturnType<typeof chromium.launch>> | undefined;
   const abort = () => {
     void browser?.close();
@@ -114,7 +142,7 @@ export async function renderCanvas(
     try {
       await browser?.close();
     } finally {
-      active--;
+      releaseRender();
     }
   }
 }

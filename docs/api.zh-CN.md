@@ -67,6 +67,8 @@
 
 AI 会话和任务位于 `/ai`，模型工具受会话范围、真实资源权限和审批约束。`POST /ai/jobs/:id/approval` 接受 `{approvalId,approved}`，仅任务所属用户可决定；审批不改变用户原有资源权限。
 
+`POST /mcp` 使用独立服务 Bearer token 提供 Streamable HTTP。个人设置使用 `GET/PUT /me/mcp` 和 `/me/mcp-services`；公司集成使用 `/admin/mcp-services`，每次 MCP 操作须传目标 `userId`。服务更新、重置 token 和撤销均要求当前 revision；token 仅在创建/重置后显示。详见 [MCP 配置、工具发现和文件传输](mcp.zh-CN.md)。
+
 知识册命令、编排运行、人工待办与来源订阅见[知识册](knowledge-books.zh-CN.md)；统一来源在 `/content`，见[内容协议](plugin-content.zh-CN.md)。已安装插件业务路由为 `/plugins/:pluginId/...`，实际可用性取决于当前加载的包。宿主没有随手记或邮箱专用业务 API，见[功能与边界](features.zh-CN.md)。
 
 ## 健康与源码

@@ -60,6 +60,11 @@
         "knowledge-books",
         "Knowledge books",
         "知识册"
+      ],
+      [
+        "mcp",
+        "MCP services",
+        "MCP 服务"
       ]
     ]
   },
@@ -266,6 +271,11 @@
     "en": "Releases",
     "zh": "发行记录",
     "pages": [
+      [
+        "releases/0.2.5",
+        "0.2.5",
+        "0.2.5"
+      ],
       [
         "releases/0.2.4",
         "0.2.4",

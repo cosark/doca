@@ -1,0 +1,42 @@
+{
+  "passed": true,
+  "documents": [
+    {
+      "id": "1069e85f-cf8f-4192-bfc6-d0cb6d84981d",
+      "format": "rich_text",
+      "title": "Codex MCP 验收报告",
+      "url": "http://127.0.0.1:39472/#/r/1069e85f-cf8f-4192-bfc6-d0cb6d84981d"
+    },
+    {
+      "id": "b390cf40-66f4-4cbe-b26a-289be03809e7",
+      "format": "canvas",
+      "title": "Codex MCP 验收画板",
+      "url": "http://127.0.0.1:39472/#/r/b390cf40-66f4-4cbe-b26a-289be03809e7"
+    },
+    {
+      "id": "1c81b230-99b2-4851-b3a0-d1beda2ed8dc",
+      "format": "presentation",
+      "title": "Codex MCP 验收 PPT",
+      "url": "http://127.0.0.1:39472/#/r/1c81b230-99b2-4851-b3a0-d1beda2ed8dc"
+    },
+    {
+      "id": "c89cff4c-9111-4d55-b93f-72d8a00b8681",
+      "format": "spreadsheet",
+      "title": "Codex MCP 验收 Excel",
+      "url": "http://127.0.0.1:39472/#/r/c89cff4c-9111-4d55-b93f-72d8a00b8681"
+    }
+  ],
+  "folderId": "8f89a112-2998-4c50-aa51-b84d184702b1",
+  "uploadedFileId": "c8e88f18-7a07-4196-80ef-30f029b1242c",
+  "xlsxFileId": "c8cbc046-eb39-45bf-b8c9-0c34e487c310",
+  "sourceSha256": "2c6f382fb0033841b3aa78430d73ab685192a76623fff7afaa206cab1eca5cf8",
+  "downloadSha256": "2c6f382fb0033841b3aa78430d73ab685192a76623fff7afaa206cab1eca5cf8",
+  "xlsxSignatureVerified": true,
+  "canvasViewed": true,
+  "client": "codex-cli 0.162.1",
+  "independentReadback": true,
+  "mcpCallsCompleted": 42,
+  "fileBytesVerified": 54,
+  "xlsxArchiveVerified": true,
+  "delegatedOwnershipVerified": true
+}

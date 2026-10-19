@@ -364,6 +364,9 @@ export const TOOL_EXAMPLES: Record<string, Record<string, unknown>[]> = {
     },
   ],
   canvas_edit: [
+    { ...editBase, operations: [{type:"diagramEdge",id:"已读取的连接器ID",autoRoute:true,autoLabel:true}] },
+    { ...editBase, operations: [{type:"diagramEdge",id:"已读取的连接器ID",sourcePort:"right",targetPort:"left",mode:"elbow",offset:960,autoLabel:true}] },
+    { ...editBase, operations: [{type:"diagramNode",id:"已读取的流程节点ID",width:360,height:180,fill:"#fce8e6",stroke:"#d93025"}] },
     { ...editBase, operations: [{type:"createFlowchart",id:"new-flow",x:60,y:60,
       nodes:[{id:"start",text:"开始",x:0,y:0,width:160,height:64,shape:"rounded"},{id:"finish",text:"完成",x:260,y:0,width:160,height:64,shape:"rounded"}],
       edges:[{id:"e1",sourceId:"start",targetId:"finish",mode:"elbow"}]}] },

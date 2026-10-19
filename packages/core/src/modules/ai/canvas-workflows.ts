@@ -2,6 +2,7 @@ import { randomUUID } from "node:crypto";
 import { z } from "zod";
 import type { CanvasModel, SceneNode } from "@smartdoca/canvas/model";
 import { fail } from "../../shared/errors.js";
+import { canvasConnectorRoute, canvasConnectorLabel, autoCanvasConnector } from "./canvas-connectors.js";
 import { nativeCanvasElement } from "../../shared/canvas-elements.js";
 
 // Host AI workflows compose the shipped public CanvasModel commands. These are
@@ -103,9 +104,13 @@ export const canvasWorkflowSchemas = [
           targetId: id,
           label: z.string().max(200).optional(),
           mode: z.enum(["straight", "elbow"]),
+          autoRoute: z.boolean().optional().describe("true 自动选择原生折线端口和避开卡片的绕行，不再提供 sourcePort/targetPort/offset；mode 填 elbow"),
+          autoLabel: z.boolean().optional().describe("新标签默认自动避让；false 明确居中。true 与 labelOffset 不能同时提供"),
           sourcePort: z.enum(["top", "right", "bottom", "left"]).optional(),
           targetPort: z.enum(["top", "right", "bottom", "left"]).optional(),
-          offset: number.optional(),
+          offset: number.optional().describe("仅 elbow 且两端同为 top/bottom 或同为 left/right 时生效；前者绕行 x，后者绕行 y，混合端口不支持此参数"),
+          labelOffset: z.strictObject({ x: number, y: number }).optional()
+            .describe("标签相对连线路径中点的偏移（像素），用于避开卡片与其他连线；不改变箭头端点"),
         }),
       )
       .max(200),
@@ -139,6 +144,21 @@ export const canvasWorkflowSchemas = [
     children: z.array(z.record(z.string(), z.unknown())).max(1000).optional(),
   }),
   z.strictObject({ type: z.literal("table"), id, command: canvasTableCommand }),
+  z.strictObject({
+    type: z.literal("diagramNode"), id,
+    width: size.optional(), height: size.optional(),
+    fill: z.string().optional(), stroke: z.string().optional(),
+  }),
+  z.strictObject({
+    type: z.literal("diagramEdge"), id,
+    autoLabel: z.boolean().optional(),
+    autoRoute: z.boolean().optional(),
+    sourcePort: z.enum(["top", "right", "bottom", "left"]).optional(),
+    targetPort: z.enum(["top", "right", "bottom", "left"]).optional(),
+    mode: z.enum(["straight", "elbow"]).optional(),
+    offset: number.nullable().optional(),
+    labelOffset: z.strictObject({ x: number, y: number }).optional(),
+  }),
 ] as const;
 
 interface N extends SceneNode {
@@ -257,6 +277,16 @@ export function assertCanvasPrimitiveOperation(model: CanvasModel, op: any) {
   )
     reject();
   if (op.type === "patch") {
+    const target = byId.get(op.id);
+    if (target?.data?.kind === "diagram-node" &&
+        ["width", "height"].some(key => key in op.patch))
+      fail(400, `流程节点尺寸请用 {type:"diagramNode",id:"${op.id}",width:目标宽度,height:目标高度}，同步调整外框、内部图形与文字边界；单独 patch 外层 Frame 会导致显示尺寸不一致。移动节点仍用 patch x/y。`, { code: "canvas_diagram_resize_required" });
+    if (target?.data?.kind === "diagram-node" &&
+        (("fill" in op.patch && op.patch.fill !== "transparent") ||
+          ["stroke", "strokeWidth"].some(key => key in op.patch))) {
+      const body = target.children?.find(child => child.data?.kind === "diagram-body");
+      fail(400, `流程节点外层 Frame 必须保持透明；填色和边框请 patch 内部 diagram-body${body ? `（id:${body.id}）` : "，先完整读取节点"}，不要给外框叠加色块。`, { code: "canvas_diagram_style_required" });
+    }
     const chain = ancestors(op.id),
       owner = chain.find((n) => n.data?.kind === "table");
     if (
@@ -285,6 +315,17 @@ export function assertCanvasPrimitiveOperation(model: CanvasModel, op: any) {
     }
 }
 function diagram(op: any): N {
+  for (const node of op.nodes) {
+    const lines = node.text.trim() ? node.text.split(/\r\n|\r|\n/).length : 0;
+    const minimumHeight = lines * 24 + 24;
+    if (lines && node.height < minimumHeight)
+      fail(400, `流程节点 ${node.id} 含 ${lines} 行文字，16px 字号至少需要 ${minimumHeight}px 高度（含上下边距）；请增高，并为自动折行留出额外空间。尚未保存本批修改。`, { code: "canvas_diagram_node_invalid" });
+  }
+  for (let i = 0; i < op.nodes.length; i++) for (let j = i + 1; j < op.nodes.length; j++) {
+    const a = op.nodes[i], b = op.nodes[j];
+    if (a.x < b.x + b.width && b.x < a.x + a.width && a.y < b.y + b.height && b.y < a.y + a.height)
+      fail(400, `流程节点 ${a.id} 与 ${b.id} 的矩形边界重叠；请调整 x/y 或尺寸并保留走线空间。尚未保存本批图形。`, { code: "canvas_diagram_overlap" });
+  }
   const nodes: N[] = op.nodes.map((n: any) => ({
     id: n.id,
     tag: "Frame",
@@ -330,7 +371,15 @@ function diagram(op: any): N {
     ],
   }));
   const byId = new Map(nodes.map((n) => [n.id, n]));
-  const edges: N[] = op.edges.flatMap((edge: any) => {
+  const occupied = [...(op.labelOccupied ?? [])];
+  const routed: { x: number; y: number }[][] = [];
+  const edges: N[] = op.edges.flatMap((inputEdge: any) => {
+    let edge = inputEdge;
+    if (edge.autoRoute) {
+      if (edge.mode !== "elbow" || [edge.sourcePort, edge.targetPort, edge.offset].some(v => v !== undefined))
+        fail(400, "autoRoute 使用原生 elbow 自动选择端口与绕行，请省略 sourcePort/targetPort/offset", { code: "canvas_diagram_node_invalid" });
+      edge = { ...edge, ...autoCanvasConnector(nodes.map(n => ({ id: n.id, x: Number(n.x), y: Number(n.y), width: Number(n.width), height: Number(n.height) })), edge.sourceId, edge.targetId, routed) };
+    }
     const a = byId.get(edge.sourceId),
       b = byId.get(edge.targetId);
     if (!a || !b || a === b)
@@ -364,68 +413,9 @@ function diagram(op: any): N {
       x: Number(b.x) + Number(b.width) * targetAnchor.x,
       y: Number(b.y) + Number(b.height) * targetAnchor.y,
     };
-    const sourceVertical = sourceAnchor.y === 0 || sourceAnchor.y === 1;
-    const targetVertical = targetAnchor.y === 0 || targetAnchor.y === 1;
-    let points = [from, to];
-    if (edge.mode === "elbow") {
-      const mid = sourceVertical ? (from.y + to.y) / 2 : (from.x + to.x) / 2;
-      if (edge.offset !== undefined && sourceVertical === targetVertical) {
-        const start = sourceVertical
-          ? { x: from.x, y: from.y + (sourceAnchor.y === 0 ? -32 : 32) }
-          : { x: from.x + (sourceAnchor.x === 0 ? -32 : 32), y: from.y };
-        const end = targetVertical
-          ? { x: to.x, y: to.y + (targetAnchor.y === 0 ? -32 : 32) }
-          : { x: to.x + (targetAnchor.x === 0 ? -32 : 32), y: to.y };
-        points = sourceVertical
-          ? [
-              from,
-              start,
-              { x: edge.offset, y: start.y },
-              { x: edge.offset, y: end.y },
-              end,
-              to,
-            ]
-          : [
-              from,
-              start,
-              { x: start.x, y: edge.offset },
-              { x: end.x, y: edge.offset },
-              end,
-              to,
-            ];
-      } else if (sourceVertical !== targetVertical)
-        points = [
-          from,
-          sourceVertical ? { x: from.x, y: to.y } : { x: to.x, y: from.y },
-          to,
-        ];
-      else
-        points = sourceVertical
-          ? [from, { x: from.x, y: mid }, { x: to.x, y: mid }, to]
-          : [from, { x: mid, y: from.y }, { x: mid, y: to.y }, to];
-    }
-    const lengths = points
-      .slice(1)
-      .map((p, i) => Math.hypot(p.x - points[i]!.x, p.y - points[i]!.y));
-    let remaining = lengths.reduce((a, b) => a + b, 0) / 2,
-      middle = { x: (from.x + to.x) / 2, y: (from.y + to.y) / 2 };
-    for (let i = 0; i < lengths.length; i++) {
-      if (remaining <= lengths[i]!) {
-        const ratio = remaining / (lengths[i] || 1);
-        middle = {
-          x: points[i]!.x + (points[i + 1]!.x - points[i]!.x) * ratio,
-          y: points[i]!.y + (points[i + 1]!.y - points[i]!.y) * ratio,
-        };
-        break;
-      }
-      remaining -= lengths[i]!;
-    }
-    const control =
-      [...points].reverse().find((p) => p.x !== to.x || p.y !== to.y) ?? from;
-    const angle = Math.atan2(to.y - control.y, to.x - control.x);
-    const head = `M${to.x - 9 * Math.cos(angle - 0.48)} ${to.y - 9 * Math.sin(angle - 0.48)}L${to.x} ${to.y}L${to.x - 9 * Math.cos(angle + 0.48)} ${to.y - 9 * Math.sin(angle + 0.48)}`;
-    const path =
-      points.map((p, i) => `${i ? "L" : "M"}${p.x} ${p.y}`).join("") + head;
+    const route = canvasConnectorRoute(from, to, sourceAnchor, targetAnchor, edge.mode, edge.offset);
+    routed.push(route.points);
+    const { middle, path } = route;
     const result: N[] = [
       {
         id: edge.id,
@@ -451,24 +441,34 @@ function diagram(op: any): N {
       },
     ];
     if (edge.label) {
+      if (edge.autoLabel && edge.labelOffset !== undefined)
+        fail(400, "autoLabel 与 labelOffset 不能同时提供", { code: "canvas_diagram_node_invalid" });
       const boxId = uuid();
+      // Field names such as source_family_id must remain on one readable line.
+      const labelWidth = Math.max(96, 12 + Array.from(edge.label as string)
+        .reduce((width, char) => width + (/[^\u0000-\u00ff]/.test(char) ? 13 : 8), 0));
+      const labelOffset = edge.labelOffset ?? (edge.autoLabel === false ? { x: 0, y: 0 } : canvasConnectorLabel(route, labelWidth, 28,
+        (op.labelObstacles ?? nodes).map((n: any) => ({ x: Number(n.x), y: Number(n.y), width: Number(n.width), height: Number(n.height) })), occupied));
+      occupied.push({ x: middle.x - labelWidth / 2 + labelOffset.x, y: middle.y - 14 + labelOffset.y, width: labelWidth, height: 28 });
       result[0]!.data!.labelId = boxId;
       result.push({
         id: boxId,
         tag: "Frame",
         name: "connector-label",
-        x: middle.x - 48,
-        y: middle.y - 14,
-        width: 96,
+        x: middle.x - labelWidth / 2 + labelOffset.x,
+        y: middle.y - 14 + labelOffset.y,
+        width: labelWidth,
         height: 28,
         fill: "#ffffff",
         hitChildren: false,
         editable: true,
-        data: { kind: "connector-label", ownerId: edge.id },
+        data: { kind: "connector-label", ownerId: edge.id,
+          offset: labelOffset },
         children: [
-          label(uuid(), edge.label, 5, 4, 86, 20, {
+          label(uuid(), edge.label, 5, 4, labelWidth - 10, 20, {
             fontSize: 13,
             textAlign: "center",
+            textWrap: "none",
             data: { kind: "node-label" },
           }),
         ],
@@ -482,7 +482,7 @@ function diagram(op: any): N {
     name: "group",
     x: op.x,
     y: op.y,
-    children: [...edges, ...nodes],
+    children: [...edges.filter(n => n.data?.kind === "connector"), ...edges.filter(n => n.data?.kind === "connector-label"), ...nodes],
   };
 }
 function mindmap(op: any): N {
@@ -1017,6 +1017,140 @@ export function executeCanvasWorkflow(model: CanvasModel, op: any): boolean {
   )[op.type];
   if (create) {
     model.add(create(op));
+    return true;
+  }
+  if (op.type === "diagramEdge") {
+    const before = model.getValue().scene, next = structuredClone(before);
+    const all = canvasSceneNodes(next), byId = new Map(all.map(n => [n.id, n]));
+    const parents = new Map<string, string>();
+    for (const n of all) for (const child of n.children ?? []) parents.set(child.id, n.id);
+    const edge = byId.get(op.id), source = byId.get(edge?.data?.sourceId), target = byId.get(edge?.data?.targetId);
+    if (edge?.data?.kind !== "connector" || source?.data?.kind !== "diagram-node" || target?.data?.kind !== "diagram-node" ||
+        parents.get(edge.id) !== parents.get(source.id) || parents.get(edge.id) !== parents.get(target.id) ||
+        edge.data.startHead !== "none" || edge.data.endHead !== "arrow" ||
+        ["axis", "bend", "vertices", "curveOffset"].some(key => edge.data![key] !== undefined) ||
+        ![source, target].every(n => [n.x, n.y, n.width, n.height].every(v => typeof v === "number" && Number.isFinite(v)) &&
+          (n.rotation === undefined || n.rotation === 0) && [n.scale, n.scaleX, n.scaleY].every(v => v === undefined || v === 1)))
+      fail(400, "diagramEdge 仅支持同一流程图内未旋转缩放的原生节点及普通箭头；请完整读取目标连接器", { code: "canvas_diagram_node_invalid" });
+    if (op.autoRoute) {
+      if ([op.sourcePort, op.targetPort, op.mode, op.offset].some(v => v !== undefined))
+        fail(400, "autoRoute 自动选择端口与绕行，请省略 sourcePort/targetPort/mode/offset", { code: "canvas_diagram_node_invalid" });
+      const siblings = all.filter(n => parents.get(n.id) === parents.get(edge.id));
+      const diagramNodes = siblings.filter(n => n.data?.kind === "diagram-node");
+      if (diagramNodes.some(n => ![n.x, n.y, n.width, n.height].every(v => typeof v === "number" && Number.isFinite(v)) ||
+        (n.rotation !== undefined && n.rotation !== 0) || [n.scale, n.scaleX, n.scaleY].some(v => v !== undefined && v !== 1)))
+        fail(400, "自动走线需要同组节点未旋转缩放，请使用明确端口或原生界面", { code: "canvas_diagram_node_invalid" });
+      const others = siblings.filter(n => n.id !== edge.id && n.data?.kind === "connector" &&
+        ["straight", "elbow"].includes(n.data.mode) && n.data.sourceAnchor && n.data.targetAnchor &&
+        [n.data.from?.x, n.data.from?.y, n.data.to?.x, n.data.to?.y].every(v => typeof v === "number" && Number.isFinite(v)))
+        .map(n => canvasConnectorRoute(n.data!.from, n.data!.to, n.data!.sourceAnchor, n.data!.targetAnchor, n.data!.mode, n.data!.offset).points);
+      const automatic = autoCanvasConnector(diagramNodes.map(n => ({ id: n.id, x: Number(n.x), y: Number(n.y), width: Number(n.width), height: Number(n.height) })), source.id, target.id, others);
+      op = { ...op, ...automatic, mode: "elbow", offset: automatic.offset ?? null };
+    } else if (!op.sourcePort || !op.targetPort) {
+      fail(400, "明确提供 sourcePort/targetPort，或用 autoRoute:true 自动选择原生端口与绕行", { code: "canvas_diagram_node_invalid" });
+    }
+    const labelBox = edge.data.labelId ? byId.get(edge.data.labelId) : undefined;
+    const text = labelBox?.children?.find(n => n.tag === "Text");
+    if (edge.data.labelId && (!labelBox || labelBox.data?.ownerId !== edge.id || typeof text?.text !== "string" ||
+        ![labelBox.width, labelBox.height].every(v => typeof v === "number" && Number.isFinite(v))))
+      fail(400, "连接器标签结构无效，请完整读取后修正", { code: "canvas_diagram_node_invalid" });
+    const routeOffset = op.offset === null ? undefined : op.offset !== undefined ? op.offset : edge.data.offset;
+    const mode = op.mode ?? edge.data.mode;
+    if (!["straight", "elbow"].includes(mode) || (routeOffset !== undefined && (typeof routeOffset !== "number" || !Number.isFinite(routeOffset))))
+      fail(400, "请明确选择 straight/elbow 及有效绕行参数", { code: "canvas_diagram_node_invalid" });
+    if (op.autoLabel && op.labelOffset !== undefined) fail(400, "autoLabel 与 labelOffset 不能同时提供", { code: "canvas_diagram_node_invalid" });
+    const labelOffset = op.autoLabel ? undefined : op.labelOffset ?? labelBox?.data?.offset ?? { x: 0, y: 0 };
+    if (labelOffset && ![labelOffset.x, labelOffset.y].every(v => typeof v === "number" && Number.isFinite(v)))
+      fail(400, "连接器标签偏移无效", { code: "canvas_diagram_node_invalid" });
+    const generated = diagram({ id: "route-calculation", x: 0, y: 0,
+      labelObstacles: all.filter(n => n.data?.kind === "diagram-node" && parents.get(n.id) === parents.get(edge.id)),
+      labelOccupied: all.filter(n => n.id !== labelBox?.id && n.data?.kind === "connector-label" && parents.get(n.id) === parents.get(edge.id)),
+      nodes: [source, target].map(n => ({ id: n.id, x: n.x, y: n.y, width: n.width, height: n.height, shape: n.data!.shape, text: "" })),
+      edges: [{ id: edge.id, sourceId: source.id, targetId: target.id, sourcePort: op.sourcePort, targetPort: op.targetPort,
+        mode, offset: routeOffset, label: text?.text, labelOffset }],
+    }).children!;
+    const route = generated.find(n => n.id === edge.id)!;
+    const { labelId: _label, ...geometry } = route.data!;
+    edge.path = route.path;
+    edge.data = { ...edge.data, ...geometry };
+    if (op.offset === null) delete edge.data.offset;
+    const box = generated.find(n => n.data?.kind === "connector-label");
+    if (labelBox && box) {
+      labelBox.x = Number(box.x) + (Number(box.width) - Number(labelBox.width)) / 2;
+      labelBox.y = Number(box.y) + (Number(box.height) - Number(labelBox.height)) / 2;
+      if (op.autoLabel || op.labelOffset !== undefined)
+        labelBox.data = { ...labelBox.data, offset: box.data!.offset };
+      const parent = canvasSceneNodes(next).find(n => n.id === parents.get(edge.id)) ?? next;
+      const children = parent.children! as N[];
+      const labelIndex = children.findIndex(n => n.id === labelBox.id);
+      const lastLine = children.findLastIndex(n => n.data?.kind === "connector");
+      // Moving an already visible label on every reroute would repeatedly halve
+      // native ordering keys and eventually exhaust their numeric precision.
+      if (labelIndex <= lastLine) {
+        children.splice(labelIndex, 1);
+        children.splice(lastLine, 0, labelBox);
+      }
+    }
+    model.applyScene(next, before);
+    return true;
+  }
+  if (op.type === "diagramNode") {
+    const before = model.getValue().scene, next = structuredClone(before);
+    const node = canvasSceneNodes(next).find(n => n.id === op.id);
+    const body = node?.children?.find(n => n.data?.kind === "diagram-body");
+    const text = node?.children?.find(n => n.tag === "Text" && n.data?.kind === "node-label");
+    if (node?.data?.kind !== "diagram-node" || !body || !text ||
+        typeof text.x !== "number" || typeof text.y !== "number")
+      fail(400, "请先完整读取目标；diagramNode 只操作包含原生 diagram-body 和 node-label 的流程节点", { code: "canvas_diagram_node_invalid" });
+    if (op.width !== undefined) {
+      if (op.width <= 2 * text.x) fail(400, "流程节点宽度不足以容纳文字边距", { code: "canvas_diagram_node_invalid" });
+      node.width = body.width = op.width;
+      text.width = op.width - 2 * text.x;
+    }
+    if (op.height !== undefined) {
+      if (op.height <= 2 * text.y) fail(400, "流程节点高度不足以容纳文字边距", { code: "canvas_diagram_node_invalid" });
+      node.height = body.height = op.height;
+      text.height = op.height - 2 * text.y;
+    }
+    if ((op.width !== undefined || op.height !== undefined) && node.data.shape === "diamond") {
+      const w = Number(body.width), h = Number(body.height);
+      body.path = `M${w / 2} 0L${w} ${h / 2}L${w / 2} ${h}L0 ${h / 2}Z`;
+    }
+    if (op.fill !== undefined) body.fill = op.fill;
+    if (op.stroke !== undefined) body.stroke = op.stroke;
+    if (op.width !== undefined || op.height !== undefined) {
+      const all = canvasSceneNodes(next), byId = new Map(all.map(n => [n.id, n]));
+      const parents = new Map<string, string>();
+      for (const n of all) for (const child of n.children ?? []) parents.set(child.id, n.id);
+      for (const edge of all.filter(n => n.data?.kind === "connector" &&
+        [n.data.sourceId, n.data.targetId].includes(node.id))) {
+        const d = edge.data!, source = byId.get(d.sourceId), target = byId.get(d.targetId);
+        const anchors = [d.sourceAnchor, d.targetAnchor];
+        if (![source, target].every(n => n?.data?.kind === "diagram-node" && parents.get(n.id) === parents.get(edge.id) &&
+          [n.x, n.y, n.width, n.height].every(v => typeof v === "number" && Number.isFinite(v)) &&
+          (n.rotation === undefined || n.rotation === 0) && [n.scale, n.scaleX, n.scaleY].every(v => v === undefined || v === 1)) ||
+          !anchors.every(a => a && [[0.5, 0], [1, 0.5], [0.5, 1], [0, 0.5]].some(([x, y]) => a.x === x && a.y === y)) ||
+          !["straight", "elbow"].includes(d.mode) || d.startHead !== "none" || d.endHead !== "arrow" ||
+          ["axis", "bend", "vertices", "curveOffset"].some(key => d[key] !== undefined) ||
+          (d.offset !== undefined && (typeof d.offset !== "number" || !Number.isFinite(d.offset))))
+          fail(400, `连接器 ${edge.id} 不支持随 diagramNode 调整尺寸，请使用原生界面保留复杂走线`, { code: "canvas_diagram_node_invalid" });
+        const from = { x: Number(source!.x) + Number(source!.width) * d.sourceAnchor.x, y: Number(source!.y) + Number(source!.height) * d.sourceAnchor.y };
+        const to = { x: Number(target!.x) + Number(target!.width) * d.targetAnchor.x, y: Number(target!.y) + Number(target!.height) * d.targetAnchor.y };
+        const route = canvasConnectorRoute(from, to, d.sourceAnchor, d.targetAnchor, d.mode, d.offset);
+        edge.data = { ...d, from, to };
+        edge.path = route.path;
+        if (d.labelId) {
+          const box = byId.get(d.labelId), offset = box?.data?.offset;
+          if (box?.data?.kind !== "connector-label" || box.data.ownerId !== edge.id ||
+            ![box.width, box.height, offset === undefined ? 0 : offset.x, offset === undefined ? 0 : offset.y]
+              .every(v => typeof v === "number" && Number.isFinite(v)))
+            fail(400, `连接器 ${edge.id} 标签结构无效，尚未调整节点尺寸`, { code: "canvas_diagram_node_invalid" });
+          box.x = route.middle.x + (offset?.x ?? 0) - Number(box.width) / 2;
+          box.y = route.middle.y + (offset?.y ?? 0) - Number(box.height) / 2;
+        }
+      }
+    }
+    model.applyScene(next, before);
     return true;
   }
   if (op.type !== "table") return false;

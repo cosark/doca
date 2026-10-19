@@ -156,6 +156,22 @@ export interface Schema extends KnowledgeBookTables {
     revision: number;
     updated_at: string;
   };
+  mcp_user_settings: { user_id: string; enabled: number; revision: number; updated_at: string };
+  mcp_services: {
+    id: string; kind: "personal" | "admin"; owner_id: string; name: string;
+    token_hash: string; token_hint: string; enabled: number;
+    grant_mode: "all" | "selected"; tool_ids: string; skill_ids: string;
+    expires_at: string | null; revoked_at: string | null; revision: number;
+    created_at: string; updated_at: string;
+  };
+  mcp_contexts: {
+    id: string; service_id: string; user_id: string; session_id: string; job_id: string;
+    instance_id: string; expires_at: string; closed_at: string | null; created_at: string;
+  };
+  mcp_tool_calls: {
+    context_id: string; request_id: string; tool_id: string; input_hash: string;
+    status: "running" | "completed" | "failed" | "interrupted"; created_at: string; updated_at: string;
+  };
   ai_mcp_keys: {
     id: string;
     user_id: string;

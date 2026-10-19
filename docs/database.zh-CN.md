@@ -53,6 +53,8 @@ AI 会话分别保存用户主动提及、用户明确批准和展示/历史关�
 
 来源订阅、知识分块与关联继续提供索引和搜索。下方知识册表保存配置历史、贡献者来源、人工反馈、运行、不可变成果和人工待办。所有衍生成果遵守原来源权限。新库不创建旧整理和问答表，已有记录不迁移、不删除。
 
+MCP 使用四张独立表记录用户开关、服务凭据哈希与授权、执行上下文和防重复调用声明。`ai_mcp_keys` 已停用，仅保全历史数据，运行时不读取。详见 [MCP 服务](mcp.zh-CN.md)。
+
 ## 当前表与字段清单
 
 以下穷举当前 Schema 接口字段。精确 SQL 类型、空值、默认值、主键/唯一约束和外键以 create-schema.ts 为准；TypeScript 可选属性不等于 SQL 可空列。该清单用于参考，不要求手工建表或修改数据库。
@@ -71,6 +73,10 @@ AI 会话分别保存用户主动提及、用户明确批准和展示/历史关�
 | `ai_calls` | `id`, `user_id`, `job_id`, `model_id`, `model_snapshot`, `periods`, `state`, `input_tokens`, `output_tokens`, `cached_tokens`, `usage`, `created_at`, `updated_at` |
 | `ai_skills` | `id`, `user_id`, `name`, `description`, `content`, `formats`, `enabled`, `revision`, `updated_at` |
 | `ai_mcp_keys` | `id`, `user_id`, `name`, `token_hash`, `resource_ids`, `writable`, `expires_at`, `created_at` |
+| `mcp_user_settings` | `user_id`, `enabled`, `revision`, `updated_at` |
+| `mcp_services` | `id`, `kind`, `owner_id`, `name`, `token_hash`, `token_hint`, `enabled`, `grant_mode`, `tool_ids`, `skill_ids`, `expires_at`, `revoked_at`, `revision`, `created_at`, `updated_at` |
+| `mcp_contexts` | `id`, `service_id`, `user_id`, `session_id`, `job_id`, `instance_id`, `expires_at`, `closed_at`, `created_at` |
+| `mcp_tool_calls` | `context_id`, `request_id`, `tool_id`, `input_hash`, `status`, `created_at`, `updated_at` |
 | `ai_session_events` | `session_id`, `seq`, `event_id`, `digest`, `type`, `payload`, `created_at` |
 | `tickets` | `operation_json`, `id`, `kind`, `resource_kind`, `source_key`, `hidden_for_user_id`, `resource_id`, `user_id`, `initiator_id`, `status`, `role`, `message`, `created_at`, `updated_at`, `expires_at`, `reminded_at` |
 | `ticket_events` | `operation_json`, `id`, `ticket_id`, `actor_id`, `status`, `message`, `created_at` |

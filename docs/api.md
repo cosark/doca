@@ -67,6 +67,8 @@ Asset upload uses `POST /assets?purpose=&filename=&resourceId=` with avatar/cove
 
 AI sessions and jobs use `/ai`. Tools honor session scope, actual resource permissions, and approval. `POST /ai/jobs/:id/approval` takes `{approvalId,approved}` from the job's owner; approval does not change resource ACLs.
 
+`POST /mcp` exposes Streamable HTTP with a dedicated service Bearer token. Personal settings use `GET/PUT /me/mcp` and `/me/mcp-services`; company integrations use `/admin/mcp-services` and must pass the target `userId` on every MCP operation. Service update/reset/revocation require the current revision. Tokens are shown only on creation/reset. See [MCP configuration, tool discovery and file transfers](mcp.md).
+
 Knowledge-book commands, workflow runs, human tasks and source subscriptions are described in [knowledge books](knowledge-books.md). Unified sources use `/content`; see the [content protocol](plugin-content.md). Installed plugin business routes use `/plugins/:pluginId/...` and depend on the loaded release. The host has no quick-notes or mail business API; see [capabilities and limits](features.md).
 
 ## Health and source

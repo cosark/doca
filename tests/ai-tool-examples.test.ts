@@ -66,6 +66,15 @@ it("declares required native block identities to the model before table editing"
   expect(() => validateEditOperations("rich_text", missingId.operations)).toThrow(/children.0.id/);
 });
 
+it("publishes complete flowchart node and edge schemas before a canvas call", () => {
+  const schema = editToolSchema("canvas").toJSONSchema() as any;
+  const fields = schema.properties.operations.items.properties;
+  expect(fields.nodes.items.required).toEqual(expect.arrayContaining(["id", "text", "x", "y", "width", "height", "shape"]));
+  expect(fields.edges.items.required).toEqual(expect.arrayContaining(["id", "sourceId", "targetId", "mode"]));
+  expect(fields.edges.items.properties.sourcePort.enum).toEqual(["top", "right", "bottom", "left"]);
+  expect(fields.parentId.description).toContain('不能编造 "root"');
+});
+
 it("covers the fields that usually fail on the first edit/file/image call", () => {
   const sheet = editToolCallExamples("spreadsheet")[0] as {
     resourceId: string;

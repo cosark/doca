@@ -1,0 +1,14 @@
+{
+  "idleSeconds": 60,
+  "browserErrors": [],
+  "contentUpdatesSent": 0,
+  "fixtures": [
+    {
+      "index": 1,
+      "format": "canvas",
+      "seq": 0,
+      "passed": true
+    }
+  ],
+  "boundary": "New isolated current-format resources from synthetic AI projections; original CRDT identity restoration is covered separately by host tests."
+}

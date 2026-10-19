@@ -1,3 +1,4 @@
+import { McpSettings } from "@web/features/mcp/mcp-settings.js";
 import { ResourceAccessTag } from "@web/features/documents/resource-access-tag.js";
 import { TitleInput } from "@web/features/documents/title-input.js";
 import { PluginSlot } from "@web/plugins/extensions.js";
@@ -273,7 +274,8 @@ function WorkspaceApp() {
     sharedFolderId = /^#\/shared-files\/([a-f0-9-]{36})(?:\?|$)/.exec(hash)?.[1],
     adminPage = hash.split("?")[0] === "#/admin",
     accountPage = hash === "#/account",
-    preferencesPage = hash === "#/preferences";
+    preferencesPage = hash === "#/preferences",
+    mcpPage = hash === "#/mcp";
   const ticketId = /^#\/tickets\/([a-f0-9-]{36})$/.exec(hash)?.[1];
   const ticketsPage = !!ticketId || hash.split("?")[0] === "#/tickets" || hash === "#/todos";
   const targetComment = new URLSearchParams(hash.split("?")[1] ?? "").get(
@@ -502,13 +504,13 @@ function WorkspaceApp() {
     document.title = resourceId && resourceTitle ? resourceTitle : siteTitle;
   }, [bootstrap?.siteName, t, resourceId, currentDetail?.resource.title]);
   useEffect(() => {
-    const href = documentFavicon(currentDetail?.resource.title ?? "");
+    const href = documentFavicon(currentDetail?.resource ?? null);
     const icon = document.querySelector<HTMLLinkElement>('link[rel="icon"]');
     if (!href || !icon) return;
     const originalHref = icon.href;
     icon.href = href;
     return () => { icon.href = originalHref; };
-  }, [currentDetail?.resource.title]);
+  }, [currentDetail?.resource.title, currentDetail?.resource.kind, currentDetail?.resource.format]);
   useEffect(() => {
     if (!bootstrap?.user) return;
     const beat = () => {
@@ -945,7 +947,7 @@ function WorkspaceApp() {
   const user = bootstrap.user;
 
   const displayName = user?.display_name || user?.public_id || user?.id || "用户";
-  if (user && (adminPage || adminPluginPage || accountPage || preferencesPage))
+  if (user && (adminPage || adminPluginPage || accountPage || preferencesPage || mcpPage))
     return (
       <div className={`settings-shell ${(adminPage || adminPluginPage) && adminNavigationCollapsed ? "admin-navigation-collapsed" : ""}`}>
         <header className="settings-shell-header">
@@ -1034,11 +1036,12 @@ function WorkspaceApp() {
                 <Settings size={18} />
                 {t("settings.appearance")}
               </a>
+              <a className={mcpPage ? "active" : ""} href="#/mcp"><Settings size={18} />{t("mcp.title")}</a>
               <p>{t("shell.settingsHint")}</p>
             </aside>
             <main className="personal-settings-content">
               {me ? (
-                accountPage ? (
+                mcpPage ? <McpSettings /> : accountPage ? (
                   <Profile
                     me={me}
                     saved={refreshMe}
