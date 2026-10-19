@@ -11,7 +11,7 @@
 | 管理员代用户写入 | 公司 token 显式传目标 `userId`；独立检查报告所有者为目标用户，不能借用 token 创建者的私有文档权限 |
 | 个人/管理员设置 | [browser.json](browser.json)：创建、编辑授权、复制 AI 安装指令、刷新读回、保存失败保留草稿、token 不写入持久 UI；[连续三次完整脚本运行](browser-runs.json)通过，每次包含三轮创建/编辑操作 |
 | Switch 与页面遮挡 | 个人总开关和服务开关使用 Switch；总开关关闭/开启后刷新验证。桌面、700 CSS px 窄屏及 200% 等效布局（720 CSS px、2 倍像素密度）检查侧栏与内容不相交、无水平溢出 |
-| 自动化回归 | [tests.json](tests.json)：3033 通过、10 跳过、0 失败；[最终相关回归](final-targeted-tests.json) 85 项通过（含 MCP 专项 12 项）。PostgreSQL [17](postgres17-tests.json) / [18](postgres18-tests.json) 各 14 项通过 |
+| 自动化回归 | [tests.json](tests.json)：3035 通过、10 跳过、0 失败；[最终相关回归](final-targeted-tests.json) 85 项通过（含 MCP 专项 12 项）。PostgreSQL [17](postgres17-tests.json) / [18](postgres18-tests.json) 各 14 项通过 |
 | 实际已发行旧版升级 | 使用正式 `smartdoca/doca:0.2.4` 创建含已有用户、Markdown 正文和旧 MCP 记录的库，再由当前源码启动。SQLite、PostgreSQL 17/18 各保留 120 张原表的数据摘要，四张新表为空，代际不变 |
 | 重复/并发启动与拒绝 | [三个数据库各三个独立进程并发重启](repeated-concurrent-upgrades.json)通过；专项测试覆盖未知结构和已安装表丢失时拒绝且无部分写入 |
 

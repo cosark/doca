@@ -215,6 +215,28 @@ for (const [format, title] of [
           : "12",
     ),
   );
+  if (format === "canvas") {
+    const view = await client.callTool({
+      name: "doca_call",
+      arguments: {
+        contextId: context.contextId,
+        requestId: randomUUID(),
+        tool: "canvas_view",
+        input: { resourceId: created.id },
+      },
+    });
+    assert(!view.isError, JSON.stringify(view));
+    const frame = view.content.find((part) => part.type === "image");
+    assert(
+      frame && frame.type === "image" && frame.mimeType === "image/png",
+      "canvas_view must deliver actual PNG pixels",
+    );
+    const png = Buffer.from(frame.data, "base64");
+    assert(
+      png.subarray(0, 8).equals(Buffer.from([137, 80, 78, 71, 13, 10, 26, 10])),
+    );
+    await writeFile(resolve(output, "mcp-canvas-view.png"), png);
+  }
   documents.push({
     id: created.id,
     format,
@@ -324,6 +346,7 @@ await admin.close();
 const result = {
   passed: true,
   transport: "official TypeScript SDK over real HTTP",
+  canvasViewed: true,
   execution: { contextId: context.contextId, sessionId: context.sessionId },
   documents,
   file: {

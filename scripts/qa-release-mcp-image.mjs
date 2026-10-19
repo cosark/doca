@@ -6,6 +6,7 @@ import { randomBytes, randomUUID } from "node:crypto";
 import { mkdir, readFile, writeFile } from "node:fs/promises";
 import { resolve } from "node:path";
 import { request as httpRequest } from "node:http";
+import { createServer } from "node:net";
 import { Client } from "@modelcontextprotocol/sdk/client/index.js";
 import { StreamableHTTPClientTransport } from "@modelcontextprotocol/sdk/client/streamableHttp.js";
 
@@ -20,13 +21,21 @@ const docker = async (...args) =>
   (await run("docker", args, { maxBuffer: 20_000_000 })).stdout.trim();
 const name = `doca-release025-${arch}-${Date.now()}`,
   volume = `${name}-data`;
-const publicOrigin = "http://127.0.0.1:39120",
-  host = "127.0.0.1:39120";
+const probe = createServer();
+await new Promise((resolve) => probe.listen(0, "127.0.0.1", resolve));
+const qaPort = probe.address().port;
+await new Promise((resolve, reject) =>
+  probe.close((error) => (error ? reject(error) : resolve())),
+);
+const publicOrigin = `http://127.0.0.1:${qaPort}`,
+  host = `127.0.0.1:${qaPort}`;
 const output = resolve(`docs/verification/release-0.2.5/${arch}-mcp`);
 const fixturePath = resolve(`.cache/release-0.2.5/${arch}-mcp.json`);
 await mkdir(output, { recursive: true });
 await mkdir(resolve(".cache/release-0.2.5"), { recursive: true });
-let base;
+let base,
+  lastHealth,
+  succeeded = false;
 const request = (path, { method = "GET", headers = {}, payload } = {}) =>
   new Promise((resolve, reject) => {
     const body = payload === undefined ? undefined : JSON.stringify(payload);
@@ -69,15 +78,18 @@ async function ready() {
   for (let attempt = 0; attempt < 120; attempt++) {
     try {
       const response = await request("/health");
+      lastHealth = { status: response.status, body: response.body };
       if (
         response.status === 200 &&
         JSON.parse(response.body).version === "0.2.5"
       )
         return;
-    } catch {}
+    } catch (error) {
+      lastHealth = String(error);
+    }
     await new Promise((resolve) => setTimeout(resolve, 500));
   }
-  throw Error("Release image startup timed out");
+  throw Error("Release image startup timed out: " + JSON.stringify(lastHealth));
 }
 async function roundtrip(selected, mode) {
   const raw = await docker(
@@ -150,7 +162,7 @@ console.log(JSON.stringify({adminId:owner.id,userId:target.id})); } finally {awa
     "--platform",
     `linux/${arch}`,
     "-p",
-    "127.0.0.1::39120",
+    `127.0.0.1:${qaPort}:39120`,
     "--security-opt",
     `seccomp=${resolve("docker/chromium-seccomp.json")}`,
     "--shm-size",
@@ -161,8 +173,6 @@ console.log(JSON.stringify({adminId:owner.id,userId:target.id})); } finally {awa
       `DOCA_ORIGIN=${publicOrigin}`,
       `DOCA_CREDENTIAL_MASTER_KEY=${randomBytes(32).toString("hex")}`,
       "DOCA_SQLITE_PATH=/data/mcp/released.db",
-      "DOCA_FILE_STORE_ID=release-mcp-qa",
-      'DOCA_FILE_STORES_JSON={"version":1,"stores":{"release-mcp-qa":{"provider":"local","root":"/data/mcp/objects"}}}',
     ].flatMap((value) => ["-e", value]),
     image,
   );
@@ -216,6 +226,16 @@ console.log(JSON.stringify({adminId:owner.id,userId:target.id})); } finally {awa
     await readFile(resolve(output, "http-client.json"), "utf8"),
   );
   assert(artifacts.passed);
+  const delegatedOwner = await docker(
+    "exec",
+    name,
+    "node",
+    "--input-type=module",
+    "-e",
+    "import Sqlite from 'better-sqlite3'; const db=new Sqlite('/data/mcp/released.db',{readonly:true}); try {console.log(db.prepare('select owner_id from resources where id=?').get(process.argv[1]).owner_id)} finally {db.close()}",
+    artifacts.delegated.id,
+  );
+  assert.equal(delegatedOwner, extra.userId);
   await api(`/ai/sessions/${artifacts.execution.sessionId}`, "DELETE");
   assert.equal(
     (await request("/health", { headers: { host: "wrong.invalid" } })).status,
@@ -314,6 +334,7 @@ console.log(JSON.stringify({adminId:owner.id,userId:target.id})); } finally {awa
     JSON.stringify(report, null, 2) + "\n",
   );
   console.log(JSON.stringify(report));
+  succeeded = true;
 } catch (error) {
   console.error(
     await docker("logs", "--tail", "25", name).catch(
@@ -322,6 +343,12 @@ console.log(JSON.stringify({adminId:owner.id,userId:target.id})); } finally {awa
   );
   throw error;
 } finally {
-  await docker("rm", "-f", name).catch(() => {});
-  await docker("volume", "rm", volume).catch(() => {});
+  if (!succeeded && process.env.DOCA_RELEASE_QA_KEEP_ON_ERROR === "1") {
+    console.error(
+      JSON.stringify({ retainedContainer: name, retainedVolume: volume, base }),
+    );
+  } else {
+    await docker("rm", "-f", name).catch(() => {});
+    await docker("volume", "rm", volume).catch(() => {});
+  }
 }

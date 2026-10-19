@@ -1,0 +1,60 @@
+{
+  "passed": true,
+  "transport": "official TypeScript SDK over real HTTP",
+  "canvasViewed": true,
+  "execution": {
+    "contextId": "74616072-f703-42cf-80df-bd8d08da0540",
+    "sessionId": "526e5b6a-501b-48ac-baa4-b070609c51ac"
+  },
+  "documents": [
+    {
+      "id": "c54ff517-5665-43f4-a6ed-e1fcbf344e6a",
+      "format": "rich_text",
+      "title": "MCP 自动测试报告",
+      "url": "http://127.0.0.1:61208/#/r/c54ff517-5665-43f4-a6ed-e1fcbf344e6a",
+      "seq": 1
+    },
+    {
+      "id": "804702bf-63d0-4778-9393-18d017ff4d92",
+      "format": "canvas",
+      "title": "MCP 验收流程画板",
+      "url": "http://127.0.0.1:61208/#/r/804702bf-63d0-4778-9393-18d017ff4d92",
+      "seq": 1
+    },
+    {
+      "id": "e3ff352a-c540-4381-9d80-d20f32514da7",
+      "format": "presentation",
+      "title": "MCP 验收汇报",
+      "url": "http://127.0.0.1:61208/#/r/e3ff352a-c540-4381-9d80-d20f32514da7",
+      "seq": 1
+    },
+    {
+      "id": "44f18339-cb15-4133-902f-e48ce3ea370a",
+      "format": "spreadsheet",
+      "title": "MCP 测试指标表",
+      "url": "http://127.0.0.1:61208/#/r/44f18339-cb15-4133-902f-e48ce3ea370a",
+      "seq": 1
+    }
+  ],
+  "file": {
+    "id": "f0527e84-8e80-4a30-8ef4-e9a80b15c88a",
+    "folderId": "7d393522-3d4d-49e9-adf5-14d510c78141",
+    "size": 420000,
+    "sha256": "7559286410e18d631bb5ee59bf9171507428b5b84834a85dc2f4184211f6bd97",
+    "uploadedAndDownloaded": true
+  },
+  "delegated": {
+    "id": "2a296f8b-815a-49b7-a90a-2e07dffdf622",
+    "targetUserId": "82d69fd7-e536-42df-8361-5b734aeaed9f",
+    "url": "http://127.0.0.1:61208/#/r/2a296f8b-815a-49b7-a90a-2e07dffdf622"
+  },
+  "availableTools": 62,
+  "skills": [
+    "writing",
+    "spreadsheet",
+    "canvas",
+    "presentation",
+    "knowledge",
+    "files"
+  ]
+}
