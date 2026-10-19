@@ -59,6 +59,8 @@ The previously released folder link structure lacks `max_members`, `expires_at` 
 
 ## Deployment and recovery
 
+The approved [knowledge-book batch checkpoint addition](knowledge-book-generation-performance.md) adds `knowledge_book_batch_checkpoints` empty through current DDL and `schemaEvolution`, within `doca-2026-10-12-book-payload-storage-v1`. Existing node/run/release rows, reference constraints, v1 formats, permissions and publication pointers are unchanged; no old results are inferred or backfilled. The separate private checkpoint v1 format is strictly validated. The [verification record](verification/knowledge-book-checkpoints-2026-10-19/README.md) covers actual released 0.2.3 data on SQLite and PostgreSQL 17/18, retained rows/body bytes, repeated/concurrent startup and rejection without partial writes. Upgrade all executors and garbage collectors together; older binaries cannot protect new checkpoint references. Existing checkpoints block offline body-storage rollback until a separate preservation plan is approved.
+
 Back up the database before deploying. Update every host instance before enabling new folder sharing restrictions: older code does not enforce the new limit or consent flow, so mixed-version operation is not supported. No compatibility-generation bump or offline migration command is needed for this reviewed additive change.
 
 Preserve the database/file volumes, deployment identity and original `DOCA_CREDENTIAL_MASTER_KEY`. A structurally compatible additive upgrade does not by itself establish safe mixed-version operation or application downgrade; assess those against the affected business behavior.

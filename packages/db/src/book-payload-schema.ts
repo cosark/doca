@@ -9,6 +9,7 @@ export const bookPayloadTables = [
   "knowledge_book_payload_edges",
   "knowledge_book_payload_references",
   "knowledge_book_payload_operations",
+  "knowledge_book_batch_checkpoints",
 ];
 export async function createBookPayloadSchema(db: Kysely<any>) {
   for (const ddl of [
@@ -17,6 +18,7 @@ export async function createBookPayloadSchema(db: Kysely<any>) {
     `CREATE TABLE knowledge_book_payload_references (book_id varchar(36) not null references knowledge_books(id) on delete cascade, owner_kind varchar(8) not null check(owner_kind in ('node','run','release')), owner_id varchar(36) not null, node_id varchar(100) not null, root_kind varchar(8) not null check(root_kind = 'root'), root_sha256 varchar(64) not null, raw_sha256 varchar(64) not null, raw_size bigint not null check(raw_size > 0), access_manifest text not null, summary text not null, created_at varchar(32) not null, updated_at varchar(32) not null, primary key(book_id,owner_kind,owner_id,node_id), check((owner_kind='node' and node_id<>'') or (owner_kind<>'node' and node_id='')), foreign key(book_id,root_kind,root_sha256) references knowledge_book_payload_objects(book_id,kind,sha256))`,
     `CREATE TABLE knowledge_book_payload_operations (id varchar(36) primary key, book_id varchar(36) not null, owner_kind varchar(8) not null, owner_id varchar(36) not null, node_id varchar(100) not null, expected_sha256 varchar(64) not null, definition text not null, lease_id varchar(36) not null, lease_until varchar(32) not null, state varchar(12) not null check(state in ('uploading','committed','garbage','deleted')), created_at varchar(32) not null, updated_at varchar(32) not null)`,
     `CREATE INDEX knowledge_book_payload_operations_cleanup ON knowledge_book_payload_operations(state,lease_until)`,
+    `CREATE TABLE knowledge_book_batch_checkpoints (id varchar(36) primary key, book_id varchar(36) not null references knowledge_books(id) on delete cascade, run_id varchar(36) not null, node_id varchar(100) not null, stage varchar(16) not null check(stage in ('extract','synthesize','organize','acceptance')), phase varchar(80) not null, scope_hash varchar(64) not null, plan_hash varchar(64) not null, batch_key varchar(64) not null, input_hash varchar(64) not null, result_ref text not null, root_kind varchar(8) not null check(root_kind='root'), root_sha256 varchar(64) not null, raw_sha256 varchar(64) not null, raw_size bigint not null check(raw_size > 0), access_manifest text not null, summary text not null, created_at varchar(32) not null, updated_at varchar(32) not null, unique(run_id,node_id,plan_hash,batch_key), foreign key(run_id,node_id) references knowledge_book_node_runs(run_id,node_id) on delete cascade, foreign key(book_id,root_kind,root_sha256) references knowledge_book_payload_objects(book_id,kind,sha256))`,
   ])
     await sql.raw(ddl).execute(db);
 }

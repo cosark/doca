@@ -57,6 +57,8 @@ PostgreSQL 获得结构锁后须读取最新目录，让并发宿主能看到前
 
 ## 部署与恢复
 
+已获同意的[知识册批次检查点](knowledge-book-generation-performance.zh-CN.md)通过最新 DDL 和 `schemaEvolution` 新增空的 `knowledge_book_batch_checkpoints` 表，保持 `doca-2026-10-12-book-payload-storage-v1` 代际。既有 node/run/release 行、引用约束、v1 格式、权限和发布指针不变，不猜测或回填历史结果。独立的私有检查点 v1 格式严格校验。[验证记录](verification/knowledge-book-checkpoints-2026-10-19/README.md)覆盖实际已发布 0.2.3 在 SQLite、PostgreSQL 17/18 创建的数据升级、记录及正文字节保留、重复/并发启动和拒绝时无部分写入。所有执行器与垃圾回收实例一起更新；旧二进制无法保护新的检查点引用。存在检查点时，离线正文存储回滚会在修改前停止，需另行批准保全方案。
+
 部署前备份数据库。启用新文件夹限制前须更新所有宿主实例：旧宿主不执行新的人数限制和邀请确认，不能混用新旧版本。这个已审定的增量变化无需调整兼容代际，也无需离线迁移命令。
 
 保留原数据库与文件卷、部署身份和 `DOCA_CREDENTIAL_MASTER_KEY`。结构增量兼容不自动代表可以混用新旧应用或安全降级，应按实际业务行为评估。

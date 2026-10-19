@@ -1,0 +1,238 @@
+{
+  "date": "2026-10-19",
+  "environment": {
+    "node": "v24.15.0",
+    "sqlite": "3.53.4",
+    "postgres": [
+      "17.11",
+      "18.6"
+    ]
+  },
+  "tests": {
+    "sqlite": {
+      "passed": 211,
+      "total": 211,
+      "files": [
+        {
+          "file": "tests/database-schema.test.ts",
+          "status": "passed",
+          "passed": 1
+        },
+        {
+          "file": "tests/knowledge-book-batch-checkpoints.test.ts",
+          "status": "passed",
+          "passed": 21
+        },
+        {
+          "file": "tests/knowledge-book-batching.test.ts",
+          "status": "passed",
+          "passed": 13
+        },
+        {
+          "file": "tests/knowledge-book-checkpoint-runtime.test.ts",
+          "status": "passed",
+          "passed": 6
+        },
+        {
+          "file": "tests/knowledge-book-payload-storage.test.ts",
+          "status": "passed",
+          "passed": 11
+        },
+        {
+          "file": "tests/knowledge-book-runtime.test.ts",
+          "status": "passed",
+          "passed": 94
+        },
+        {
+          "file": "tests/knowledge-books.test.ts",
+          "status": "passed",
+          "passed": 58
+        },
+        {
+          "file": "tests/schema-reconciliation.test.ts",
+          "status": "passed",
+          "passed": 7
+        }
+      ],
+      "durationMs": 18415
+    },
+    "pg17": {
+      "passed": 98,
+      "total": 98,
+      "files": [
+        {
+          "file": "tests/knowledge-book-batch-checkpoints.test.ts",
+          "status": "passed",
+          "passed": 21
+        },
+        {
+          "file": "tests/knowledge-book-checkpoint-runtime.test.ts",
+          "status": "passed",
+          "passed": 6
+        },
+        {
+          "file": "tests/knowledge-book-payload-storage.test.ts",
+          "status": "passed",
+          "passed": 11
+        },
+        {
+          "file": "tests/knowledge-books.test.ts",
+          "status": "passed",
+          "passed": 58
+        },
+        {
+          "file": "tests/schema-reconciliation-postgres.test.ts",
+          "status": "passed",
+          "passed": 2
+        }
+      ],
+      "durationMs": 47107
+    },
+    "pg18": {
+      "passed": 98,
+      "total": 98,
+      "files": [
+        {
+          "file": "tests/knowledge-book-batch-checkpoints.test.ts",
+          "status": "passed",
+          "passed": 21
+        },
+        {
+          "file": "tests/knowledge-book-checkpoint-runtime.test.ts",
+          "status": "passed",
+          "passed": 6
+        },
+        {
+          "file": "tests/knowledge-book-payload-storage.test.ts",
+          "status": "passed",
+          "passed": 11
+        },
+        {
+          "file": "tests/knowledge-books.test.ts",
+          "status": "passed",
+          "passed": 58
+        },
+        {
+          "file": "tests/schema-reconciliation-postgres.test.ts",
+          "status": "passed",
+          "passed": 2
+        }
+      ],
+      "durationMs": 48957
+    }
+  },
+  "typecheck": "passed",
+  "docsCheck": {
+    "status": "passed",
+    "pages": 76,
+    "languages": 2
+  },
+  "diffCheck": "passed",
+  "coldProcess": {
+    "firstExit": 137,
+    "firstBatchCommitted": 1,
+    "resumeExit": 0,
+    "originalBatchProducerCalls": 0,
+    "missingBatchProducerCalls": 1,
+    "checkpointRows": 2,
+    "gcPreserved": true
+  },
+  "pipeline": {
+    "vendor": "mock",
+    "originalWritingRequests": 2,
+    "totalAfterRuntimeReplacementAndResume": 3,
+    "extractionCallsUnchanged": 2,
+    "retainedClaimCount": 42,
+    "requiredAcceptance": "passed",
+    "publication": "completed"
+  },
+  "releasedUpgrade": {
+    "image": "smartdoca/doca:0.2.3",
+    "digest": "sha256:187ec89bbe1e0a02de33693c881c89f4c030ca7a49dc4a6a0549a6c40f1691cb",
+    "results": [
+      {
+        "name": "sqlite",
+        "concurrentStarts": 2,
+        "attempts": [
+          {
+            "mode": "verify",
+            "driver": "sqlite",
+            "tablesPreserved": 13,
+            "oldBodyByteExact": true,
+            "checkpointRows": 0,
+            "baselineUnchanged": true
+          },
+          {
+            "mode": "verify",
+            "driver": "sqlite",
+            "tablesPreserved": 13,
+            "oldBodyByteExact": true,
+            "checkpointRows": 0,
+            "baselineUnchanged": true
+          }
+        ]
+      },
+      {
+        "name": "pg17",
+        "concurrentStarts": 2,
+        "attempts": [
+          {
+            "mode": "verify",
+            "driver": "postgres",
+            "tablesPreserved": 13,
+            "oldBodyByteExact": true,
+            "checkpointRows": 0,
+            "baselineUnchanged": true
+          },
+          {
+            "mode": "verify",
+            "driver": "postgres",
+            "tablesPreserved": 13,
+            "oldBodyByteExact": true,
+            "checkpointRows": 0,
+            "baselineUnchanged": true
+          }
+        ]
+      },
+      {
+        "name": "pg18",
+        "concurrentStarts": 2,
+        "attempts": [
+          {
+            "mode": "verify",
+            "driver": "postgres",
+            "tablesPreserved": 13,
+            "oldBodyByteExact": true,
+            "checkpointRows": 0,
+            "baselineUnchanged": true
+          },
+          {
+            "mode": "verify",
+            "driver": "postgres",
+            "tablesPreserved": 13,
+            "oldBodyByteExact": true,
+            "checkpointRows": 0,
+            "baselineUnchanged": true
+          }
+        ]
+      }
+    ],
+    "initialReleasedCreationHadNoCheckpointTable": true
+  },
+  "preview": {
+    "url": "http://127.0.0.1:39273/#/knowledge-books",
+    "bookCount": 6,
+    "checkpointTableAddedEmpty": true,
+    "baselineUnchanged": true,
+    "preRestartDatabaseBackup": true,
+    "fullNavigationVerified": true,
+    "bootstrapStatus": 200,
+    "directHealthWithConfiguredHostStatus": 200
+  },
+  "limits": [
+    "No online production run or logs were accessed.",
+    "No new paid 150000-character generation or production-duration benchmark.",
+    "Actual released-version fixture publications are synthetic storage fixtures.",
+    "No production build, deployment or binary rollback performed."
+  ]
+}

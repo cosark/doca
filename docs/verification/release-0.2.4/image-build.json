@@ -1,0 +1,18 @@
+{
+  "version": "0.2.4",
+  "candidate": "smartdoca/doca:0.2.4-candidate",
+  "platforms": [
+    "linux/arm64",
+    "linux/amd64"
+  ],
+  "buildPassed": true,
+  "acceptedIndexDigest": "sha256:6356022181ca86d110d6faeed8f51de9d7ec56f12856763c3936525202ab15a0",
+  "acceptedConfigIds": {
+    "arm64": "sha256:e06200415938574ef9291981c5360b85d24bb53996b6b0752519b67db1a1cee5",
+    "amd64": "sha256:20164d5c5bc6df4ce2407ad658d056e3394705ad8ba6ffcfa5016c557b3396ac"
+  },
+  "nodeBase": "22-bookworm-slim",
+  "matchedRuntimeSourceFiles": 426,
+  "matchedUncompressedWebFiles": 479,
+  "publishing": "The final index may have updated build provenance after merge; accepted runtime config IDs must remain identical."
+}

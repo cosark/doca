@@ -204,29 +204,37 @@ export function BookReader({
   return (
     <div className="book-reader" ref={host}>
       <header className="book-reader-header">
-        <nav className="book-breadcrumb" aria-label={t("books.documentPath")}>
-          {page.path.map((label, depth) => (
-            <span key={depth}>
-              <button
-                type="button"
-                onClick={() => {
-                  const target = ordered.find((item) =>
-                    page.path
-                      .slice(0, depth + 1)
-                      .every((name, i) => item.path[i] === name),
-                  );
-                  if (target) navigate(target.id);
-                }}
-              >
-                {label}
-              </button>
-              <ChevronRight size={12} />
+        <div className="book-reader-context">
+          <nav className="book-breadcrumb" aria-label={t("books.documentPath")}>
+            {page.path.map((label, depth) => (
+              <span key={depth}>
+                <button
+                  type="button"
+                  onClick={() => {
+                    const target = ordered.find((item) =>
+                      page.path
+                        .slice(0, depth + 1)
+                        .every((name, i) => item.path[i] === name),
+                    );
+                    if (target) navigate(target.id);
+                  }}
+                >
+                  {label}
+                </button>
+                <ChevronRight size={12} />
+              </span>
+            ))}
+            <span className="book-breadcrumb-current" title={page.title}>
+              {page.title}
             </span>
-          ))}
-          <span className="book-breadcrumb-current" title={page.title}>
-            {page.title}
+          </nav>
+          <span className="book-reader-position">
+            {t("books.documentPosition", {
+              current: index + 1,
+              total: ordered.length,
+            })}
           </span>
-        </nav>
+        </div>
         <h1>{page.title}</h1>
       </header>
       {model.outline.length > 0 && (

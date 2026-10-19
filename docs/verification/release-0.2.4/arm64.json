@@ -1,0 +1,54 @@
+{
+  "arch": "arm64",
+  "passed": true,
+  "runtime": {
+    "version": "0.2.4",
+    "uid": 1000
+  },
+  "health": true,
+  "hostValidation": true,
+  "compression": [
+    "gzip",
+    "br"
+  ],
+  "originalUserLogin": true,
+  "oldBookRead": true,
+  "restart": true,
+  "gracefulStop": true,
+  "releasedUpgrade": {
+    "from": "0.2.3",
+    "mode": "verify",
+    "driver": "sqlite",
+    "tablesPreserved": 13,
+    "oldBodyByteExact": true,
+    "checkpointRows": 0,
+    "baselineUnchanged": true,
+    "repeated": {
+      "mode": "verify",
+      "driver": "sqlite",
+      "tablesPreserved": 13,
+      "oldBodyByteExact": true,
+      "checkpointRows": 0,
+      "baselineUnchanged": true
+    }
+  },
+  "coldProcess": {
+    "killed": {
+      "exit": 137,
+      "result": {
+        "event": "checkpoint_saved_before_sigkill",
+        "rows": 1
+      }
+    },
+    "restored": {
+      "exit": 0,
+      "result": {
+        "event": "cold_process_restore_pass",
+        "originalBatchCalls": 0,
+        "missingBatchCalls": 1,
+        "durableCheckpointRows": 2,
+        "gcPreserved": true
+      }
+    }
+  }
+}

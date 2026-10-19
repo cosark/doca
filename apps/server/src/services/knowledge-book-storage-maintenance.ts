@@ -30,7 +30,10 @@ import { payloadHash } from "@core/modules/knowledge-books/payload-codec.js";
 const identity = (o: PayloadOwner) =>
   JSON.stringify([o.bookId, o.ownerKind, o.ownerId, o.nodeId]);
 export async function bookPayloadRecords(db: DB) {
-  const records: Array<{ owner: PayloadOwner; raw: string }> = [];
+  const records: Array<{
+    owner: PayloadOwner & { ownerKind: "node" | "run" | "release" };
+    raw: string;
+  }> = [];
   for (const r of await db
     .selectFrom("knowledge_book_node_runs as n")
     .innerJoin("knowledge_book_runs as r", "r.id", "n.run_id")
@@ -181,6 +184,19 @@ export async function inspectBookStorageConversion(
       `Storage ${action} accepts only ${from} or its own interrupted conversion generation`,
     );
   await noWorkers(db);
+  if (
+    action === "rollback" &&
+    (await currentSchemaTables(db)).some(
+      (t) => t.name === "knowledge_book_batch_checkpoints",
+    ) &&
+    (await db
+      .selectFrom("knowledge_book_batch_checkpoints")
+      .select("id")
+      .executeTakeFirst())
+  )
+    throw new Error(
+      "Batch checkpoints must be preserved; storage rollback requires a separately approved checkpoint recovery plan",
+    );
   if (
     action === "upgrade" &&
     b.id === from &&

@@ -1,0 +1,21 @@
+{
+  "date": "2026-10-19",
+  "baseCommit": "36c53aa5eedcc55c95b45c86af38ccad54e46203",
+  "uncommitted": true,
+  "sha256": {
+    "apps/server/src/bootstrap/config.ts": "babdf12d292e42de36901c7796619b272264bc9cd484b428fc02da9d53245f46",
+    "apps/server/src/services/ai/knowledge-book-runtime.ts": "ed1236a4ace47f30c2cb70ce012b6981cb0e4fac669a0ce9a8d44426e3b6af2e",
+    "apps/server/src/services/knowledge-book-storage-maintenance.ts": "2804b6f7151ba8c10ac82eabd01a61ce5fab346db0592d72fdb3c364ed382ca6",
+    "packages/core/src/modules/knowledge-books/batch-checkpoint-format.ts": "48cf82bab843092655df54d46b459527c7d633811bedc213952dd72ed9173c81",
+    "packages/core/src/modules/knowledge-books/batch-checkpoints.ts": "0fc4383fbc20d85d1f44d9da34f2238fd9d2908eee9868bd97d3afd5dc24cdad",
+    "packages/core/src/modules/knowledge-books/engine.ts": "4352bff917af2066f19fdac35a8906d2ba914b53f428f4f33af03628f4cb156a",
+    "packages/core/src/modules/knowledge-books/payload-storage.ts": "87d6d82cf6459c4806086393a21fd66277021a05e233d48a638bcea511bb819f",
+    "packages/db/src/book-payload-schema.ts": "5458d37c67309a9a423b9f3d24754c4dea657395814cd707457dae1b031b5a61",
+    "packages/db/src/knowledge-books-types.ts": "c880ce682c217e51f2ba21d5bbd26d8094ff83e17206ac7d6be1958d24390f56",
+    "tests/knowledge-book-batch-checkpoints.test.ts": "2423bfd322bc2e2facc2d68c3a59411046dcabe5d85f34cf5799878d705471d4",
+    "tests/knowledge-book-checkpoint-runtime.test.ts": "55812fa623943072f74589f152dd667bb3c8c573acb1af40c669b14832839b8e",
+    "tests/knowledge-book-runtime.test.ts": "b56ec75d90d69dc7d01b018b7daf66ea5244035bd56eccc6cc5c6d7de4260890",
+    "docs/verification/knowledge-book-checkpoints-2026-10-19/crash-roundtrip.mjs": "d204bb9d6d7521f24f0023cf8522dabc9b848429687e46d62fce91a461060992",
+    "docs/verification/knowledge-book-checkpoints-2026-10-19/released-roundtrip.mjs": "3cfdc6bd396efd87f904a9b4b2c01688eb4a1ef45b291f075f4fa78d5348efe4"
+  }
+}

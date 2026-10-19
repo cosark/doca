@@ -6,6 +6,12 @@ import {
   lockBookPayload,
 } from "./payload-storage.js";
 import { readRetryOrigin, readNodeReuse } from "./retry.js";
+import {
+  createBookBatchCheckpoints,
+  bookBatchCheckpointsEnabled,
+  type BookBatchCheckpoints,
+} from "./batch-checkpoints.js";
+import { validateBookModelAccess } from "./model-access.js";
 import { isFrozenBookResume } from "./resume.js";
 import { readFeedbackOrigin } from "./feedback-origin.js";
 import { appendBookRunLog, type BookRunReporter } from "./run-logs.js";
@@ -15,7 +21,10 @@ import type { DB, Schema } from "@db/index.js";
 import { transact } from "@db/transactions.js";
 import { bookFail as fail } from "./errors.js";
 import { AppError, systemErrorText } from "../../shared/errors.js";
-import { acceptedBookFailures, assertBookPublicationAcceptance } from "./acceptance-overrides.js";
+import {
+  acceptedBookFailures,
+  assertBookPublicationAcceptance,
+} from "./acceptance-overrides.js";
 import {
   bookAccess,
   bookInputSnapshot,
@@ -51,6 +60,7 @@ export interface BookRuntime extends BookSourceRuntime {
     input: Record<string, unknown>,
     signal: AbortSignal,
     report?: BookRunReporter,
+    checkpoints?: BookBatchCheckpoints,
   ): Promise<unknown>;
 }
 type NodeOutput = {
@@ -1129,6 +1139,26 @@ export async function executeBookRun(db: DB, id: string, runtime: BookRuntime) {
             },
             signal,
             report,
+            bookBatchCheckpointsEnabled()
+              ? createBookBatchCheckpoints({
+                  db,
+                  bookId: run.book_id,
+                  runId: id,
+                  nodeId: node.id,
+                  stage: node.type,
+                  scope: [run.configuration, run.input_hash, node],
+                  guard: async (connection) => {
+                    signal.throwIfAborted();
+                    await assertCurrent(connection, run, lease);
+                    await validateBookModelAccess(
+                      connection,
+                      run.actor_id,
+                      id,
+                      enabled,
+                    );
+                  },
+                })
+              : undefined,
           );
           await assertCurrent(db, run, lease);
           if (node.type === "extract") {

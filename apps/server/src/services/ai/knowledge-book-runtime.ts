@@ -316,7 +316,7 @@ export function knowledgeBookRuntime(
     { pagesHash: string; scopeHash: string; reviews: Review[] } | undefined;
   const scopeHash = (input: Record<string, unknown>) =>
     bookHash([input.evidence, input.claims]);
-  async function generateModel(
+  async function generateModelUncached(
     stage: Parameters<BookRuntime["generate"]>[0],
     input: Record<string, unknown>,
     signal: AbortSignal,
@@ -1274,7 +1274,205 @@ export function knowledgeBookRuntime(
       }
       throw new Error("Web source retry did not return");
     },
-    async generate(stage, input, signal, report) {
+    async generate(stage, input, signal, report, checkpoints) {
+      // Private stage algorithms and model settings bind every cached request.
+      // Bump this when validation, prompting or subdivision semantics change.
+      const runtimeVersion = "knowledge-book-model-batches-v1";
+      const modelFingerprint = async () => {
+        const {
+          provider,
+          model,
+          baseUrl,
+          apiVersion,
+          apiMode,
+          maxInput,
+          maxOutput,
+          tools,
+        } = (await requireModel(db, userId, modelId)).model;
+        return {
+          provider,
+          model,
+          baseUrl,
+          apiVersion,
+          apiMode,
+          maxInput,
+          maxOutput,
+          tools,
+        };
+      };
+      const frozenModel = checkpoints ? await modelFingerprint() : undefined;
+      const assertFrozenModel = async () => {
+        if (bookHash(await modelFingerprint()) !== bookHash(frozenModel))
+          fail(
+            409,
+            "Knowledge-book model settings changed during this node; start a new pipeline",
+          );
+      };
+      const generateModel = async (
+        stage: Parameters<BookRuntime["generate"]>[0],
+        request: Record<string, unknown>,
+        signal: AbortSignal,
+        report?: BookRunReporter,
+      ): Promise<unknown> => {
+        if (!checkpoints)
+          return generateModelUncached(stage, request, signal, report);
+        signal.throwIfAborted();
+        await assertFrozenModel();
+        const evidence = (input.evidence ?? []) as any[];
+        await validateBookModelAccess(db, userId, runId, evidence);
+        const { recordInspection, ...requestData } = request;
+        const canSubdivide =
+          request.writingScope !== "plan" &&
+          request.acceptanceScope !== "plan" &&
+          ((stage === "synthesize" &&
+            ((request.claims ?? []) as any[]).length > 1) ||
+            (["organize", "acceptance"].includes(stage) &&
+              ((request.pages ?? []) as any[]).reduce(
+                (n, page) => n + page.paragraphs.length,
+                0,
+              ) > 1));
+        const cachedSchema = z.discriminatedUnion("kind", [
+          z
+            .object({
+              kind: z.literal("value"),
+              output: z.unknown(),
+              inspections: z.array(acceptanceOutputSchema.shape.checks.element),
+            })
+            .strict(),
+          z
+            .object({
+              kind: z.literal("subdivide"),
+              cause: z.enum(["budget", "output"]),
+            })
+            .strict(),
+        ]);
+        const validate = async (raw: unknown) => {
+          const value = cachedSchema.parse(raw);
+          if (value.kind === "subdivide") {
+            if (
+              !canSubdivide ||
+              (stage === "acceptance" && value.cause !== "budget")
+            )
+              fail(409, "Invalid checkpoint subdivision decision");
+            return value;
+          }
+          const schema =
+            request.writingScope === "plan"
+              ? writingOutlineSchema
+              : request.writingScope === "assign"
+                ? writingAssignmentSchema
+                : request.acceptanceScope === "plan"
+                  ? acceptancePlanSchema
+                  : stage === "extract"
+                    ? claimOutputSchema
+                    : stage === "acceptance"
+                      ? acceptanceOutputSchema
+                      : pageOutputSchema;
+          schema.parse(value.output);
+          if (stage === "extract")
+            checkClaims((value.output as any).claims, evidence);
+          if (
+            ["synthesize", "organize"].includes(stage) &&
+            !request.writingScope
+          ) {
+            const pages = (value.output as any).pages;
+            checkPages(
+              pages,
+              (request.claims ?? []) as any[],
+              request.maxDocumentDepth as number,
+            );
+            await validateBookDiagrams(pages, signal);
+          }
+          if (stage === "acceptance" && request.acceptanceScope !== "plan") {
+            const checks = (value.output as any).checks as Review[];
+            const expected = ((request.criteria ?? []) as { id: string }[]).map(
+              (c) => c.id,
+            );
+            if (
+              checks.length !== expected.length ||
+              new Set(checks.map((c) => c.criterionId)).size !==
+                expected.length ||
+              checks.some((c) => !expected.includes(c.criterionId)) ||
+              value.inspections.some(
+                (review) =>
+                  !review.passed &&
+                  checks.some(
+                    (check) =>
+                      check.criterionId === review.criterionId && check.passed,
+                  ),
+              )
+            )
+              fail(
+                409,
+                "Checkpoint acceptance verdict does not match its obligations",
+              );
+          }
+          return value;
+        };
+        const value = await checkpoints.run(
+          {
+            phase: String(
+              request.writingScope ?? request.acceptanceScope ?? stage,
+            ),
+            nodeInput: input,
+            input: requestData,
+            model: frozenModel,
+            runtimeVersion,
+            evidence,
+            validate,
+          },
+          async () => {
+            const inspections: Review[] = [];
+            try {
+              const output = await generateModelUncached(
+                stage,
+                {
+                  ...requestData,
+                  recordInspection: (reviews: Review[]) =>
+                    inspections.push(...reviews),
+                },
+                signal,
+                report,
+              );
+              await assertFrozenModel();
+              return { kind: "value" as const, output, inspections };
+            } catch (error) {
+              signal.throwIfAborted();
+              await assertFrozenModel();
+              if (
+                canSubdivide &&
+                (error instanceof BookModelBudgetError ||
+                  (stage !== "acceptance" &&
+                    error instanceof BookModelOutputError))
+              )
+                // This is a complete host plan, never a partial model response.
+                return {
+                  kind: "subdivide" as const,
+                  cause:
+                    error instanceof BookModelBudgetError
+                      ? ("budget" as const)
+                      : ("output" as const),
+                };
+              throw error;
+            }
+          },
+        );
+        await assertFrozenModel();
+        await validateBookModelAccess(db, userId, runId, evidence);
+        signal.throwIfAborted();
+        if (value.kind === "subdivide") {
+          if (value.cause === "budget")
+            throw new BookModelBudgetError(
+              "Continue the retained bounded subdivision plan",
+            );
+          throw new BookModelOutputError(
+            "Continue the retained bounded subdivision plan",
+          );
+        }
+        if (typeof recordInspection === "function")
+          recordInspection(value.inspections);
+        return value.output;
+      };
       if (stage === "synthesize" || stage === "organize") {
         const allClaims = (input.claims ?? []) as any[];
         let allPages = (input.pages ?? []) as any[];
@@ -1463,19 +1661,33 @@ export function knowledgeBookRuntime(
           const sections = plan.chapters.flatMap((chapter) =>
             chapter.sections.map((section) => ({ chapter, section })),
           );
+          const configured = await requireModel(db, userId, modelId);
+          // Reserve output room for JSON, citations and reasoning before a
+          // paid request, rather than discovering an oversized batch at EOF.
+          const outputCharacters = Math.max(
+            1200,
+            Math.min(8000, Math.floor(configured.model.maxOutput * 0.4)),
+          );
           for (const { chapter, section } of sections) {
             const claims = section.claimIds.map((id) =>
               allClaims.find((claim) => claim.id === id)!,
             );
-            for (let start = 0; start < claims.length; start += 12) {
-              const part = claims.slice(start, start + 12);
+            const sectionTarget =
+              target! / plan.chapters.length / chapter.sections.length;
+            const size = Math.max(
+              1,
+              Math.min(
+                12,
+                Math.floor((claims.length * outputCharacters) / sectionTarget),
+              ),
+            );
+            for (let start = 0; start < claims.length; start += size) {
+              const part = claims.slice(start, start + size);
               groups.push({
                 claims: part,
                 pages: [],
                 characterTarget: Math.ceil(
-                  ((target! / plan.chapters.length / chapter.sections.length) *
-                    part.length) /
-                    claims.length,
+                  (sectionTarget * part.length) / claims.length,
                 ),
                 chapter: {
                   title: chapter.title,
@@ -2122,7 +2334,6 @@ export function knowledgeBookRuntime(
             }));
             // Preserve chapter identity and concrete case observations before whole-book acceptance.
             while (summaries.length > 12) {
-              const reduced: typeof summaries = [];
               const chapterSets =
                 inspectChapters &&
                 summaries.every((review) => review.chapters.length === 1)
@@ -2144,52 +2355,64 @@ export function knowledgeBookRuntime(
                       (_, index) =>
                         summaries.slice(index * 12, index * 12 + 12),
                     );
-              for (const selected of sets) {
-                const coveredChapters = [
-                  ...new Set(selected.flatMap((review) => review.chapters)),
-                ];
-                const merged = acceptanceOutputSchema.parse(
-                  await generateModel(
-                    stage,
-                    {
-                      ...input,
-                      goal: "Consolidate only the supplied partial observations. Other chapter groups are inspected separately; whole-book acceptance follows later.",
-                      instructions:
-                        "Retain concrete observed cases, diagnostic steps and contradictions. Defer obligations whose evidence belongs to another group.",
-                      evidence: [],
-                      accessEvidence: input.evidence,
-                      claims: [],
-                      pages: [],
-                      criteria: [
-                        {
-                          ...criterion,
-                          description:
-                            "Faithfully consolidate the supplied partial reviews. Retain every reported failure or contradiction and concrete case/diagnostic component. Absence of other chapter groups is deferred, never a failure of this consolidation.",
-                        },
-                      ],
-                      reviewObligation: criterion,
-                      reviewCoverage: {
-                        wholeBook: false,
-                        chapters: coveredChapters,
-                      },
-                      acceptanceScope: "merge",
-                      batchReviews: selected,
-                    },
-                    signal,
-                    report,
-                  ),
-                ).checks[0]!;
-                reduced.push({
-                  batch: reduced.length + 1,
-                  chapters: [
+              const reduced = await runBookBatches(
+                sets,
+                signal,
+                async (selected, index, signal) => {
+                  // A single observation already carries its complete verdict
+                  // and chapter identity; summarizing it again adds no evidence.
+                  if (selected.length === 1)
+                    return { ...selected[0]!, batch: index + 1 };
+                  const coveredChapters = [
                     ...new Set(selected.flatMap((review) => review.chapters)),
-                  ],
-                  ...merged,
-                  passed:
-                    merged.passed && selected.every((review) => review.passed),
-                  reason: merged.reason.slice(0, inspectChapters ? 2500 : 600),
-                });
-              }
+                  ];
+                  const merged = acceptanceOutputSchema.parse(
+                    await generateModel(
+                      stage,
+                      {
+                        ...input,
+                        goal: "Consolidate only the supplied partial observations. Other chapter groups are inspected separately; whole-book acceptance follows later.",
+                        instructions:
+                          "Retain concrete observed cases, diagnostic steps and contradictions. Defer obligations whose evidence belongs to another group.",
+                        evidence: [],
+                        accessEvidence: input.evidence,
+                        claims: [],
+                        pages: [],
+                        criteria: [
+                          {
+                            ...criterion,
+                            description:
+                              "Faithfully consolidate the supplied partial reviews. Retain every reported failure or contradiction and concrete case/diagnostic component. Absence of other chapter groups is deferred, never a failure of this consolidation.",
+                          },
+                        ],
+                        reviewObligation: criterion,
+                        reviewCoverage: {
+                          wholeBook: false,
+                          chapters: coveredChapters,
+                        },
+                        acceptanceScope: "merge",
+                        batchReviews: selected,
+                      },
+                      signal,
+                      report,
+                    ),
+                  ).checks[0]!;
+                  return {
+                    batch: index + 1,
+                    chapters: [
+                      ...new Set(selected.flatMap((review) => review.chapters)),
+                    ],
+                    ...merged,
+                    passed:
+                      merged.passed &&
+                      selected.every((review) => review.passed),
+                    reason: merged.reason.slice(
+                      0,
+                      inspectChapters ? 2500 : 600,
+                    ),
+                  };
+                },
+              );
               summaries = reduced;
             }
             const rejected = summaries.find((review) => !review.passed);

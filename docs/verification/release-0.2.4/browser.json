@@ -1,0 +1,20 @@
+{
+  "passed": true,
+  "kind": "built-image-browser-verification",
+  "arch": "arm64",
+  "syntheticReleasedBook": true,
+  "checks": [
+    "password login",
+    "complete application sidebar",
+    "knowledge-book card",
+    "released original prose",
+    "directory collapse and expand",
+    "workflow palette and compact seven-node graph"
+  ],
+  "screenshots": [
+    "book-cards.png",
+    "book-reader.png",
+    "book-workflow.png"
+  ],
+  "changes": "No book content/configuration edits or model requests; normal login updates its timestamp."
+}

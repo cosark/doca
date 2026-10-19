@@ -5,6 +5,7 @@ import { webhookDatabaseConfig } from "@db/webhook-database.js";
 import { sessionDurations } from "../app/session-policy.js";
 import { createCredentialCipher } from "../services/credential-cipher.js";
 import { pluginDatabaseConfig } from "../services/plugin-databases.js";
+import { bookBatchCheckpointsEnabled } from "@core/modules/knowledge-books/batch-checkpoints.js";
 export function assetBase(value: string | undefined) {
   const raw = value?.trim();
   if (!raw) return undefined;
@@ -28,6 +29,7 @@ export function assetBase(value: string | undefined) {
 }
 
 export function config() {
+  bookBatchCheckpointsEnabled();
   // Validate before opening databases, including one-off administrator commands.
   createCredentialCipher().dispose();
   sessionDurations();
