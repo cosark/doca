@@ -6,7 +6,7 @@
   "failed": 0,
   "skipped": 10,
   "filesWithPassingTests": 294,
-  "filesWithOnlySkippedTests": 0,
+  "filesWithOnlySkippedTests": 3,
   "totalFiles": 297,
   "durationMs": 361487,
   "initialUnboundedParallelRun": {
