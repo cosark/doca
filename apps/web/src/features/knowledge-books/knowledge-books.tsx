@@ -1,5 +1,5 @@
 import type { PayloadSummary } from "@core/modules/knowledge-books/payload-storage.js";
-import { useCallback, useEffect, useMemo, useRef, useState } from "react";
+import { useCallback, useEffect, useId, useMemo, useRef, useState } from "react";
 import { createPortal } from "react-dom";
 import type { ReactNode } from "react";
 import {
@@ -12,6 +12,14 @@ import {
   Plus,
   Layers,
   Pencil,
+  ArrowRight,
+  BookOpen,
+  ChevronDown,
+  List,
+  Ellipsis,
+  Folder,
+  FolderOpen,
+  FileText,
 } from "lucide-react";
 import {
   Alert,
@@ -24,16 +32,15 @@ import {
   Input,
   InputNumber,
   Modal,
+  Popover,
   Select,
   Segmented,
   Space,
   Switch,
   Tabs,
   Tag,
-  Tree,
   Spin,
 } from "antd";
-import type { DataNode } from "antd/es/tree";
 import type { MessageKey } from "@doca/i18n";
 import type {
   BookArtifact,
@@ -74,11 +81,15 @@ function Preview({ value }: { value: string }) {
 function BookHeader({
   title,
   actions,
+  secondaryActions,
 }: {
   title?: string;
   actions?: ReactNode;
+  secondaryActions?: ReactNode;
 }) {
   const bt = useBookText();
+  const { t } = useI18n();
+  const [more, setMore] = useState(false);
   const [slots, setSlots] = useState<{
     title: HTMLElement;
     actions: HTMLElement;
@@ -107,7 +118,32 @@ function BookHeader({
           slots.title,
         )}
         {createPortal(
-          <div className="book-header-actions">{actions}</div>,
+          <div className="book-header-actions">
+            {secondaryActions && (
+              <>
+                <div className="book-header-secondary">{secondaryActions}</div>
+                <Popover
+                  trigger="click"
+                  placement="bottomRight"
+                  open={more}
+                  onOpenChange={setMore}
+                  content={
+                    <div className="book-header-menu" onClick={() => setMore(false)}>
+                      {secondaryActions}
+                    </div>
+                  }
+                >
+                  <Button
+                    className="book-header-more"
+                    aria-label={t("workspace.more")}
+                    title={t("workspace.more")}
+                    icon={<Ellipsis size={18} />}
+                  />
+                </Popover>
+              </>
+            )}
+            {actions}
+          </div>,
           slots.actions,
         )}
       </>
@@ -211,7 +247,8 @@ export function KnowledgeBooksPage({ id }: { id?: string }) {
   );
 }
 function KnowledgeBookList({ tasks }: { tasks: boolean }) {
-  const { t } = useI18n(), ai = useAI();
+  const { t } = useI18n(),
+    ai = useAI();
   const bt = useBookText();
   const [items, setItems] = useState<
     Array<{
@@ -228,12 +265,17 @@ function KnowledgeBookList({ tasks }: { tasks: boolean }) {
     [creating, setCreating] = useState(false),
     [busy, setBusy] = useState(false),
     [title, setTitle] = useState("");
-  const [resourceAction, setResourceAction] = useState<{ resource: Resource; action: "rename" | "trash" }>();
+  const [resourceAction, setResourceAction] = useState<{
+    resource: Resource;
+    action: "rename" | "trash";
+  }>();
   const openAction = async (id: string, action: "rename" | "trash") => {
     try {
       const detail = await api<Detail>(`/resources/${id}`);
       setResourceAction({ resource: detail.resource, action });
-    } catch (e) { setError(failure(e)); }
+    } catch (e) {
+      setError(failure(e));
+    }
   };
   const load = useCallback(async () => {
     try {
@@ -252,67 +294,117 @@ function KnowledgeBookList({ tasks }: { tasks: boolean }) {
     void load();
   }, [load]);
   return (
-    <div className="knowledge-books-page">
+    <div className={`knowledge-books-page${tasks ? "" : " book-library-page"}`}>
       <BookHeader
+        secondaryActions={
+          <Button href="#/knowledge-books/tasks">{bt("humanTasks")}</Button>
+        }
         actions={
-          <>
-            <Button href="#/knowledge-books/tasks">{bt("humanTasks")}</Button>
-            <Button type="primary" onClick={() => setCreating(true)}>
-              {bt("create")}
-            </Button>
-          </>
+          <Button
+            type="primary"
+            icon={<Plus size={16} />}
+            onClick={() => setCreating(true)}
+          >
+            {bt("create")}
+          </Button>
         }
       />
-      <p className="book-lead">{tasks ? bt("humanTasks") : bt("lead")}</p>
+      {tasks && <p className="book-lead">{bt("humanTasks")}</p>}
       {error && <Alert type="error" showIcon title={error} />}
       {tasks ? (
         <BookHumanTasks />
       ) : (
         <div className="book-list-content">
-          <div className="book-cards">
+          <header className="book-library-heading">
+            <p>{bt("lead")}</p>
+            {items.length > 0 && (
+              <span className="book-library-count">
+                {bt("pageBookCount", { count: items.length })}
+              </span>
+            )}
+          </header>
+          <div className="book-library-grid">
             {items.map((item) => (
-              <Card
-                key={item.id}
-                title={
-                  <a href={`#/knowledge-books/${item.id}`}>{item.title}</a>
-                }
-                extra={<Space size={4}>
-                  {item.permission >= 3 && <Button type="text" size="small" aria-label={`${t("shell.rename")} ${item.title}`} title={t("shell.rename")} icon={<Pencil size={15} />} onClick={() => void openAction(item.id, "rename")} />}
-                  {item.owner_id === ai?.userId && <Button type="text" size="small" danger aria-label={`${t("common.delete")} ${item.title}`} title={t("common.delete")} icon={<Trash2 size={15} />} onClick={() => void openAction(item.id, "trash")} />}
-                </Space>}
-              >
-                <Tag>
-                  {item.published_release_id
-                    ? bt("published")
-                    : bt("unpublished")}
-                </Tag>
-                <p>
-                  {bt("revision")} {item.revision}
-                </p>
-                <Button size="small" href={`#/knowledge-books/${item.id}`}>
-                  {bt("openBook")}
-                </Button>
-              </Card>
+              <article className="book-library-card" key={item.id}>
+                <a
+                  className="book-library-link"
+                  href={`#/knowledge-books/${item.id}`}
+                >
+                  <div className="book-library-card-top">
+                    <span className="book-library-icon" aria-hidden="true">
+                      <BookOpen size={24} strokeWidth={1.6} />
+                    </span>
+                    <span
+                      className={`book-publication-status${item.published_release_id ? " is-published" : ""}`}
+                    >
+                      <span aria-hidden="true" />
+                      {item.published_release_id
+                        ? bt("published")
+                        : bt("unpublished")}
+                    </span>
+                  </div>
+                  <h3>{item.title}</h3>
+                  <span className="book-library-revision">
+                    {bt("revision")} <strong>{item.revision}</strong>
+                  </span>
+                  <span className="book-library-open">
+                    {bt("openBook")}
+                    <ArrowRight size={16} aria-hidden="true" />
+                  </span>
+                </a>
+                <div className="book-library-actions">
+                  {item.permission >= 3 && (
+                    <Button
+                      type="text"
+                      size="small"
+                      aria-label={`${t("shell.rename")} ${item.title}`}
+                      title={t("shell.rename")}
+                      icon={<Pencil size={15} />}
+                      onClick={() => void openAction(item.id, "rename")}
+                    />
+                  )}
+                  {item.owner_id === ai?.userId && (
+                    <Button
+                      type="text"
+                      size="small"
+                      danger
+                      aria-label={`${t("common.delete")} ${item.title}`}
+                      title={t("common.delete")}
+                      icon={<Trash2 size={15} />}
+                      onClick={() => void openAction(item.id, "trash")}
+                    />
+                  )}
+                </div>
+              </article>
             ))}
           </div>
           {!items.length && <Empty description={bt("empty")} />}
-          <Space>
-            <Button
-              disabled={!offset}
-              onClick={() => setOffset(Math.max(0, offset - 50))}
-            >
-              {bt("previous")}
-            </Button>
-            <Button
-              disabled={items.length < 50}
-              onClick={() => setOffset(offset + 50)}
-            >
-              {bt("next")}
-            </Button>
-          </Space>
+          {(offset > 0 || items.length === 50) && (
+            <Space className="book-library-pagination">
+              <Button
+                disabled={!offset}
+                onClick={() => setOffset(Math.max(0, offset - 50))}
+              >
+                {bt("previous")}
+              </Button>
+              <Button
+                disabled={items.length < 50}
+                onClick={() => setOffset(offset + 50)}
+              >
+                {bt("next")}
+              </Button>
+            </Space>
+          )}
         </div>
       )}
-      {resourceAction && <ResourceActionDialog resource={resourceAction.resource} action={resourceAction.action} close={() => setResourceAction(undefined)} saved={() => void load()} />}
+      {resourceAction && (
+        <ResourceActionDialog
+          resource={resourceAction.resource}
+          action={resourceAction.action}
+          close={() => setResourceAction(undefined)}
+          saved={() => void load()}
+        />
+      )}
       <Modal
         title={bt("create")}
         open={creating}
@@ -666,7 +758,7 @@ function KnowledgeBookPage({ id }: { id: string }) {
     <div className={`knowledge-books-page book-active-${activeTab}`}>
       <BookHeader
         title={book.detail.resource.title}
-        actions={
+        secondaryActions={
           <>
             <Button
               disabled={!ai?.userId || ai.resource?.id !== id}
@@ -699,16 +791,20 @@ function KnowledgeBookPage({ id }: { id: string }) {
                 {t("shell.share")}
               </button>
             )}
-            <Button
-              disabled={!book.canEdit || busy || dirty}
-              type="primary"
-              onClick={() =>
-                void command<{ id: string }>({ operation: "run.start" }).then(result => openRun(result.id)).catch(e => setError(failure(e)))
-              }
-            >
-              {bt("run")}
-            </Button>
           </>
+        }
+        actions={
+          <Button
+            disabled={!book.canEdit || busy || dirty}
+            type="primary"
+            onClick={() =>
+              void command<{ id: string }>({ operation: "run.start" })
+                .then((result) => openRun(result.id))
+                .catch((e) => setError(failure(e)))
+            }
+          >
+            {bt("run")}
+          </Button>
         }
       />
       {error && (
@@ -735,7 +831,7 @@ function KnowledgeBookPage({ id }: { id: string }) {
                 <Space className="book-toolbar">
                   <Select
                     aria-label={bt("release")}
-                    style={{ minWidth: 170 }}
+                    style={{ minWidth: 150 }}
                     value={release?.id}
                     placeholder={bt("release")}
                     options={book.releases.map((r) => ({
@@ -769,6 +865,7 @@ function KnowledgeBookPage({ id }: { id: string }) {
                   <div className="book-result">
                     <aside>
                       <BookDocumentTree
+                        title={book.detail.resource.title}
                         pages={release.artifact.pages}
                         selected={page?.id}
                         changed={setPageId}
@@ -1623,16 +1720,32 @@ function AcceptanceCheckList({
   );
 }
 function BookDocumentTree({
+  title,
   pages,
   selected,
   changed,
 }: {
+  title: string;
   pages: BookArtifact["pages"];
   selected?: string;
   changed: (id: string) => void;
 }) {
-  const data = useMemo(() => pageTree(pages), [pages]);
-  const folderKeys = (nodes: DataNode[]): string[] =>
+  const bt = useBookText();
+  const directoryId = useId();
+  const [query, setQuery] = useState("");
+  const [open, setOpen] = useState(false);
+  const search = query.trim().toLocaleLowerCase();
+  const filtered = useMemo(
+    () =>
+      pages.filter((page) =>
+        [page.title, ...page.path].some((label) =>
+          label.toLocaleLowerCase().includes(search),
+        ),
+      ),
+    [pages, search],
+  );
+  const data = useMemo(() => bookPageTree(filtered), [filtered]);
+  const folderKeys = (nodes: BookPageNode[]): string[] =>
     nodes.flatMap((node) =>
       node.children ? [String(node.key), ...folderKeys(node.children)] : [],
     );
@@ -1651,44 +1764,161 @@ function BookDocumentTree({
     );
   }, [pages, selected]);
   function firstDocument(
-    node: DataNode,
+    node: BookPageNode,
     ancestors: string[] = [],
   ): { documentId: string; directories: string[] } | undefined {
-    if (node.isLeaf)
+    if (node.page)
       return { documentId: String(node.key), directories: ancestors };
     for (const child of node.children ?? []) {
       const found = firstDocument(child, [...ancestors, String(node.key)]);
       if (found) return found;
     }
   }
+  function selectDocument(node: BookPageNode) {
+    const found = firstDocument(node);
+    if (!found) return;
+    setExpanded((keys) => [...new Set([...keys, ...found.directories])]);
+    changed(found.documentId);
+    setOpen(false);
+  }
+  function navigation(nodes: BookPageNode[]): ReactNode {
+    return (
+      <ul className="book-directory-items">
+        {nodes.map((node) => {
+          if (node.page)
+            return (
+              <li key={node.key}>
+                <button
+                  type="button"
+                  className="book-directory-link"
+                  title={node.title}
+                  aria-current={node.key === selected ? "page" : undefined}
+                  onClick={() => selectDocument(node)}
+                >
+                  <FileText size={14} strokeWidth={1.6} aria-hidden="true" />
+                  <span className="book-directory-node-label">
+                    {node.title}
+                  </span>
+                </button>
+              </li>
+            );
+          const expandedGroup = !!search || expanded.includes(node.key);
+          const groupId = `${directoryId}-${encodeURIComponent(node.key)}`;
+          return (
+            <li className="book-directory-group" key={node.key}>
+              <div className="book-directory-group-heading">
+                {!search && (
+                  <button
+                    type="button"
+                    className="book-directory-group-toggle"
+                    aria-label={bt(
+                      expandedGroup
+                        ? "collapseDirectoryGroup"
+                        : "expandDirectoryGroup",
+                      { name: node.title },
+                    )}
+                    aria-expanded={expandedGroup}
+                    aria-controls={groupId}
+                    onClick={() =>
+                      setExpanded((keys) =>
+                        expandedGroup
+                          ? keys.filter((key) => key !== node.key)
+                          : [...keys, node.key],
+                      )
+                    }
+                  >
+                    <ChevronRight
+                      size={15}
+                      strokeWidth={1.5}
+                      aria-hidden="true"
+                    />
+                  </button>
+                )}
+                {search && (
+                  <span
+                    className="book-directory-group-spacer"
+                    aria-hidden="true"
+                  />
+                )}
+                <button
+                  type="button"
+                  className="book-directory-group-link"
+                  title={node.title}
+                  onClick={() => selectDocument(node)}
+                >
+                  {expandedGroup ? (
+                    <FolderOpen
+                      size={15}
+                      strokeWidth={1.6}
+                      aria-hidden="true"
+                    />
+                  ) : (
+                    <Folder size={15} strokeWidth={1.6} aria-hidden="true" />
+                  )}
+                  <span className="book-directory-node-label">
+                    {node.title}
+                  </span>
+                </button>
+              </div>
+              <div
+                className="book-directory-children"
+                id={groupId}
+                hidden={!expandedGroup}
+              >
+                {navigation(node.children ?? [])}
+              </div>
+            </li>
+          );
+        })}
+      </ul>
+    );
+  }
   return (
-    <Tree
-      blockNode
-      treeData={data}
-      selectedKeys={selected ? [selected] : []}
-      expandedKeys={expanded}
-      onExpand={(keys) => setExpanded(keys.map(String))}
-      onSelect={(_keys, info) => {
-        const found = firstDocument(info.node);
-        if (!found) return;
-        setExpanded((keys) => [...new Set([...keys, ...found.directories])]);
-        changed(found.documentId);
-      }}
-    />
+    <nav
+      className={`book-directory${open ? " book-directory-open" : ""}`}
+      aria-label={bt("documentDirectory")}
+    >
+      <button
+        type="button"
+        className="book-directory-toggle"
+        aria-expanded={open}
+        aria-controls={directoryId}
+        onClick={() => setOpen(!open)}
+      >
+        <List size={17} aria-hidden="true" />
+        <span>{bt("documentDirectory")}</span>
+        <span className="book-directory-count">
+          {bt("documentCount", { count: pages.length })}
+        </span>
+        <ChevronDown size={16} aria-hidden="true" />
+      </button>
+      <div className="book-directory-body" id={directoryId}>
+        <Input
+          className="book-directory-search"
+          prefix={<Search size={15} aria-hidden="true" />}
+          placeholder={bt("searchDirectory")}
+          aria-label={bt("searchDirectory")}
+          allowClear
+          value={query}
+          onChange={(event) => setQuery(event.target.value)}
+        />
+        <div className="book-directory-book">
+          <BookOpen size={16} strokeWidth={1.6} aria-hidden="true" />
+          <strong>{title}</strong>
+        </div>
+        <div className="book-directory-tree">
+          {filtered.length ? (
+            navigation(data)
+          ) : (
+            <Empty
+              image={Empty.PRESENTED_IMAGE_SIMPLE}
+              description={bt("noDirectoryMatches")}
+            />
+          )}
+        </div>
+      </div>
+    </nav>
   );
-}
-function pageTree(pages: BookArtifact["pages"]): DataNode[] {
-  const visit = (node: BookPageNode): DataNode => ({
-    key: node.key,
-    title: (
-      <span className="book-tree-title" title={node.title}>
-        {node.title}
-      </span>
-    ),
-    isLeaf: !!node.page,
-    children: node.children?.map(visit),
-  });
-  return bookPageTree(pages).map(visit);
 }
 function PublishedBookView({ book }: { book: Book }) {
   const bt = useBookText(),
@@ -1724,6 +1954,7 @@ function PublishedBookView({ book }: { book: Book }) {
                 <div className="book-result">
                   <aside>
                     <BookDocumentTree
+                      title={book.detail.resource.title}
                       pages={artifact.pages}
                       selected={page?.id}
                       changed={setPageId}

@@ -1,4 +1,25 @@
 export interface KnowledgeBookTables {
+  knowledge_book_batch_checkpoints: {
+    id: string;
+    book_id: string;
+    run_id: string;
+    node_id: string;
+    stage: "extract" | "synthesize" | "organize" | "acceptance";
+    phase: string;
+    scope_hash: string;
+    plan_hash: string;
+    batch_key: string;
+    input_hash: string;
+    result_ref: string;
+    root_kind: "root";
+    root_sha256: string;
+    raw_sha256: string;
+    raw_size: number;
+    access_manifest: string;
+    summary: string;
+    created_at: string;
+    updated_at: string;
+  };
   knowledge_book_payload_objects: {
     book_id: string;
     kind: "data" | "index" | "root";

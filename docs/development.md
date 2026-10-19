@@ -68,6 +68,7 @@ The command checks that the account is an enabled administrator, updates the pas
 | DOCA_DATABASE | sqlite | sqlite or postgres |
 | DOCA_SQLITE_PATH | ./data/v1/doca.db | The current database file |
 | DOCA_DATABASE_URL | none | PostgreSQL URL for the configured database |
+| DOCA_BOOK_BATCH_CHECKPOINTS | on | on/off only; off disables batch recovery, preserving stored checkpoints and objects |
 | NODE_ENV | unset | production requires an HTTPS origin and disables dev |
 | DOCA_ASSET_BASE | empty | HTTPS prefix for built assets. Empty serves `/assets` locally |
 

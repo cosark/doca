@@ -1,0 +1,68 @@
+[
+  {
+    "name": "sqlite",
+    "concurrentStarts": 2,
+    "attempts": [
+      {
+        "mode": "verify",
+        "driver": "sqlite",
+        "tablesPreserved": 13,
+        "oldBodyByteExact": true,
+        "checkpointRows": 0,
+        "baselineUnchanged": true
+      },
+      {
+        "mode": "verify",
+        "driver": "sqlite",
+        "tablesPreserved": 13,
+        "oldBodyByteExact": true,
+        "checkpointRows": 0,
+        "baselineUnchanged": true
+      }
+    ]
+  },
+  {
+    "name": "pg17",
+    "concurrentStarts": 2,
+    "attempts": [
+      {
+        "mode": "verify",
+        "driver": "postgres",
+        "tablesPreserved": 13,
+        "oldBodyByteExact": true,
+        "checkpointRows": 0,
+        "baselineUnchanged": true
+      },
+      {
+        "mode": "verify",
+        "driver": "postgres",
+        "tablesPreserved": 13,
+        "oldBodyByteExact": true,
+        "checkpointRows": 0,
+        "baselineUnchanged": true
+      }
+    ]
+  },
+  {
+    "name": "pg18",
+    "concurrentStarts": 2,
+    "attempts": [
+      {
+        "mode": "verify",
+        "driver": "postgres",
+        "tablesPreserved": 13,
+        "oldBodyByteExact": true,
+        "checkpointRows": 0,
+        "baselineUnchanged": true
+      },
+      {
+        "mode": "verify",
+        "driver": "postgres",
+        "tablesPreserved": 13,
+        "oldBodyByteExact": true,
+        "checkpointRows": 0,
+        "baselineUnchanged": true
+      }
+    ]
+  }
+]

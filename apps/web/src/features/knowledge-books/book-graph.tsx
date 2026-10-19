@@ -14,6 +14,16 @@ import {
   PanelLeftOpen,
   PanelTopClose,
   PanelTopOpen,
+  MoveHorizontal,
+  BookOpen,
+  MessageSquareText,
+  ScanText,
+  PenLine,
+  ListTree,
+  ShieldCheck,
+  UserRoundCheck,
+  Send,
+  type LucideIcon,
 } from "lucide-react";
 import type {
   BookWorkflow,
@@ -33,33 +43,73 @@ function plainLabel(markdown: string) {
   return text(fromMarkdown(markdown)).replace(/\s+/g, " ").trim();
 }
 
+// The palette and canvas use the same Lucide silhouettes at every zoom level.
 const nodeAppearance: Record<
   BookNodeType,
   {
-    icon: string;
+    icon: LucideIcon;
+    path: string;
     color: string;
     fill: string;
     group: "inputs" | "models" | "checks";
   }
 > = {
-  sources: { icon: "KB", color: "#2563eb", fill: "#eef4ff", group: "inputs" },
-  feedback: { icon: "Hi", color: "#08918e", fill: "#e9faf7", group: "inputs" },
-  extract: { icon: "AI", color: "#6654d9", fill: "#f2efff", group: "models" },
-  synthesize: {
-    icon: "AI",
-    color: "#6654d9",
-    fill: "#f2efff",
+  sources: {
+    icon: BookOpen,
+    path: "M12 7v14m0-14C9 5 5 5 2 6v14c3-1 7-1 10 1m0-14c3-2 7-2 10-1v14c-3-1-7-1-10 1",
+    color: "#465fce",
+    fill: "#f0f2fc",
+    group: "inputs",
+  },
+  feedback: {
+    icon: MessageSquareText,
+    path: "M21 15a3 3 0 0 1-3 3H7l-5 4V5a3 3 0 0 1 3-3h13a3 3 0 0 1 3 3v10M7 7h9M7 12h6",
+    color: "#247b79",
+    fill: "#eef8f6",
+    group: "inputs",
+  },
+  extract: {
+    icon: ScanText,
+    path: "M4 7V4h3m10 0h3v3m0 10v3h-3M7 20H4v-3M8 8h8M8 12h8M8 16h5",
+    color: "#7054bb",
+    fill: "#f4f0fa",
     group: "models",
   },
-  organize: { icon: "≡", color: "#2563eb", fill: "#eef4ff", group: "models" },
-  acceptance: { icon: "✓", color: "#d38718", fill: "#fff7e7", group: "checks" },
-  human_review: {
-    icon: "Hi",
-    color: "#d38718",
-    fill: "#fff7e7",
+  synthesize: {
+    icon: PenLine,
+    path: "m15 5 4 4M4 20h16M5 15 16 4a2.8 2.8 0 0 1 4 4L9 19H5v-4",
+    color: "#7054bb",
+    fill: "#f4f0fa",
+    group: "models",
+  },
+  organize: {
+    icon: ListTree,
+    path: "M4 3v12a3 3 0 0 0 3 3h3M4 7h6m4 0h6m-6 11h6",
+    color: "#465fce",
+    fill: "#f0f2fc",
+    group: "models",
+  },
+  acceptance: {
+    icon: ShieldCheck,
+    path: "M12 2 3 6v6c0 5 9 10 9 10s9-5 9-10V6l-9-4m-5 10 3 3 6-6",
+    color: "#997021",
+    fill: "#fcf6e9",
     group: "checks",
   },
-  publish: { icon: "↗", color: "#19926a", fill: "#eaf8f1", group: "checks" },
+  human_review: {
+    icon: UserRoundCheck,
+    path: "M16 21v-2a4 4 0 0 0-4-4H6a4 4 0 0 0-4 4v2M9 3a4 4 0 1 0 0 8 4 4 0 0 0 0-8m8 9 2 2 4-4",
+    color: "#997021",
+    fill: "#fcf6e9",
+    group: "checks",
+  },
+  publish: {
+    icon: Send,
+    path: "m22 2-7 20-4-9L2 9 22 2ZM11 13 22 2",
+    color: "#287b60",
+    fill: "#edf7f1",
+    group: "checks",
+  },
 };
 
 /** X6 is also the diagram engine used by the installed slatetsx editor. */
@@ -73,7 +123,12 @@ export function BookGraph({
   added,
   execution,
 }: {
-  execution?: { viewId: string; states: Readonly<Record<string, string>>; summaries: Readonly<Record<string, string>>; selectedId?: string };
+  execution?: {
+    viewId: string;
+    states: Readonly<Record<string, string>>;
+    summaries: Readonly<Record<string, string>>;
+    selectedId?: string;
+  };
   workflow?: BookWorkflow;
   provenance?: { nodes: ProvenanceNode[]; edges: ProvenanceEdge[] };
   editable?: boolean;
@@ -112,9 +167,9 @@ export function BookGraph({
       autoResize: true,
       grid: {
         visible: true,
-        size: 16,
+        size: 20,
         type: "dot",
-        args: { color: "#cbd4e1", thickness: 1 },
+        args: { color: "#dce1e9", thickness: 1 },
       },
       virtual: isProvenance,
       panning: true,
@@ -133,7 +188,7 @@ export function BookGraph({
           return canvas.createEdge({
             attrs: {
               line: {
-                stroke: "#6d97ef",
+                stroke: "#a3aec5",
                 strokeWidth: 2,
                 targetMarker: "classic",
               },
@@ -141,7 +196,7 @@ export function BookGraph({
           });
         },
       },
-      background: { color: "#fafcff" },
+      background: { color: "#f8f9fc" },
     });
     graph.current = canvas;
     fitted.current = false;
@@ -173,15 +228,18 @@ export function BookGraph({
         const previous = selectedId.current
           ? canvas.getCellById(selectedId.current)
           : null;
-        if (previous?.isNode()) previous.attr("body/stroke", "#c4d4ef");
-        node.attr("body/stroke", "#5588f5");
+        if (previous?.isNode()) previous.attr("body/stroke", "#dbe0e9");
+        node.attr("body/stroke", "#465fce");
         selectedId.current = node.id;
       }
       callbacks.current.selected?.(node.id);
     });
     canvas.on("blank:click", () => {
-      const previous = selectedId.current ? canvas.getCellById(selectedId.current) : null;
-      if (previous?.isNode() && !execution) previous.attr("body/stroke", "#c4d4ef");
+      const previous = selectedId.current
+        ? canvas.getCellById(selectedId.current)
+        : null;
+      if (previous?.isNode() && !execution)
+        previous.attr("body/stroke", "#dbe0e9");
       selectedId.current = null;
       callbacks.current.dismissed?.();
     });
@@ -244,7 +302,7 @@ export function BookGraph({
               height: 56,
               label,
               attrs: {
-                body: { rx: 9, ry: 9, stroke: "#c4d4ef", fill: "#fff" },
+                body: { rx: 9, ry: 9, stroke: "#dbe0e9", fill: "#fff" },
                 label: {
                   fill: "#243449",
                   fontSize: 12,
@@ -253,17 +311,33 @@ export function BookGraph({
               },
             };
           const state = execution?.states[node.id];
-          const stateColor = state === "completed" ? "#19926a" : state === "failed" ? "#d43838" : state === "running" ? "#2563eb" : state === "awaiting_input" || state === "awaiting_publication" ? "#b67c0d" : "#8491a6";
+          const stateColor =
+            state === "completed"
+              ? "#19926a"
+              : state === "failed"
+                ? "#d43838"
+                : state === "running"
+                  ? "#2563eb"
+                  : state === "awaiting_input" ||
+                      state === "awaiting_publication"
+                    ? "#b67c0d"
+                    : "#8491a6";
           const style = nodeAppearance[node.type];
           // Keep the full editable workflow visible at entry. At overview scale,
           // show readable titles; zooming in restores the rule and scope details.
           const condensed = editable && zoom < 65;
+          const overviewScale = Math.min(4, 100 / zoom);
           const summary =
             execution?.summaries[node.id] ||
             plainLabel(node.parameters.instructions) ||
             t(`books.nodeHint.${node.type}`);
-          const scope = execution ? t(state === "pending" ? "books.pipelinePending" : `books.status.${state}` as Parameters<typeof t>[0]) :
-            node.type === "sources"
+          const scope = execution
+            ? t(
+                state === "pending"
+                  ? "books.pipelinePending"
+                  : (`books.status.${state}` as Parameters<typeof t>[0]),
+              )
+            : node.type === "sources"
               ? node.parameters.sourceIds.length
                 ? t("books.graphSourceCount", {
                     count: node.parameters.sourceIds.length,
@@ -289,60 +363,77 @@ export function BookGraph({
               "title",
               "summary",
               "divider",
+              "statusDot",
               "scope",
             ].map((selector) => ({
               tagName:
                 selector === "body" || selector === "iconBody"
                   ? "rect"
-                  : selector === "divider"
+                  : selector === "divider" || selector === "icon"
                     ? "path"
-                    : "text",
+                    : selector === "statusDot"
+                      ? "circle"
+                      : "text",
               selector,
             })),
             attrs: {
               body: {
-                ...(execution ? { role: "button", tabindex: 0, "aria-label": t("books.pipelineNodeLogs", { node: label, state: scope }) } : {}),
-                rx: 12,
-                ry: 12,
-                stroke: execution?.selectedId === node.id || selectedId.current === node.id ? "#5588f5" : execution ? stateColor : "#c4d4ef",
+                ...(execution
+                  ? {
+                      role: "button",
+                      tabindex: 0,
+                      "aria-label": t("books.pipelineNodeLogs", {
+                        node: label,
+                        state: scope,
+                      }),
+                    }
+                  : {}),
+                rx: 10,
+                ry: 10,
+                stroke:
+                  execution?.selectedId === node.id ||
+                  selectedId.current === node.id
+                    ? "#465fce"
+                    : "#dbe0e9",
                 strokeWidth: 1.5,
                 fill: "#fff",
               },
               iconBody: {
-                opacity: condensed ? 0 : 1,
-                x: 12,
-                y: 12,
-                width: 30,
-                height: 30,
+                x: condensed ? 105 - 12 * overviewScale : 12,
+                y: condensed ? 10 : 12,
+                width: condensed ? 24 * overviewScale : 30,
+                height: condensed ? 24 * overviewScale : 30,
                 rx: 8,
-                fill: execution ? `${stateColor}12` : style.fill,
+                fill: style.fill,
                 stroke: "none",
               },
               icon: {
-                opacity: condensed ? 0 : 1,
-                refX: 0,
-                refY: 0,
-                x: 27,
-                y: 27,
-                text: execution ? state === "completed" ? "✓" : state === "failed" ? "!" : state === "running" ? "▶" : state?.startsWith("awaiting") ? "Ⅱ" : "·" : style.icon,
-                textAnchor: "middle",
-                textVerticalAnchor: "middle",
-                fontSize: 12,
-                fontWeight: 700,
-                fill: execution ? stateColor : style.color,
+                d: style.path,
+                transform: condensed
+                  ? `translate(${105 - 8 * overviewScale}, ${10 + 4 * overviewScale}) scale(${(overviewScale * 2) / 3})`
+                  : "translate(18, 18) scale(0.75)",
+                fill: "none",
+                stroke: style.color,
+                strokeWidth: 1.8,
+                strokeLinecap: "round",
+                strokeLinejoin: "round",
               },
               title: {
                 refX: 0,
                 refY: 0,
                 x: condensed ? 105 : 51,
-                y: condensed ? 60 : 27,
+                y: condensed ? 91 : 27,
                 text: label,
                 textAnchor: condensed ? "middle" : "start",
                 textVerticalAnchor: "middle",
-                fontSize: condensed ? Math.min(64, 13 / (zoom / 100)) : 13,
+                fontSize: condensed ? Math.min(64, 12 / (zoom / 100)) : 14,
                 fontWeight: 600,
                 fill: "#20304a",
-                textWrap: { width: condensed ? 185 : 147, height: condensed ? 100 : 20, ellipsis: true },
+                textWrap: {
+                  width: condensed ? 185 : 147,
+                  height: condensed ? 44 : 20,
+                  ellipsis: true,
+                },
               },
               summary: {
                 opacity: condensed ? 0 : 1,
@@ -353,22 +444,33 @@ export function BookGraph({
                 text: summary,
                 textAnchor: "start",
                 textVerticalAnchor: "top",
-                fontSize: 11,
-                lineHeight: 15,
-                fill: "#758198",
-                textWrap: { width: 184, height: 31, ellipsis: true },
+                fontSize: 12,
+                lineHeight: 17,
+                fill: "#647084",
+                textWrap: { width: 184, height: 34, ellipsis: true },
               },
-              divider: { d: "M 13 95 L 197 95", stroke: "#edf0f6", opacity: condensed ? 0 : 1 },
+              divider: {
+                d: "M 13 95 L 197 95",
+                stroke: "#edf0f5",
+                opacity: condensed ? 0 : 1,
+              },
+              statusDot: {
+                cx: 17,
+                cy: 108,
+                r: 3,
+                fill: stateColor,
+                opacity: execution && !condensed ? 1 : 0,
+              },
               scope: {
                 opacity: condensed ? 0 : 1,
                 refX: 0,
                 refY: 0,
-                x: 13,
+                x: execution ? 27 : 13,
                 y: 108,
                 text: scope,
                 textAnchor: "start",
                 textVerticalAnchor: "middle",
-                fontSize: 10,
+                fontSize: 11,
                 fill: execution ? stateColor : style.color,
                 textWrap: { width: 184, height: 14, ellipsis: true },
               },
@@ -381,7 +483,7 @@ export function BookGraph({
                     circle: {
                       r: 4,
                       magnet: editable ? "passive" : false,
-                      stroke: "#6d97ef",
+                      stroke: "#a3aec5",
                       strokeWidth: 1.5,
                       fill: "#fff",
                     },
@@ -393,7 +495,7 @@ export function BookGraph({
                     circle: {
                       r: 4,
                       magnet: editable,
-                      stroke: "#6d97ef",
+                      stroke: "#a3aec5",
                       strokeWidth: 1.5,
                       fill: "#fff",
                     },
@@ -416,23 +518,43 @@ export function BookGraph({
           source: workflow ? { cell: edge.source, port: "out" } : edge.source,
           target: workflow ? { cell: edge.target, port: "in" } : edge.target,
           connector: { name: "rounded" },
-          ...(execution ? { router: { name: "manhattan", args: { padding: 16 } } } : { connector: { name: "smooth", args: { direction: "H" } } }),
+          ...(execution
+            ? { router: { name: "manhattan", args: { padding: 16 } } }
+            : { connector: { name: "smooth", args: { direction: "H" } } }),
           attrs: {
             line: {
-              stroke: execution ? execution.states[edge.source] === "completed" ? "#73bca3" : "#cbd4e1" : "#6d97ef",
-              strokeWidth: workflow ? 2 : 1.5,
-              targetMarker: { name: "classic", width: 8, height: 7 },
+              stroke: execution
+                ? execution.states[edge.source] === "completed"
+                  ? "#73bca3"
+                  : "#cbd4e1"
+                : "#a3aec5",
+              strokeWidth: 1.5,
+              targetMarker: { name: "block", width: 6, height: 5 },
             },
           },
           zIndex: 0,
           ...("count" in edge && Number(edge.count) > 1
-            ? { labels: [{ attrs: { label: { text: `×${edge.count}`, fill: "#64748b", fontSize: 11 } } }] }
+            ? {
+                labels: [
+                  {
+                    attrs: {
+                      label: {
+                        text: `×${edge.count}`,
+                        fill: "#64748b",
+                        fontSize: 11,
+                      },
+                    },
+                  },
+                ],
+              }
             : {}),
         })),
       };
       // Polling changes node state, not the canvas or its viewport. Keep existing
       // X6 cells and touch only metadata which actually changed.
-      const wanted = new Set([...model.nodes, ...model.edges].map(cell => cell.id));
+      const wanted = new Set(
+        [...model.nodes, ...model.edges].map((cell) => cell.id),
+      );
       canvas.batchUpdate(() => {
         for (const cell of canvas.getCells()) {
           if (!wanted.has(cell.id)) {
@@ -448,8 +570,14 @@ export function BookGraph({
             cell.setAttrs(metadata.attrs);
             if (metadata.x !== undefined && metadata.y !== undefined)
               cell.position(metadata.x, metadata.y);
-            if (metadata.label !== undefined) cell.setProp("label", metadata.label);
-            if (metadata.ports && JSON.stringify(cell.getProp("ports")) !== JSON.stringify(metadata.ports)) cell.setProp("ports", metadata.ports);
+            if (metadata.label !== undefined)
+              cell.setProp("label", metadata.label);
+            if (
+              metadata.ports &&
+              JSON.stringify(cell.getProp("ports")) !==
+                JSON.stringify(metadata.ports)
+            )
+              cell.setProp("ports", metadata.ports);
           } else canvas.addNode(metadata);
           rendered.current.set(metadata.id!, signature);
         }
@@ -460,8 +588,7 @@ export function BookGraph({
           if (cell?.isEdge()) {
             cell.setAttrs(metadata.attrs);
             cell.setLabels(metadata.labels ?? []);
-          }
-          else canvas.addEdge(metadata);
+          } else canvas.addEdge(metadata);
           rendered.current.set(metadata.id, signature);
         }
       });
@@ -470,19 +597,29 @@ export function BookGraph({
     }
     // Redrawing edited rules or positions must preserve the reader's current view.
     const narrow = (host.current?.clientWidth ?? 0) < 420;
-    if (!fitted.current || (narrow && execution?.viewId !== viewedExecution.current)) {
+    if (
+      !fitted.current ||
+      (narrow && execution?.viewId !== viewedExecution.current)
+    ) {
       canvas.zoomToFit({
         padding: 32,
         maxScale: 1,
         minScale: narrow ? 1 : execution ? 0.65 : 0.08,
       });
       if (narrow) {
-        const failed = narrow && execution
-          ? workflow?.nodes.find(node => execution.states[node.id] === "failed")
-          : undefined;
-        const bounds = failed ? canvas.getCellById(failed.id)!.getBBox() : canvas.getContentArea();
+        const failed =
+          narrow && execution
+            ? workflow?.nodes.find(
+                (node) => execution.states[node.id] === "failed",
+              )
+            : undefined;
+        const bounds = failed
+          ? canvas.getCellById(failed.id)!.getBBox()
+          : canvas.getContentArea();
         const scale = canvas.zoom();
-        const left = failed ? ((host.current?.clientWidth ?? 0) - bounds.width * scale) / 2 : 24;
+        const left = failed
+          ? ((host.current?.clientWidth ?? 0) - bounds.width * scale) / 2
+          : 24;
         canvas.translate(left - bounds.x * scale, 24 - bounds.y * scale);
       }
       fitted.current = true;
@@ -509,7 +646,13 @@ export function BookGraph({
           <div className="book-graph-title">
             <Workflow size={16} />
             <strong>
-              {t(execution ? "books.pipeline" : workflow ? "books.workflow" : "books.provenance")}
+              {t(
+                execution
+                  ? "books.pipeline"
+                  : workflow
+                    ? "books.workflow"
+                    : "books.provenance",
+              )}
             </strong>
             {workflow && (
               <span>
@@ -599,6 +742,12 @@ export function BookGraph({
       )}
       <div className="book-graph-workspace">
         {workflow && editable && added && paletteVisible && toolbarVisible && (
+          <div className="book-palette-mobile-hint">
+            <MoveHorizontal size={14} aria-hidden="true" />
+            {t("books.paletteScrollHint")}
+          </div>
+        )}
+        {workflow && editable && added && paletteVisible && toolbarVisible && (
           <aside className="book-node-palette" aria-label={t("books.addNode")}>
             <div className="book-palette-heading">
               {t("books.addNode")}
@@ -635,7 +784,11 @@ export function BookGraph({
                         className="book-palette-icon"
                         style={{ color: style.color, background: style.fill }}
                       >
-                        {style.icon}
+                        <style.icon
+                          size={18}
+                          strokeWidth={1.7}
+                          aria-hidden="true"
+                        />
                       </span>
                       <span>
                         <strong>{t(`books.node.${type}`)}</strong>
@@ -662,24 +815,41 @@ export function BookGraph({
           )}
           <div
             ref={host}
-            onKeyDown={event => {
+            onKeyDown={(event) => {
               if (!execution || !["Enter", " "].includes(event.key)) return;
-              const id = (event.target as Element).closest("[data-cell-id]")?.getAttribute("data-cell-id");
-              if (id && workflow?.nodes.some(node => node.id === id)) { event.preventDefault(); callbacks.current.selected?.(id); }
+              const id = (event.target as Element)
+                .closest("[data-cell-id]")
+                ?.getAttribute("data-cell-id");
+              if (id && workflow?.nodes.some((node) => node.id === id)) {
+                event.preventDefault();
+                callbacks.current.selected?.(id);
+              }
             }}
             className="book-graph-canvas"
-            aria-label={t(execution ? "books.pipeline" : workflow ? "books.workflow" : "books.provenance")}
+            aria-label={t(
+              execution
+                ? "books.pipeline"
+                : workflow
+                  ? "books.workflow"
+                  : "books.provenance",
+            )}
           />
           <div className="book-graph-hint">
             <MousePointer2 size={13} />
-            <span className="book-graph-help-desktop">{t(
-              workflow
-                ? editable
-                  ? "books.graphHelp"
-                  : execution ? "books.pipelineGraphHelp" : "books.workflowGraphHelp"
-                : "books.provenanceHelp",
-            )}</span>
-            <span className="book-graph-help-touch">{t("books.touchGraphHelp")}</span>
+            <span className="book-graph-help-desktop">
+              {t(
+                workflow
+                  ? editable
+                    ? "books.graphHelp"
+                    : execution
+                      ? "books.pipelineGraphHelp"
+                      : "books.workflowGraphHelp"
+                  : "books.provenanceHelp",
+              )}
+            </span>
+            <span className="book-graph-help-touch">
+              {t("books.touchGraphHelp")}
+            </span>
           </div>
         </div>
       </div>

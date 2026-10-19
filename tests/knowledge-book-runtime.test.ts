@@ -2016,7 +2016,7 @@ it("hierarchically consolidates many batch reviews without a growing final model
     },
     new AbortController().signal,
   );
-  expect(merges).toBe(3);
+  expect(merges).toBe(2);
   expect(final).toBe(1);
   expect(result.checks[0].passed).toBe(true);
 });
@@ -2785,6 +2785,8 @@ it("plans a compact outline then assigns bounded claims before writing into fixe
     }
     expect(data.fixedChapter.title).toBe("TCP mechanics");
     expect(data.chapterAssignment.sections).toHaveLength(2);
+    expect(data.batchCharacterTarget).toBe(5000);
+    expect(data.claims).toHaveLength(1);
     return depthPage(data);
   });
   const result: any = await knowledgeBookRuntime(
@@ -2797,13 +2799,20 @@ it("plans a compact outline then assigns bounded claims before writing into fixe
     { ...input([evidence("source", "TCP")]), goal: "20000字", claims },
     new AbortController().signal,
   );
-  expect(phases).toEqual(["plan", "assign", "write", "write"]);
+  expect(phases).toEqual([
+    "plan",
+    "assign",
+    "write",
+    "write",
+    "write",
+    "write",
+  ]);
   expect(result.pages).toHaveLength(1);
-  expect(result.pages[0].paragraphs).toHaveLength(2);
+  expect(result.pages[0].paragraphs).toHaveLength(4);
   expect(
     new Set(result.pages[0].paragraphs.flatMap((p: any) => p.claimIds)),
   ).toEqual(new Set(claims.map((c) => c.id)));
-  expect(fixture.access).toHaveBeenCalledTimes(4);
+  expect(fixture.access).toHaveBeenCalledTimes(6);
 });
 
 it("rejects assignments that duplicate a claim and omit another without starting any writing", async () => {
@@ -2913,7 +2922,7 @@ it("subdivides incomplete assignments and restores original IDs across reused lo
   expect(
     output.pages[0].paragraphs.flatMap((paragraph: any) => paragraph.claimIds),
   ).toEqual(["fact0", "fact1"]);
-  expect(fixture.access).toHaveBeenCalledTimes(6);
+  expect(fixture.access).toHaveBeenCalledTimes(7);
 });
 
 it("allocates comparable depth budgets to chapters with unequal section counts", async () => {
@@ -3231,7 +3240,7 @@ it("keeps fragment obligations local and retains source context and chapter case
     new AbortController().signal,
   );
   expect(inspected).toBe(13);
-  expect(merged).toBe(2);
+  expect(merged).toBe(1);
   expect(output.checks[0].passed).toBe(true);
 });
 
@@ -3283,6 +3292,89 @@ it("retains later failed chapter scopes in bounded repair diagnostics", async ()
     expect(output.checks[0].reason).toContain(page.id.slice(0, 15));
   expect(output.checks[0].reason).toContain("Incorrect transition");
 });
+
+it.each([true, false])(
+  "consolidates independent review groups with bounded concurrency and preserves rejection (%s)",
+  async (passed) => {
+    const pages = Array.from({ length: 25 }, (_, index) => ({
+      id: `page${index}`,
+      title: `Chapter ${index}`,
+      path: [],
+      paragraphs: [
+        {
+          id: `p${index}`,
+          markdown: "Supported mechanism. ".repeat(100),
+          claimIds: ["fact0"],
+          reason: "Source",
+        },
+      ],
+    }));
+    let active = 0,
+      peak = 0,
+      merges = 0,
+      summaries = 0;
+    fixture.stream.mockImplementation(async (options) => {
+      const data = JSON.parse(options.prompt[1].content[0].text);
+      if (data.acceptanceScope === "plan") return plannedAcceptance(data);
+      if (data.acceptanceScope === "trace") return tracedAcceptance(data);
+      if (data.acceptanceScope === "merge") {
+        expect(data.batchReviews).toHaveLength(12);
+        merges++;
+        peak = Math.max(peak, ++active);
+        await new Promise((resolve) => setTimeout(resolve, data.batchReviews[0].batch === 1 ? 20 : 1));
+        active--;
+      } else {
+        summaries++;
+        // Ordered results include the untouched singleton as the final group.
+        expect(data.batchReviews.map((review: any) => review.batch)).toEqual([
+          1, 2, 3,
+        ]);
+        expect(
+          data.batchReviews.flatMap((review: any) => review.chapters),
+        ).toEqual(pages.map((page) => page.title));
+        expect(data.batchReviews[2].reason).toContain("Chapter Chapter 24:");
+      }
+      return response(
+        JSON.stringify({
+          checks: [
+            {
+              criterionId: "facts",
+              passed,
+              reason: passed
+                ? "Observed cases retained"
+                : "Conflicting calculation",
+            },
+          ],
+        }),
+      );
+    });
+    const output: any = await knowledgeBookRuntime(
+      {} as DB,
+      "user",
+      "run",
+      "model",
+    ).generate(
+      "acceptance",
+      {
+        ...input([evidence("source", "TCP")]),
+        goal: "20000字",
+        pages,
+        claims: depthClaims(1),
+        criteria: [
+          { id: "facts", description: "Correct mechanisms", required: true },
+        ],
+      },
+      new AbortController().signal,
+    );
+    expect(peak).toBe(2);
+    expect(active).toBe(0);
+    expect(merges).toBe(2);
+    expect(summaries).toBe(passed ? 1 : 0);
+    expect(output.checks[0].passed).toBe(passed);
+    if (!passed)
+      expect(output.checks[0].reason).toContain("Conflicting calculation");
+  },
+);
 
 it("bounds final review payloads when there are more than twelve complete chapters", async () => {
   const pages = Array.from({ length: 13 }, (_, index) => ({

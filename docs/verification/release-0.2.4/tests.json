@@ -1,0 +1,45 @@
+{
+  "command": "pnpm exec vitest run --maxWorkers=2 --reporter=json",
+  "success": true,
+  "total": 3003,
+  "passed": 2993,
+  "failed": 0,
+  "skipped": 10,
+  "filesWithPassingTests": 294,
+  "filesWithOnlySkippedTests": 3,
+  "totalFiles": 297,
+  "durationMs": 361487,
+  "initialUnboundedParallelRun": {
+    "passed": 2988,
+    "failed": 5,
+    "skipped": 10,
+    "failures": [
+      {
+        "file": "tests/ai-image-batch-attempts.test.ts",
+        "test": "reads old-job source and raw proposals as two actual frames without a worker, then prepares and composes in later one-step fragments"
+      },
+      {
+        "file": "tests/ai-image-recompose.test.ts",
+        "test": "composes five real signed binary proposals with exact holes, independent components and complete authorized hand occlusion, then rejects revoked proposal bytes even on idempotent replay"
+      },
+      {
+        "file": "tests/ai-images.test.ts",
+        "test": "retries only the same paid Qwen result URL after real 503 and 429 downloads, then persists valid raw and final PNGs without another POST or fee"
+      },
+      {
+        "file": "tests/knowledge-book-runtime.test.ts",
+        "test": "accepts over 100,000 characters with bounded detail batches and a global metrics review"
+      },
+      {
+        "file": "tests/knowledge-book-runtime.test.ts",
+        "test": "does not inflate a prose target using diagram code or Markdown formatting"
+      }
+    ]
+  },
+  "targetedRecheck": {
+    "passed": 270,
+    "failed": 0,
+    "workerLimit": 2
+  },
+  "testThresholdsUnchanged": true
+}

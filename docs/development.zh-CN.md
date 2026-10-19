@@ -68,6 +68,7 @@ unset DOCA_RESET_ADMIN_LOGIN DOCA_RESET_ADMIN_PASSWORD
 | DOCA_DATABASE     | sqlite                 | sqlite/postgres                     |
 | DOCA_SQLITE_PATH  | ./data/v1/doca.db      | 配置的 SQLite 数据库路径            |
 | DOCA_DATABASE_URL | 无                     | 配置的 PostgreSQL 数据库连接串      |
+| DOCA_BOOK_BATCH_CHECKPOINTS | on | 仅 on/off；off 停用批次恢复并保留检查点记录及对象 |
 | NODE_ENV          | 未设置                 | production强制HTTPS Origin并禁止dev |
 | DOCA_ASSET_BASE   | 空                     | 构建资源的 HTTPS 前缀；空则从本机 `/assets` 提供 |
 

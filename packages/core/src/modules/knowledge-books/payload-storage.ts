@@ -1,3 +1,4 @@
+import { bookBatchEnvelopeSchema } from "./batch-checkpoint-format.js";
 import { randomUUID } from "node:crypto";
 import { sql } from "kysely";
 import { z } from "zod";
@@ -21,7 +22,7 @@ import {
   type PayloadKind,
 } from "./payload-codec.js";
 const hash = z.string().regex(/^[a-f0-9]{64}$/);
-const markerSchema = z
+const bodyMarkerSchema = z
   .object({
     type: z.literal("knowledge_book_payload_ref"),
     version: z.literal(1),
@@ -34,9 +35,17 @@ const markerSchema = z
     rawSize: z.number().int().positive(),
   })
   .strict();
+const batchMarkerSchema = bodyMarkerSchema.extend({
+  type: z.literal("knowledge_book_batch_checkpoint_ref"),
+  ownerKind: z.literal("batch"),
+});
+const markerSchema = z.discriminatedUnion("type", [
+  bodyMarkerSchema,
+  batchMarkerSchema,
+]);
 export type PayloadOwner = {
   bookId: string;
-  ownerKind: "node" | "run" | "release";
+  ownerKind: "node" | "run" | "release" | "batch";
   ownerId: string;
   nodeId: string;
 };
@@ -208,6 +217,39 @@ export function payloadMetadata(
   raw: string,
   ownerKind: PayloadOwner["ownerKind"],
 ) {
+  if (ownerKind === "batch") {
+    const value = bookBatchEnvelopeSchema.parse(JSON.parse(raw));
+    // Keep authorization and source fingerprints, never an extra source-body copy.
+    const references = new Map<string, AccessEvidence>();
+    for (const item of value.evidenceInventory) {
+      const reference = {
+        sourceId: item.sourceId,
+        sourceVersion: item.sourceVersion,
+        reference: item.reference,
+        ...(item.contentRef ? { contentRef: item.contentRef } : {}),
+      } as AccessEvidence;
+      references.set(JSON.stringify(reference), reference);
+    }
+    const access = accessSchema.parse({
+      version: 1,
+      evidence: [...references.values()],
+    });
+    const summary = summarySchema.parse({
+      version: 1,
+      pages: [],
+      checks: [],
+      claimCount: 0,
+      evidenceCount: value.evidenceInventory.length,
+      provenanceNodeCount: 0,
+      inventory: value.evidenceInventory.map(
+        ({ weight: _weight, blockId: _blockId, ...item }) => item,
+      ),
+    });
+    return {
+      access_manifest: JSON.stringify(access),
+      summary: JSON.stringify(summary),
+    };
+  }
   const value = JSON.parse(raw) as BookArtifact;
   if (
     !value ||
@@ -343,6 +385,13 @@ export async function lockBookPayload(db: DB, bookId: string) {
   else await sql`update schema_baseline set created_at=created_at`.execute(db);
 }
 function ownerQuery(db: DB, o: PayloadOwner) {
+  if (o.ownerKind === "batch")
+    return db
+      .selectFrom("knowledge_book_batch_checkpoints")
+      .selectAll()
+      .where("book_id", "=", o.bookId)
+      .where("id", "=", o.ownerId)
+      .where("node_id", "=", o.nodeId);
   return db
     .selectFrom("knowledge_book_payload_references")
     .selectAll()
@@ -365,7 +414,7 @@ export async function bookPayloadReference(
       m.nodeId !== expected.nodeId)
   )
     throw new Error("Payload owner mismatch");
-  if ((m.ownerKind === "node") !== !!m.nodeId)
+  if ((m.ownerKind === "node" || m.ownerKind === "batch") !== !!m.nodeId)
     throw new Error("Invalid payload node owner");
   const row = await ownerQuery(db, m).executeTakeFirstOrThrow();
   if (
@@ -663,7 +712,10 @@ export async function prepareBookPayload(
       owner,
       metadata,
       marker: JSON.stringify({
-        type: "knowledge_book_payload_ref",
+        type:
+          owner.ownerKind === "batch"
+            ? "knowledge_book_batch_checkpoint_ref"
+            : "knowledge_book_payload_ref",
         version: 1,
         ...owner,
         rootSha256: encoded.rootSha256,
@@ -691,6 +743,81 @@ export async function installBookPayload(
   db: DB,
   p: PreparedPayload,
   owner: PayloadOwner = p.owner,
+) {
+  if (owner.ownerKind === "batch" || p.owner.ownerKind === "batch")
+    throw new Error(
+      "Batch checkpoints require their own reference installation",
+    );
+  return installPayload(db, p, owner, async (reference) => {
+    const ref = {
+      ...reference,
+      owner_kind: owner.ownerKind as "node" | "run" | "release",
+    };
+    await db
+      .insertInto("knowledge_book_payload_references")
+      .values(ref)
+      .onConflict((c) =>
+        c
+          .columns(["book_id", "owner_kind", "owner_id", "node_id"])
+          .doUpdateSet(ref),
+      )
+      .execute();
+  });
+}
+export async function installBookBatchPayload(
+  db: DB,
+  p: PreparedPayload,
+  identity: Pick<
+    Schema["knowledge_book_batch_checkpoints"],
+    | "run_id"
+    | "stage"
+    | "phase"
+    | "scope_hash"
+    | "plan_hash"
+    | "batch_key"
+    | "input_hash"
+  >,
+) {
+  if (p.owner.ownerKind !== "batch")
+    throw new Error("Invalid batch payload owner");
+  const run = await db
+    .selectFrom("knowledge_book_runs")
+    .select("book_id")
+    .where("id", "=", identity.run_id)
+    .executeTakeFirstOrThrow();
+  const node = await db
+    .selectFrom("knowledge_book_node_runs")
+    .select("type")
+    .where("run_id", "=", identity.run_id)
+    .where("node_id", "=", p.owner.nodeId)
+    .executeTakeFirstOrThrow();
+  if (run.book_id !== p.owner.bookId || node.type !== identity.stage)
+    throw new Error("Batch checkpoint owner scope mismatch");
+  return installPayload(db, p, p.owner, async (ref, marker) => {
+    const { owner_kind: _kind, owner_id: _owner, ...metadata } = ref;
+    await db
+      .insertInto("knowledge_book_batch_checkpoints")
+      .values({
+        ...metadata,
+        ...identity,
+        id: p.owner.ownerId,
+        result_ref: marker,
+      })
+      .execute();
+  });
+}
+async function installPayload(
+  db: DB,
+  p: PreparedPayload,
+  owner: PayloadOwner,
+  installReference: (
+    reference:
+      | Schema["knowledge_book_payload_references"]
+      | (Omit<Schema["knowledge_book_payload_references"], "owner_kind"> & {
+          owner_kind: "batch";
+        }),
+    marker: string,
+  ) => Promise<void>,
 ) {
   if (!db.isTransaction)
     throw new Error("Payload installation requires owner transaction");
@@ -766,15 +893,7 @@ export async function installBookPayload(
     created_at: now,
     updated_at: now,
   };
-  await db
-    .insertInto("knowledge_book_payload_references")
-    .values(ref)
-    .onConflict((c) =>
-      c
-        .columns(["book_id", "owner_kind", "owner_id", "node_id"])
-        .doUpdateSet({ ...ref }),
-    )
-    .execute();
+  await installReference(ref, JSON.stringify({ ...marker, ...owner }));
   const unused: ObjectRow[] = [];
   for (const object of def.objects) {
     const canonical = await db
@@ -807,7 +926,11 @@ export async function copyBookPayloadReference(
   raw: string,
   owner: PayloadOwner,
 ) {
+  if (owner.ownerKind === "batch")
+    throw new Error("Batch checkpoints cannot be copied across runs");
   const { marker, row } = await bookPayloadReference(db, raw);
+  if (marker.ownerKind === "batch")
+    throw new Error("Batch checkpoints cannot be copied across runs");
   if (marker.bookId !== owner.bookId)
     throw new Error("Cannot share payload across books");
   await lockBookPayload(db, owner.bookId);
@@ -840,6 +963,12 @@ export async function cleanupBookPayloads(db: DB, now = Date.now()) {
       .selectFrom("knowledge_book_payload_references")
       .select("root_sha256")
       .where("book_id", "=", bookId)
+      .union(
+        db
+          .selectFrom("knowledge_book_batch_checkpoints")
+          .select("root_sha256")
+          .where("book_id", "=", bookId),
+      )
       .execute();
     const rootSignature = (roots: Array<{ root_sha256: string }>) =>
       JSON.stringify([...new Set(roots.map((r) => r.root_sha256))].sort());
@@ -885,6 +1014,12 @@ export async function cleanupBookPayloads(db: DB, now = Date.now()) {
         .selectFrom("knowledge_book_payload_references")
         .select("root_sha256")
         .where("book_id", "=", bookId)
+        .union(
+          tx
+            .selectFrom("knowledge_book_batch_checkpoints")
+            .select("root_sha256")
+            .where("book_id", "=", bookId),
+        )
         .execute();
       if (rootSignature(roots) !== rootSignature(rootSnapshot)) return [];
       const edges = await tx

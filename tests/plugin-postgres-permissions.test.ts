@@ -13,6 +13,23 @@ import {
 import { createHostFileStore } from "@server/services/host-file-store.js";
 import { storageRuntime } from "@server/adapters/storage.js";
 
+async function dropFixtureDatabase(admin: Pool, name: string) {
+  // pg-pool.end() can resolve before its clients finish closing on the server.
+  // Forcing DROP during that interval emits an idle-client error after the test.
+  const deadline = performance.now() + 5000;
+  for (;;) {
+    const active = await admin.query(
+      "select pid from pg_stat_activity where datname=$1 and pid<>pg_backend_pid()",
+      [name],
+    );
+    if (!active.rows.length) break;
+    if (performance.now() >= deadline)
+      throw new Error(`Fixture connections did not close for ${name}`);
+    await new Promise((resolve) => setTimeout(resolve, 20));
+  }
+  await admin.query(`drop database if exists ${name}`);
+}
+
 it.skipIf(!process.env.DOCA_TEST_POSTGRES)(
   "uses the same administrator login for separate core and plugin databases across restarts",
   async () => {
@@ -71,7 +88,7 @@ it.skipIf(!process.env.DOCA_TEST_POSTGRES)(
         await db?.destroy();
       } finally {
         try {
-          await admin.query(`drop database if exists ${name} with (force)`);
+          await dropFixtureDatabase(admin, name);
           await admin.query(`drop schema if exists ${name} cascade`);
         } finally {
           await admin.end();
@@ -208,8 +225,8 @@ it.skipIf(!process.env.DOCA_TEST_POSTGRES)(
       await db?.destroy();
       await control.end();
       try {
-        await admin.query(`drop database if exists ${name} with (force)`);
-        await admin.query(`drop database if exists ${coreName} with (force)`);
+        await dropFixtureDatabase(admin, name);
+        await dropFixtureDatabase(admin, coreName);
         await admin.query(`drop role if exists ${role}`);
         await admin.query(`drop role if exists ${coreRole}`);
       } finally {
