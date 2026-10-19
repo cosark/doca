@@ -1,5 +1,7 @@
 # Plugin development
 
+External AI clients use [MCP services](mcp.md). Tools must explicitly declare MCP exposure and keep their normal authorization/admission checks; a SKILL is a manual, not an authorization grant.
+
 0.1.26 uses a [shared plugin business database](plugin-database-isolation.md), separate from core, with automatic namespaces. It replaces the per-plugin databases released in 0.1.25. Upgrade requires normal uninstall on the previous host and reinstall; plugin data is not migrated.
 
 Updated 2026-10-12 for source host 0.1.23 and SDK source 0.1.11 (SDK 0.1.11 npm publication verified; production deployment not verified). This is the primary development guide, including current content, native and installation contracts. Linked documents provide full protocols and historical acceptance records. Any compatibility adapter, old-format conversion or database migration requires prior agreement with the project owner.

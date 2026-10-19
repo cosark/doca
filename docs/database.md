@@ -53,6 +53,8 @@ AI sessions separate user-mentioned resources, explicitly approved resources, an
 
 Native source subscriptions, chunks and links retain indexing/search. The knowledge-book tables below persist editable configuration histories, contributor sources, feedback, workflow runs, immutable releases and human tasks. Original source permissions protect all derived results. Old curation and Q&A tables are absent from fresh databases; old records are never migrated or deleted.
 
+MCP services use four separate tables for user switches, hashed service credentials/grants, execution contexts and at-most-once call claims. `ai_mcp_keys` is retired and retained only to preserve historical data; the runtime never reads it. See [MCP services](mcp.md).
+
 ## Current table and field inventory
 
 The inventory below reflects the current Schema interface. Field names are listed exhaustively; exact SQL types, nullability, defaults, primary/unique keys, and foreign keys remain defined by create-schema.ts. Optional TypeScript properties do not imply nullable SQL columns. This is a reference, not an instruction to create or modify tables manually.
@@ -71,6 +73,10 @@ The inventory below reflects the current Schema interface. Field names are liste
 | `ai_calls` | `id`, `user_id`, `job_id`, `model_id`, `model_snapshot`, `periods`, `state`, `input_tokens`, `output_tokens`, `cached_tokens`, `usage`, `created_at`, `updated_at` |
 | `ai_skills` | `id`, `user_id`, `name`, `description`, `content`, `formats`, `enabled`, `revision`, `updated_at` |
 | `ai_mcp_keys` | `id`, `user_id`, `name`, `token_hash`, `resource_ids`, `writable`, `expires_at`, `created_at` |
+| `mcp_user_settings` | `user_id`, `enabled`, `revision`, `updated_at` |
+| `mcp_services` | `id`, `kind`, `owner_id`, `name`, `token_hash`, `token_hint`, `enabled`, `grant_mode`, `tool_ids`, `skill_ids`, `expires_at`, `revoked_at`, `revision`, `created_at`, `updated_at` |
+| `mcp_contexts` | `id`, `service_id`, `user_id`, `session_id`, `job_id`, `instance_id`, `expires_at`, `closed_at`, `created_at` |
+| `mcp_tool_calls` | `context_id`, `request_id`, `tool_id`, `input_hash`, `status`, `created_at`, `updated_at` |
 | `ai_session_events` | `session_id`, `seq`, `event_id`, `digest`, `type`, `payload`, `created_at` |
 | `tickets` | `operation_json`, `id`, `kind`, `resource_kind`, `source_key`, `hidden_for_user_id`, `resource_id`, `user_id`, `initiator_id`, `status`, `role`, `message`, `created_at`, `updated_at`, `expires_at`, `reminded_at` |
 | `ticket_events` | `operation_json`, `id`, `ticket_id`, `actor_id`, `status`, `message`, `created_at` |

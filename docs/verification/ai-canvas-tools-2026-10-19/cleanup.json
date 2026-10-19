@@ -1,0 +1,4 @@
+{
+  "removedUnusedTestDatabases": 11,
+  "scope": "Only this task’s isolated synthetic QA databases and their temporary storage/credential files, explicitly authorized by the user. Production database was not changed."
+}

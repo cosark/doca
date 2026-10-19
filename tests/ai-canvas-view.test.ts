@@ -26,12 +26,28 @@ import { checkpointMessages } from "@server/services/ai/checkpoint.js";
 import { aiDefaults, saveAIConfig } from "@core/modules/ai/config.js";
 import { createApp } from "@server/app/create-app.js";
 import { completionResponse } from "./ai-mock.js";
+import { canvasRoutingAudit } from "@server/services/ai/canvas-command-audit.js";
 import {
   createStorage,
   storageConfigForProfile,
   storageRuntime,
 } from "@server/adapters/storage.js";
 import { objectKey } from "@server/services/storage-policy.js";
+
+it("distinguishes requested automatic routing from native persisted drawing fields", () => {
+  expect(canvasRoutingAudit([
+    { type: "createFlowchart", nodes: [{ text: "private content" }], edges: [
+      { id: "auto", mode: "elbow", autoRoute: true },
+      { id: "manual", mode: "elbow", sourcePort: "right", targetPort: "left", offset: 400 },
+    ] },
+    { type: "diagramEdge", id: "clear", sourcePort: "top", targetPort: "bottom", offset: null },
+    { type: "patch", id: "node", patch: { fill: "red" } },
+  ])).toEqual([
+    { command: "createFlowchart", id: "auto", automaticRequested: true, requestedMode: "elbow", providedRoutingFields: [] },
+    { command: "createFlowchart", id: "manual", automaticRequested: false, requestedMode: "elbow", providedRoutingFields: ["sourcePort", "targetPort", "offset"] },
+    { command: "diagramEdge", id: "clear", automaticRequested: false, requestedMode: undefined, providedRoutingFields: ["sourcePort", "targetPort", "offset"] },
+  ]);
+});
 
 beforeAll(async () => {
   await build({
@@ -315,6 +331,81 @@ it("reports native export approximations instead of silently hiding visual diffe
   ).rejects.toThrow("SELECTION_NOT_FOUND");
 }, 30_000);
 
+it("queues concurrent detail renders and removes a canceled queued request without losing capacity", async () => {
+  const input = { source: (await read()).value as any, assets: {} };
+  const controller = new AbortController();
+  const renders = [renderCanvas(input), renderCanvas(input), renderCanvas(input)];
+  const canceled = renderCanvas(input, controller.signal);
+  const stopped = expect(canceled).rejects.toThrow();
+  controller.abort();
+  const results = await Promise.all(renders);
+  await stopped;
+  expect(results.every(result => result.width > 0 && result.height > 0)).toBe(true);
+  expect((await renderCanvas(input)).width).toBe(results[0]!.width);
+}, 60_000);
+
+it("uses the native route label anchor so explicit and automatic offsets survive actual SVG rendering", async () => {
+  const initial = await read();
+  await editAIDocument(db, ctx, resourceId, { seq: initial.seq, epochId: initial.epochId! }, [{
+    type: "createFlowchart", id: "native-route", x: 500, y: 500,
+    nodes: [{ id: "route-a", text: "A", x: 0, y: 0, width: 200, height: 100, shape: "rect" },
+      { id: "route-b", text: "B", x: 500, y: 200, width: 200, height: 100, shape: "rect" },
+      { id: "route-obstacle", text: "中间节点", x: 300, y: 100, width: 120, height: 120, shape: "rect" }],
+    edges: [{ id: "route-edge", sourceId: "route-a", targetId: "route-b", mode: "elbow", sourcePort: "bottom", targetPort: "bottom", offset: 900, label: "project_id", labelOffset: { x: 0, y: -30 } }],
+  }], randomUUID());
+  const snapshot = await read();
+  const group = (snapshot.value as any).scene.children.find((n: any) => n.id === "native-route");
+  const label = group.children.find((n: any) => n.data?.kind === "connector-label");
+  const rendered = await renderCanvas({ source: snapshot.value as any, assets: {}, elementIds: [label.id] });
+  // Native SVG bounds include four world units of export padding.
+  // Halfway along the normalized asymmetric path is (750,132),
+  // rather than the raw bend center (900,232).
+  expect(rendered.bounds.x + 4).toBeCloseTo(500 + 750 - label.width / 2, 0);
+  expect(rendered.bounds.y + 4).toBeCloseTo(500 + 132 - 30 - label.height / 2, 0);
+  expect(rendered.bounds.x + 4).toBeCloseTo(500 + label.x, 0);
+  expect(rendered.bounds.y + 4).toBeCloseTo(500 + label.y, 0);
+  await editAIDocument(db, ctx, resourceId, { seq: snapshot.seq, epochId: snapshot.epochId! }, [{
+    type: "diagramEdge", id: "route-edge", sourcePort: "right", targetPort: "left", mode: "elbow", offset: null, autoLabel: true,
+  }], randomUUID());
+  const automatic = await read();
+  const autoGroup = (automatic.value as any).scene.children.find((n: any) => n.id === "native-route");
+  const autoLabel = autoGroup.children.find((n: any) => n.id === label.id);
+  for (const node of autoGroup.children.filter((n: any) => n.data?.kind === "diagram-node"))
+    expect(autoLabel.x + autoLabel.width <= node.x || autoLabel.x >= node.x + node.width ||
+      autoLabel.y + autoLabel.height <= node.y || autoLabel.y >= node.y + node.height).toBe(true);
+  const autoRender = await renderCanvas({ source: automatic.value as any, assets: {}, elementIds: [label.id] });
+  expect(autoRender.bounds.x + 4).toBeCloseTo(500 + autoLabel.x, 0);
+  expect(autoRender.bounds.y + 4).toBeCloseTo(500 + autoLabel.y, 0);
+}, 30_000);
+
+it("records delegated overview evidence only after successful inspection and never for a crop or a failed read", async () => {
+  const snapshot = await read();
+  const hash = digest({ value: snapshot.value, resource: snapshot.resource });
+  let reject = false;
+  const delegated = createCanvasView({ db, ctx, vision: false, read, inspect: async (image, receipt) => {
+    expect(image.mime).toBe("image/png");
+    expect((await sharp(Buffer.from(image.data, "base64")).metadata()).width).toBe(receipt.width);
+    if (reject) throw Error("incomplete vision response");
+    return "已检查实际像素";
+  } });
+  await delegated.tool.execute!({ resourceId, elementIds: ["red"] }, {} as any);
+  expect(delegated.hasViewed(resourceId, hash)).toBe(false);
+  reject = true;
+  await expect(delegated.tool.execute!({ resourceId }, {} as any)).rejects.toThrow("incomplete");
+  expect(delegated.hasViewed(resourceId, hash)).toBe(false);
+  reject = false;
+  const receipt = await delegated.tool.execute!({ resourceId }, {} as any);
+  expect(delegated.hasViewed(resourceId, hash)).toBe(false);
+  expect(await delegated.tool.toModelOutput!(receipt)).toMatchObject({ type: "json", value: { inspection: "已检查实际像素" } });
+  const prompt = [{ role: "tool", content: [{ type: "tool-result", toolName: "canvas_view", output: { type: "json", value: receipt } }] }];
+  delegated.observe([], prompt).abort();
+  expect(delegated.hasViewed(resourceId, hash)).toBe(false);
+  delegated.observe([], prompt).complete();
+  expect(delegated.hasViewed(resourceId, hash)).toBe(true);
+  delegated.clear();
+  expect(delegated.hasViewed(resourceId, hash)).toBe(false);
+}, 30_000);
+
 it("renders an explicit empty viewport and embeds only authorized image assets", async () => {
   const empty = await renderCanvas({
     source: { scene: { tag: "Leafer", children: [] } },
@@ -416,12 +507,13 @@ it("renders an explicit empty viewport and embeds only authorized image assets",
   ).rejects.toThrow("无权读取画板图片");
 }, 30_000);
 
-it("sends real canvas images to both agents and refuses review until the fixed snapshot was seen", async () => {
+it.each([true, false])("checks canvas pixels with direct vision=%s and refuses review until the fixed snapshot was seen", async (directVision) => {
   await saveAIConfig(
     db,
     {
       ...aiDefaults,
       defaultModel: "visual-test",
+      mediaModel: "image-reader",
       maxSteps: 12,
       vendors: [
         {
@@ -437,14 +529,16 @@ it("sends real canvas images to both agents and refuses review until the fixed s
         {
           id: "visual-test",
           vendorId: "vendor",
-          model: "isolated",
+          model: directVision ? "isolated" : "doubao-seed-2.1-lite",
           alias: "Visual",
           enabled: true,
           maxInput: 64000,
           maxOutput: 4000,
           tools: true,
-          vision: true,
+          vision: directVision,
         },
+        { id: "image-reader", vendorId: "vendor", model: "image-reader", alias: "Image reader",
+          enabled: true, maxInput: 64000, maxOutput: 4000, vision: true, tools: false },
       ],
     },
     0,
@@ -453,7 +547,8 @@ it("sends real canvas images to both agents and refuses review until the fixed s
     reviewerStep = 0,
     executorSawImages = false,
     reviewerSawImages = false,
-    reviewSeq = -1;
+    reviewSeq = -1,
+    inspections = 0;
   const receipts = (body: any) =>
     body.messages
       .filter((message: any) => message.role === "tool")
@@ -476,6 +571,26 @@ it("sends real canvas images to both agents and refuses review until the fixed s
     );
   const fetcher = (async (_url: any, init: any) => {
     const body = JSON.parse(String(init?.body));
+    if (body.model === "image-reader") {
+      expect(hasPixels(body)).toBe(true);
+      const context = body.messages.flatMap((message: any) => Array.isArray(message.content) ? message.content : [])
+        .find((part: any) => part.type === "text" && part.text.includes('"originalRequest"'));
+      const facts = JSON.parse(context.text).source;
+      expect(facts.sceneIndexCoordinateSpace).toBe("parent-local");
+      expect(facts.sceneIndex).toContainEqual(expect.objectContaining({ id: "red", parentId: "group", x: 0 }));
+      if (reviewerStep >= 3) expect(facts.seq).toBe(reviewSeq);
+      inspections++;
+      return completionResponse({
+        id: `inspection-${inspections}`, object: "chat.completion", created: 1, model: body.model,
+        choices: [{ index: 0, message: { role: "assistant", content: "已实际查看此保存快照：方块和标题可见，无遮挡。" }, finish_reason: "stop" }],
+        usage: { prompt_tokens: 100, completion_tokens: 40, total_tokens: 140 },
+      }, !!body.stream);
+    }
+    if (!directVision) {
+      expect(hasPixels(body)).toBe(false);
+      expect(body.thinking).toEqual({ type: "disabled" });
+      expect(body.reasoning_effort).toBeUndefined();
+    } else expect(body.thinking).toBeUndefined();
     const review = body.tools.some(
       (tool: any) => tool.function?.name === "submit_review",
     );
@@ -492,7 +607,7 @@ it("sends real canvas images to both agents and refuses review until the fixed s
         name = "canvas_view";
         args = { resourceId };
       } else if (step === 2) {
-        executorSawImages = hasPixels(body);
+        executorSawImages = directVision ? hasPixels(body) : !!results.at(-1)?.inspection;
         const current = results.find((result: any) => result.resource);
         name = "canvas_edit";
         args = {
@@ -506,7 +621,7 @@ it("sends real canvas images to both agents and refuses review until the fixed s
       } else if (step === 3) {
         name = "canvas_view";
         args = { resourceId };
-      } else expect(hasPixels(body)).toBe(true);
+      } else expect(directVision ? hasPixels(body) : !!results.at(-1)?.inspection).toBe(true);
     } else {
       const step = reviewerStep++;
       const submit = () => {
@@ -544,7 +659,7 @@ it("sends real canvas images to both agents and refuses review until the fixed s
         name = "canvas_view";
         args = { resourceId };
       } else if (step === 3) {
-        reviewerSawImages = hasPixels(body);
+        reviewerSawImages = directVision ? hasPixels(body) : !!results.at(-1)?.inspection;
         expect(results.at(-1).seq).toBe(reviewSeq);
         submit();
       } else {
@@ -630,6 +745,7 @@ it("sends real canvas images to both agents and refuses review until the fixed s
     expect(executorSawImages).toBe(true);
     expect(reviewerSawImages).toBe(true);
     expect(reviewerStep).toBeGreaterThanOrEqual(4);
+    expect(inspections).toBe(directVision ? 0 : 3);
     expect((await read()).seq).toBeGreaterThan(reviewSeq);
   } finally {
     await app.close();

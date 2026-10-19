@@ -69,6 +69,7 @@ Rich text for plans and meeting notes, with a library tree, formatting tools, pe
 | **Online documents and collaboration** | Rich text, Markdown, spreadsheets, slides, and canvas; realtime collaboration, comments, and history. |
 | **Knowledge management** | Knowledge libraries with document trees, plus shared knowledge books with workflows, source evidence, and human review. |
 | **Personal AI assistant** | Work with authorized documents and files, read PDF/Office attachments, generate or edit images, and prepare browser drafts. Requires configured models and services. |
+| **MCP services** | Connect external AI clients such as Codex to authorized Doca tools and SKILLs, using personal services or company integrations acting as a named user. |
 | **Files and sharing** | Personal files, shared folders, invitations, permission controls, share links, search, notifications, and trash. Local or S3-compatible file storage. |
 | **Accounts and languages** | Password, OIDC, Google, GitHub, WeChat QR, and QQ sign-in; Chinese and English interfaces. External login requires service configuration. |
 | **Self-hosting and extensions** | Docker deployment; SQLite for one server, or shared PostgreSQL, Redis, and file storage for multiple replicas. Business plugins use the public `@smartdoca/plugin-sdk`. |
@@ -88,11 +89,11 @@ One deployment has one account system. The default image installs no quick-notes
 
 ## Quick start with Docker
 
-Requires Git, Docker Engine, Docker Compose, and an HTTP(S) origin served by a reverse proxy. This installs the published 0.2.4 image into a fresh database. Existing installations must read the [release requirements](https://smartdoca.github.io/doca/#/en/releases/0.2.4) and preserve their data before changing versions.
+Requires Git, Docker Engine, Docker Compose, and an HTTP(S) origin served by a reverse proxy. This installs the published 0.2.5 image into a fresh database. Existing installations must read the [release requirements](https://smartdoca.github.io/doca/#/en/releases/0.2.5) and preserve their data before changing versions.
 
 ```sh
 # 1. Clone the matching release
-git clone --branch v0.2.4 --depth 1 https://github.com/smartdoca/doca.git
+git clone --branch v0.2.5 --depth 1 https://github.com/smartdoca/doca.git
 cd doca
 
 # 2. Configure the environment
@@ -137,7 +138,7 @@ Open `http://127.0.0.1:39130`. Initialize the administrator with `bash scripts/b
 - [Deployment and configuration](https://smartdoca.github.io/doca/#/en/operations/deployment)
 - [Plugin development](https://smartdoca.github.io/doca/#/en/plugins/plugin-development)
 - [HTTP API](https://smartdoca.github.io/doca/#/en/reference/api); the running application also provides `/api/openapi.json`.
-- [Release notes](https://smartdoca.github.io/doca/#/en/releases/0.2.4)
+- [Release notes](https://smartdoca.github.io/doca/#/en/releases/0.2.5)
 - [Documentation source](docs/README.md)
 
 For a documentation preview, run `pnpm docs:dev` and open `http://127.0.0.1:39140/#/en/`. `pnpm docs:check` verifies bilingual coverage and local links. GitHub Pages setup is in [documentation maintenance](docs/documentation.md).

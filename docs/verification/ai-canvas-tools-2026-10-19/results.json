@@ -1,0 +1,42 @@
+{
+  "actualModels": {
+    "executor": "doubao-seed-2.1-lite",
+    "visualInspector": "kimi-k3"
+  },
+  "tasks": {
+    "graph": {
+      "status": "completed",
+      "independentReview": "pass",
+      "tables": 12,
+      "relations": 13
+    },
+    "modify": {
+      "status": "completed",
+      "independentReview": "pass",
+      "originalObjectIdsRetained": 77,
+      "endpointBindingsValidated": 13,
+      "width": 380,
+      "height": 140,
+      "fill": "#fce8e6",
+      "stroke": "#d93025"
+    }
+  },
+  "checks": {
+    "unitTestFiles": 15,
+    "unitTests": 272,
+    "historyBrowserCases": 5,
+    "nativePortCases": 64,
+    "nativeAutomaticObstacleCases": 1,
+    "nativeIdleSecondsPerFixture": 60,
+    "nativeIdleFixtures": 2,
+    "contentWritesDuringIdleReloadReadonly": 0,
+    "typecheck": "pass",
+    "build": "pass",
+    "docs": "pass"
+  },
+  "cleanup": {
+    "unusedTestDatabasesRemoved": 11
+  },
+  "deployment": "not deployed",
+  "scope": "Isolated synthetic documents only. Existing user documents and the production database were not edited by this task."
+}

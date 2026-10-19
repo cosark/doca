@@ -1,0 +1,34 @@
+{
+  "result": "passed",
+  "canvas": "0.5.6",
+  "sheet": "0.2.4",
+  "install": {
+    "frozenLockfile": true,
+    "supplyChainPolicyEntries": 2046,
+    "result": "passed"
+  },
+  "typecheck": "passed",
+  "builds": {
+    "serverCanvasRenderer": "passed",
+    "web": "passed"
+  },
+  "hostTests": {
+    "suites": 13,
+    "passed": 60,
+    "skipped": 1,
+    "skipReason": "DOCA_TEST_REDIS_URL is not set"
+  },
+  "upstreamSheetSourceTests": {
+    "suites": 3,
+    "passed": 9
+  },
+  "browser": "browser.json",
+  "routing": "native-route-parity/report.json",
+  "docs": {
+    "pagesPerLanguage": 78,
+    "languages": 2,
+    "localLinks": "passed"
+  },
+  "dataScope": "isolated in-memory SQLite, synthetic users/documents/assets only",
+  "deployment": false
+}

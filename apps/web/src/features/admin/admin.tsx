@@ -1,3 +1,4 @@
+import { McpSettings } from "@web/features/mcp/mcp-settings.js";
 import { NavigationArea } from "@web/plugins/navigation.js";
 import { NavigationSettings } from "./navigation.js";
 import { Plugins } from "./plugins.js";
@@ -118,6 +119,7 @@ const sectionGroups: {
     group: "admin.group.intelligence" as MessageKey,
     items: [
       { id: "ai", label: "admin.ai", Icon: SettingsIcon },
+      { id: "mcp", label: "mcp.adminTitle", Icon: ShieldCheck },
       { id: "file-recognition", label: "admin.recognition", Icon: ScanText },
     ],
   },
@@ -787,6 +789,7 @@ export function Admin({
             </>
           )}
           {tab === "ai" && <AIAdmin />}
+          {tab === "mcp" && <McpSettings admin />}
           {tab === "file-recognition" && <FileRecognitionSettings />}
           {accountTarget && (
             <AdminAccountEditor

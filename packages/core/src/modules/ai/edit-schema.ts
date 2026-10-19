@@ -534,10 +534,19 @@ export function editToolSchema(format: DocumentFormat) {
           : format === "canvas"
             ? wireOperation.extend({
                 x: z.number().optional(), y: z.number().optional(),
-                parentId: z.string().nullable().optional().describe("add/place 的真实父容器 ID。UI 内容必须填所属设备容器 ID，不能省略或填 null 放到根层；不要把 parentId 写进 element.data。"), beforeId: optionalId,
+                width: z.number().optional(), height: z.number().optional(),
+                fill: z.string().optional(), stroke: z.string().optional(),
+                autoLabel: z.boolean().optional(),
+                autoRoute: z.boolean().optional().describe("diagramEdge 设 true 自动选择避开卡片的原生折线端口/绕行，省略 sourcePort/targetPort/mode/offset；可同时 autoLabel:true"),
+                sourcePort: z.enum(["top", "right", "bottom", "left"]).optional(),
+                targetPort: z.enum(["top", "right", "bottom", "left"]).optional(),
+                mode: z.enum(["straight", "elbow"]).optional(), offset: z.number().nullable().optional().describe("仅 elbow 且两端端口同轴时生效：两端 top/bottom 为绕行 x，两端 left/right 为绕行 y；混合端口和 straight 不支持以 offset 调整走线，请选择同轴端口。null 明确清除。"),
+                labelOffset: z.strictObject({ x: z.number(), y: z.number() }).optional(),
+                parentId: z.string().nullable().optional().describe('add/place 的真实父容器 ID。普通根节点省略或传 null，不能编造 "root"。UI 页面内容必须填所属设备容器 ID，不能放到根层；不要把 parentId 写进 element.data。'), beforeId: optionalId,
                 children: z.array(canvas).max(1000).optional().describe("createContainer 的原生内容节点数组。新建 APP/手机/平板/网页 UI 时将整页内容放在这里，一次创建真实父子层级；所有坐标相对该容器，嵌套分组用节点自身的 children。"),
                 ids: ids.optional(), index: index.optional(), deleteCount: index.optional(),
-                nodes: z.array(z.any()).optional(), edges: z.array(z.any()).optional(),
+                nodes: canvasWorkflowSchemas[0].shape.nodes.optional(),
+                edges: canvasWorkflowSchemas[0].shape.edges.optional(),
                 topic: z.any().optional(), layout: z.enum(["right", "left", "balanced"]).optional(),
                 containerType: z.enum(["phone", "tablet", "web", "wide", "standard", "a4", "section"]).optional(),
                 title: z.string().optional(), columnWidths: z.array(z.number()).optional(), rowHeights: z.array(z.number()).optional(),
@@ -959,7 +968,7 @@ export function validateEditOperations(format: string, operations: any[]) {
               k === "text" ||
               (!partial && ["id", "children"].includes(k)),
           ),
-          `画板元素包含未知属性：${Object.keys(element).filter(k => !CANVAS_ELEMENT_PROPERTIES.includes(k) && k !== "text" && !(!partial && ["id", "children"].includes(k))).slice(0,8).join("、")}。Path 的原生路径字段是 path，不是 SVG 的 d；颜色用 fill/stroke。不要保留错误字段后反复提交。`,
+          `画板元素包含未知属性：${Object.keys(element).filter(k => !CANVAS_ELEMENT_PROPERTIES.includes(k) && k !== "text" && !(!partial && ["id", "children"].includes(k))).slice(0,8).join("、")}。Path 的原生路径字段是 path，不是 SVG 的 d；颜色用 fill/stroke；Text 加粗用 fontWeight:700，不是 bold。不要保留错误字段后反复提交。`,
         );
         if (element.tag !== undefined || !partial)
           assert(canvas.safeParse(element).success, "未知画板元素类型");

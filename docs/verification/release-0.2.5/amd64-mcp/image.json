@@ -1,0 +1,34 @@
+{
+  "passed": true,
+  "arch": "amd64",
+  "image": "smartdoca/doca:0.2.5-candidate",
+  "runtime": {
+    "uid": 1000,
+    "version": "0.2.5",
+    "canvas": "0.5.6",
+    "sheet": "0.2.4"
+  },
+  "releasedUpgrade": {
+    "from": "0.2.4",
+    "passed": true,
+    "releasedVersion": "0.2.4",
+    "engine": "sqlite",
+    "retainedTables": 120,
+    "newTablesEmpty": true,
+    "legacyRecordPreservedAndCredentialRejected": true
+  },
+  "realHttpMcp": true,
+  "nativeFormats": [
+    "rich_text",
+    "canvas",
+    "presentation",
+    "spreadsheet"
+  ],
+  "transferredBytes": 420000,
+  "transferSha256": "7559286410e18d631bb5ee59bf9171507428b5b84834a85dc2f4184211f6bd97",
+  "delegatedOwnership": true,
+  "closedSessionDeletion": true,
+  "restartReadback": true,
+  "hostValidation": true,
+  "gracefulStop": true
+}

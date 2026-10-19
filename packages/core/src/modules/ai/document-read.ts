@@ -179,6 +179,7 @@ function canvasNodes(nodes: any[] | undefined, depth = 0, parentId: string | nul
     cellColumn: n?.data?.kind === "table-cell" ? n.data.column : undefined,
     rowSpan: n?.data?.rowSpan, columnSpan: n?.data?.columnSpan, coveredBy: n?.data?.coveredBy,
     sourceId: n?.data?.sourceId, targetId: n?.data?.targetId,
+    labelId: n?.data?.labelId, ownerId: n?.data?.ownerId,
     containerType: n?.data?.containerType,
     rows: n?.data?.kind === "table" ? n.data.rows : undefined,
     columns: n?.data?.kind === "table" ? n.data.columns : undefined,

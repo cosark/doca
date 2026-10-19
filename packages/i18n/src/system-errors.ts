@@ -35,6 +35,22 @@ export function decodeSystemError(value: string): SystemErrorReason | undefined 
 type Translator = (key: MessageKey, values?: MessageValues) => string;
 
 const reasonKeys = {
+  mcp_invalid: "mcp.error.invalid",
+  mcp_conflict: "mcp.error.conflict",
+  mcp_unavailable: "mcp.error.unavailable",
+  mcp_forbidden: "mcp.error.forbidden",
+  mcp_limit: "mcp.error.limit",
+  mcp_failed: "mcp.error.failed",
+  visual_inspection_model_required: "ai.error.visual_inspection_model_required",
+  visual_inspection_images_invalid: "ai.error.visual_inspection_images_invalid",
+  visual_inspection_incomplete: "ai.error.visual_inspection_incomplete",
+  canvas_diagram_node_invalid: "ai.error.canvas_diagram_node_invalid",
+  canvas_diagram_overlap: "ai.error.canvas_diagram_overlap",
+  canvas_diagram_resize_required: "ai.error.canvas_diagram_resize_required",
+  canvas_diagram_style_required: "ai.error.canvas_diagram_style_required",
+  canvas_parent_not_found: "ai.error.canvas_parent_not_found",
+  canvas_element_id_reused: "ai.error.canvas_element_id_reused",
+
   canvas_inline_invalid: "editor.error.canvasInlineInvalid",
   history_snapshot_unavailable: "record.snapshot.unavailable",
   book_invalid:"books.error.book_invalid",

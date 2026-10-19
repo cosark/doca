@@ -31,7 +31,7 @@
 | 画板 | PNG/JPEG/WebP/SVG 素材 | PNG/SVG | 导入为图片素材；不恢复原生图层，不承诺编辑数据往返 |
 | 演示文稿 | PPTX，最大 30 MB | PPTX | 基础文字、图形、表格和图片；复杂母版/动画可能简化，不支持旧 PPT |
 
-当前安装包：`@smartdoca/slate` 0.4.20、`@smartdoca/sheet` 0.2.3、`@smartdoca/markdown` 0.4.3、`@smartdoca/canvas` 0.4.3、`@smartdoca/slides` 0.3.0-alpha.2。导入分派见 `apps/web/src/features/documents/file-transfer.tsx`，导出见各宿主编辑器适配器。PDF 导入经过识别/转换与素材重新上传，不承诺保留原始页布局。复用版本号时以 hash 命名包并更新 lockfile；独立外部应用和复杂文件仍需逐项验收。
+当前安装包：`@smartdoca/slate` 0.4.23、`@smartdoca/sheet` 0.2.4、`@smartdoca/markdown` 0.4.3、`@smartdoca/canvas` 0.5.6、`@smartdoca/slides` 0.3.0-alpha.3。导入分派见 `apps/web/src/features/documents/file-transfer.tsx`，导出见各宿主编辑器适配器。PDF 导入经过识别/转换与素材重新上传，不承诺保留原始页布局。复用版本号时以 hash 命名包并更新 lockfile；独立外部应用和复杂文件仍需逐项验收。
 
 ## 按在线样式导出 PDF 与可编辑导入
 
@@ -66,3 +66,13 @@ Slides 要求 codec revision 6。客户端与服务端统一严格协商 `eppt-y
 Doca 0.1.31 锁定正式 npm 包 `@smartdoca/canvas` 0.5.2，替代上文临时 0.5.0 tarball；临时包退出运行依赖和构建路径，上一源代码快照保留恢复依据。公开导出、依赖和声明签名相同，声明差异只有一处表格布局注释；模型运行代码逐字节一致。不增加历史读取器、原场景转换、字段补写、codec/schema 变更或 checkpoint/outbox 替换。
 
 新包修复连续中文输入、平移缩放时工具条跟随，并按内容撑高表格行。文字与行几何通过同一原生协同撤销事务保存。宿主继续使用稳定模型、已认证资源与 presence 回调、持久化 ACK 队列。源码、浏览器、镜像及发布证据位于 `docs/verification/release-0.1.31/`；此前 0.5.0 记录保留为当时的验收依据，不代表 0.5.2 全部操作均已验证。
+
+## Canvas 0.5.6 与 Sheet 0.2.4 对接 — 2026-10-20
+
+当前代码锁定正式 npm 包 `@smartdoca/canvas` 0.5.6、`@smartdoca/sheet` 0.2.4。公开入口及宿主使用的声明不变；Canvas model 和 Sheet model/Yjs/XLSX 与上一版逐字节一致。Canvas 私有渲染声明和 IO 分包引用有变化；Sheet 将已有 0.25.1 运行时的 `@univerjs/drawing-ui`、`@univerjs/sheets-filter` 声明为直接依赖。
+
+用户明确同意上游对旧图形的视图规则：包含 diagram-body、仅有 frame/diagram-node 名称且没有冲突 kind/显式容器角色的包装识别为图形，隐藏重复外框填充/描边和生成的 Frame 标题，并令图形、文字尺寸跟随包装；显式容器和无形状名的自定义路径保留其角色与轮廓。已有椭圆/菱形端点按新轮廓显示，原四个中点端口索引不变并新增八个端口。打开、选中、视口变化和关闭不得回写原模型/checkpoint；显式缩放或编辑通过原生协同事务与撤销栈保存。不批量转换、不补字段、不变更 DDL、schema/codec、epoch、checkpoint 或待确认消息身份。Canvas 保持 aidcanvas-yjs/schema 1，Sheet 保持 exlsx-cell-registers/schema 6，未知版本继续精确拒绝。
+
+Canvas 图片先选中再预览；复制 PNG 像素通过宿主 resolveDownloadUrl 鉴权，阅读模式也可用。历史/回收站预览保留原有访问参数，服务端仍拒绝不支持的审计资源访问。Sheet 使用包内原生筛选渲染及当前内联图片几何/预览，不修复传入的文档数据。资产 UUID、ACL、临时 presence、永久锚点、持久 ACK 和原 update 保持原归属。已有历史读取器、虚拟工作表恢复、规范化代码和已批准显示默认值仅审计，不扩展其兼容行为。
+
+回退依据为原 Canvas 0.5.5 / Sheet 0.2.3 制品、依赖和锁文件（源码提交 589a3589820770d218bea418fe7c93cd10583f95）；制品身份见 docs/verification/editor-packages-2026-10-20/package-audit.json。服务端与 Web 一起更新，回退前保留后续写入，不承诺旧界面与新图形行为一致。验证只使用隔离数据库/文档，未部署；通过项目及未覆盖范围见[接入验证](verification/editor-packages-2026-10-20/README.md)。

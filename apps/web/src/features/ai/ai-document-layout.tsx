@@ -119,6 +119,11 @@ export function AIDocumentLayout({
       filesSurface ||
       (!!ai.resource &&
         (ai.resource.kind === "document" || ai.resource.kind === "library")));
+  const [opened, setOpened] = useState(false);
+  useEffect(() => {
+    if (!enabled) setOpened(false);
+    else if (ai?.open) setOpened(true);
+  }, [enabled, ai?.open]);
   return (
     <div
       className={`ai-document-layout ${enabled && ai?.open ? "ai-document-open" : ""}`}
@@ -129,8 +134,12 @@ export function AIDocumentLayout({
           <DocumentScrollButtons />
         )}
       </div>
-      {enabled && ai?.open && (
-        <aside className="ai-document-panel" style={{ width: panel.width }}>
+      {enabled && (ai?.open || opened) && (
+        <aside
+          className="ai-document-panel"
+          hidden={!ai?.open}
+          style={{ width: panel.width, display: ai?.open ? undefined : "none" }}
+        >
           <div
             className="ai-panel-resizer"
             role="separator"

@@ -55,6 +55,12 @@ PostgreSQL 获得结构锁后须读取最新目录，让并发宿主能看到前
 
 此前文件夹分享链接缺少 `max_members`、`expires_at` 和 `revision`，历史记录分别补为 `NULL`（不限人数）、`NULL`（不过期）和 `1`。已有令牌、启用状态、角色、时间及文件夹成员权限保持原值。应用为新链接明确设置默认 1 人。新的 `file_folder_link_members` 和 `file_folder_invitations` 从空表开始，不推断或补造历史加入来源、邀请事实。
 
+## 已确认的 MCP 服务新增结构
+
+按用户同意停用未使用的旧 MCP 实现，通过最新 DDL 和 `schemaEvolution` 新增四张空表（`mcp_user_settings`、`mcp_services`、`mcp_contexts`、`mcp_tool_calls`），保持 `doca-2026-10-12-book-payload-storage-v1` 代际。不推断或补造旧授权与凭据；没有个人设置行即未开启 MCP。旧 `ai_mcp_keys` 表和行仅为保全保留，运行时不读取、不转换 token，旧凭据直接拒绝。已有内容、权限和配置原样保留。
+
+[MCP 验收记录](verification/mcp-2026-10-20/README.md)覆盖实际已发布 0.2.4 在 SQLite、PostgreSQL 17/18 创建的数据升级，保留 120 张原表的数据摘要，检查新增空表、重复/并发启动及拒绝时无部分写入。部署前备份并同步更新服务端/Web；旧二进制不能执行新的 token/授权约定，应用降级前须保全新增记录并确认恢复方案。本次不删除旧表、不自动转换，也不提供降级适配器。
+
 ## 部署与恢复
 
 已获同意的[知识册批次检查点](knowledge-book-generation-performance.zh-CN.md)通过最新 DDL 和 `schemaEvolution` 新增空的 `knowledge_book_batch_checkpoints` 表，保持 `doca-2026-10-12-book-payload-storage-v1` 代际。既有 node/run/release 行、引用约束、v1 格式、权限和发布指针不变，不猜测或回填历史结果。独立的私有检查点 v1 格式严格校验。[验证记录](verification/knowledge-book-checkpoints-2026-10-19/README.md)覆盖实际已发布 0.2.3 在 SQLite、PostgreSQL 17/18 创建的数据升级、记录及正文字节保留、重复/并发启动和拒绝时无部分写入。所有执行器与垃圾回收实例一起更新；旧二进制无法保护新的检查点引用。存在检查点时，离线正文存储回滚会在修改前停止，需另行批准保全方案。

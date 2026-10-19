@@ -1,0 +1,16 @@
+{
+  "result": "passed",
+  "canvasVersion": "0.5.6",
+  "sheetVersion": "0.2.4",
+  "checks": [
+    "released 0.5.5 name-only diagram opens, selects, resizes viewport and reloads without checkpoint writes; twelve native ports",
+    "explicit legacy resize synchronizes body/text geometry and supports host undo, redo, peer replay and reload",
+    "native image select/preview and authorized PNG clipboard in edit and readonly preserve document content",
+    "readonly history preview copies through the host download authorization without live-document writes",
+    "native filter create/remove/recreate and reload use host ACKs without peer echo",
+    "two in-cell images upload, persist, reload and preview without content writes or peer echo",
+    "60 seconds of two-editor idle, readonly and resize produce zero writes"
+  ],
+  "errors": [],
+  "idleSeconds": 60
+}

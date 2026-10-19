@@ -71,6 +71,169 @@ const topic = {
   ],
 };
 
+it("rejects painting the transparent diagram wrapper and preserves the whole batch", async () => {
+  await edit([{ type: "createFlowchart", id: "flow", x: 10, y: 10,
+    nodes: [{ id: "card", text: "video_books\n视频书\nid, data", x: 0, y: 0, width: 300, height: 140, shape: "rounded" }], edges: [] }]);
+  const before = await read();
+  const card = canvasSceneNodes((before.value as any).scene).find(n => n.id === "card")!;
+  const body = card.children!.find(n => n.data?.kind === "diagram-body")!;
+  await expect(edit([
+    { type: "patch", id: body.id, patch: { fill: "#ff0000" } },
+    { type: "patch", id: "card", patch: { fill: "#ff0000" } },
+  ])).rejects.toThrow(body.id);
+  expect(await read()).toEqual(before);
+  await edit([{ type: "patch", id: body.id, patch: { fill: "#fce8e6", stroke: "#d93025" } }]);
+  const nodes = canvasSceneNodes(((await read()).value as any).scene);
+  expect(nodes.find(n => n.id === "card")!.fill).toBe("transparent");
+  expect(nodes.find(n => n.id === body.id)).toMatchObject({ fill: "#fce8e6", stroke: "#d93025" });
+  const saved = await read();
+  await expect(edit([{ type: "add", parentId: "root", element: { id: "invalid", tag: "Text", text: "无效" } }])).rejects.toThrow('不能填写 "root"');
+  expect(await read()).toEqual(saved);
+});
+
+it("sizes new connector labels for complete field names instead of wrapping them into the route", async () => {
+  await edit([{ type: "createFlowchart", id: "flow", x: 20, y: 20,
+    nodes: ["families", "video_books"].map((id, index) => ({ id, text: id, x: index * 500, y: 0, width: 280, height: 120, shape: "rect" })),
+    edges: [{ id: "relation", sourceId: "families", targetId: "video_books", mode: "elbow", label: "source_family_id", labelOffset: { x: 0, y: -30 } }] }]);
+  const nodes = canvasSceneNodes(((await read()).value as any).scene);
+  const edge = nodes.find(n => n.id === "relation")!;
+  const box = nodes.find(n => n.id === edge.data!.labelId)!;
+  expect(box.width).toBeGreaterThan(120);
+  expect(box.children![0]).toMatchObject({ text: "source_family_id", textWrap: "none" });
+  expect(box.children![0]!.width).toBeGreaterThan(110);
+  expect(box.data).toMatchObject({ ownerId: "relation", offset: { x: 0, y: -30 } });
+  const outline = documentReadPayload("canvas", (await read()).value).outline as any;
+  const children = outline.children[0].children;
+  expect(children.find((n: any) => n.id === "relation").labelId).toBe(box.id);
+  expect(children.find((n: any) => n.id === box.id).ownerId).toBe("relation");
+});
+
+it("rejects overlapping new flowchart cards atomically with the conflicting IDs", async () => {
+  const before = await read();
+  await expect(edit([{ type: "createFlowchart", id: "flow", x: 0, y: 0,
+    nodes: ["logs", "imports"].map((id, index) => ({ id, text: id, x: index * 200, y: 0, width: 280, height: 120, shape: "rect" })), edges: [] }])).rejects.toThrow("logs 与 imports");
+  expect(await read()).toEqual(before);
+});
+
+it("rejects multiline labels that cannot fit their explicit node height before saving", async () => {
+  const before = await read();
+  await expect(edit([{ type: "createFlowchart", id: "flow", x: 0, y: 0,
+    nodes: [{ id: "logs", text: "logs\n运行日志\nid, project_id", x: 0, y: 0, width: 260, height: 78, shape: "rect" }], edges: [] }])).rejects.toThrow("至少需要 96px");
+  expect(await read()).toEqual(before);
+});
+
+it("rejects reusing removed IDs without clearing the old diagram, and can atomically replace it with fresh IDs", async () => {
+  const create = (id: string, nodeId: string) => ({ type: "createFlowchart", id, x: 0, y: 0,
+    nodes: [{ id: nodeId, text: "数据库表", x: 0, y: 0, width: 280, height: 120, shape: "rect" }], edges: [] });
+  await edit([create("flow", "card")]);
+  const before = await read();
+  await expect(edit([{ type: "remove", ids: ["flow"] }, create("flow", "card")])).rejects.toThrow("删除后也不能重新新增相同 ID");
+  expect(await read()).toEqual(before);
+  await edit([create("replacement", "new-card"), { type: "remove", ids: ["flow"] }]);
+  const all = canvasSceneNodes(((await read()).value as any).scene);
+  expect(all.some(n => n.id === "new-card")).toBe(true);
+  expect(all.some(n => n.id === "card")).toBe(false);
+});
+
+it("resizes and colors native diagram parts together without replacing identities or text", async () => {
+  await edit([{ type: "createFlowchart", id: "flow", x: 20, y: 20,
+    nodes: [{ id: "card", text: "video_books\n视频书\nid, data", x: 0, y: 0, width: 280, height: 120, shape: "diamond" }], edges: [] }]);
+  const before = await read();
+  const original = canvasSceneNodes((before.value as any).scene);
+  await expect(edit([{ type: "patch", id: "card", patch: { width: 360 } }])).rejects.toThrow("diagramNode");
+  expect(await read()).toEqual(before);
+  await edit([{ type: "diagramNode", id: "card", width: 360, height: 180, fill: "#fce8e6", stroke: "#d93025" }]);
+  const after = canvasSceneNodes(((await read()).value as any).scene);
+  expect(after.map(n => n.id)).toEqual(original.map(n => n.id));
+  const card = after.find(n => n.id === "card")!;
+  expect(card).toMatchObject({ width: 360, height: 180, fill: "transparent" });
+  expect(card.children!.find(n => n.data?.kind === "diagram-body")).toMatchObject({ width: 360, height: 180, fill: "#fce8e6", stroke: "#d93025", path: "M180 0L360 90L180 180L0 90Z" });
+  expect(card.children!.find(n => n.tag === "Text")).toMatchObject({ width: 332, height: 156, text: "video_books\n视频书\nid, data" });
+});
+
+it("reroutes existing connectors and moves labels without rebuilding nodes, text or IDs", async () => {
+  await edit([{ type: "createFlowchart", id: "flow", x: 50, y: 50,
+    nodes: ["a", "b"].map((id, index) => ({ id, text: id, x: index * 500, y: index * 200, width: 280, height: 120, shape: "rect" })),
+    edges: [{ id: "edge", sourceId: "a", targetId: "b", mode: "elbow", offset: 420, label: "project_id" }] }]);
+  const before = await read(), original = canvasSceneNodes((before.value as any).scene);
+  const oldEdge = original.find(n => n.id === "edge")!, labelId = oldEdge.data!.labelId;
+  await edit([{ type: "diagramEdge", id: "edge", sourcePort: "bottom", targetPort: "left", mode: "elbow", offset: null, labelOffset: { x: 15, y: -30 } }]);
+  const updated = canvasSceneNodes(((await read()).value as any).scene), edge = updated.find(n => n.id === "edge")!;
+  expect(updated.map(n => n.id)).toEqual(original.map(n => n.id));
+  expect(updated.filter(n => !["flow", "edge", labelId].includes(n.id))).toEqual(original.filter(n => !["flow", "edge", labelId].includes(n.id)));
+  expect(edge.data).toMatchObject({ sourceId: "a", targetId: "b", sourceAnchor: { x: 0.5, y: 1 }, targetAnchor: { x: 0, y: 0.5 }, from: { x: 140, y: 120 }, to: { x: 500, y: 260 }, labelId });
+  expect(edge.data!.offset).toBeUndefined();
+  expect(edge.path).not.toBe(oldEdge.path);
+  expect(updated.find(n => n.id === labelId)!.data).toMatchObject({ kind: "connector-label", ownerId: "edge", offset: { x: 15, y: -30 } });
+  const saved = await read();
+  await expect(edit([{ type: "patch", id: "a", patch: { rotation: 45 } }, { type: "diagramEdge", id: "edge", sourcePort: "right", targetPort: "left" }])).rejects.toThrow("未旋转缩放");
+  expect(await read()).toEqual(saved);
+});
+
+it("can reroute labels repeatedly without consuming native element ordering precision", () => {
+  const model = CanvasModel.initialize(randomUUID(), { version: 1, scene: { id: "scene", tag: "Group", children: [] } });
+  try {
+    executeCanvasWorkflow(model, { type: "createFlowchart", id: "flow", x: 0, y: 0,
+      nodes: ["a", "b"].map((id, i) => ({ id, text: id, x: i * 500, y: i * 300, width: 240, height: 120, shape: "rect" })),
+      edges: ["first", "second"].map(id => ({ id, sourceId: "a", targetId: "b", mode: "elbow", label: id })) });
+    const original = canvasSceneNodes(model.getValue().scene).map(n => n.id);
+    for (let round = 0; round < 80; round++) for (const id of ["second", "first"])
+      executeCanvasWorkflow(model, { type: "diagramEdge", id, sourcePort: round % 2 ? "right" : "bottom", targetPort: "left", autoLabel: true });
+    expect(canvasSceneNodes(model.getValue().scene).map(n => n.id)).toEqual(original);
+  } finally { model.dispose(); }
+});
+
+it("rebinds existing endpoints and labels atomically when resizing a diagram node", async () => {
+  await edit([{ type: "createFlowchart", id: "flow", x: 0, y: 0,
+    nodes: [{ id: "a", text: "A", x: 0, y: 0, width: 200, height: 100, shape: "rect" },
+      { id: "b", text: "B", x: 500, y: 200, width: 200, height: 100, shape: "rect" }],
+    edges: [{ id: "edge", sourceId: "a", targetId: "b", sourcePort: "right", targetPort: "left", mode: "elbow", label: "fk" }] }]);
+  const before = canvasSceneNodes(((await read()).value as any).scene);
+  const labelId = before.find(n => n.id === "edge")!.data!.labelId;
+  await edit([{ type: "diagramNode", id: "a", width: 260, height: 140 }]);
+  const after = canvasSceneNodes(((await read()).value as any).scene);
+  expect(after.map(n => n.id)).toEqual(before.map(n => n.id));
+  expect(after.find(n => n.id === "edge")!.data).toMatchObject({ from: { x: 260, y: 70 }, to: { x: 500, y: 250 }, labelId });
+  expect(after.find(n => n.id === labelId)).toMatchObject({ x: 332, y: 146, width: 96, height: 28 });
+  expect(after.find(n => n.id === "edge")!.path).not.toEqual(before.find(n => n.id === "edge")!.path);
+  await edit([{ type: "patch", id: "edge", patch: { data: { ...after.find(n => n.id === "edge")!.data, mode: "curve" } } }]);
+  const unsupported = await read();
+  await expect(edit([{ type: "diagramNode", id: "a", width: 300 }])).rejects.toThrow("保留复杂走线");
+  expect(await read()).toEqual(unsupported);
+});
+
+it("automatically routes around an intervening card and preserves every existing object when rerouting", async () => {
+  await edit([{ type: "createFlowchart", id: "flow", x: 0, y: 0,
+    nodes: [{ id: "a", text: "A", x: 0, y: 0, width: 200, height: 100, shape: "rect" },
+      { id: "b", text: "B", x: 500, y: 0, width: 200, height: 100, shape: "rect" },
+      { id: "obstacle", text: "其他表", x: 300, y: -50, width: 100, height: 200, shape: "rect" }],
+    edges: [{ id: "edge", sourceId: "a", targetId: "b", mode: "elbow", autoRoute: true, autoLabel: true, label: "project_id" }] }]);
+  const original = canvasSceneNodes(((await read()).value as any).scene);
+  const edge = original.find(n => n.id === "edge")!;
+  expect(edge.data).toMatchObject({ sourceId: "a", targetId: "b", sourceAnchor: { x: 1, y: .5 }, targetAnchor: { x: 0, y: .5 }, mode: "elbow", offset: -90 });
+  expect(edge.path).toContain("L232 -90L468 -90");
+  expect(edge.data!.autoRoute).toBeUndefined();
+  expect(edge.data!.autoLabel).toBeUndefined();
+  await edit([{ type: "diagramEdge", id: "edge", autoRoute: true, autoLabel: true }]);
+  expect(canvasSceneNodes(((await read()).value as any).scene).map(n => n.id)).toEqual(original.map(n => n.id));
+  const saved = await read();
+  await expect(edit([{ type: "diagramEdge", id: "edge", autoRoute: true, sourcePort: "left" }])).rejects.toThrow("省略 sourcePort");
+  expect(await read()).toEqual(saved);
+});
+
+it("honors explicitly centered new labels and rejects conflicting automatic and explicit offsets", async () => {
+  await edit([{ type: "createFlowchart", id: "flow", x: 0, y: 0,
+    nodes: ["a", "b"].map((id, i) => ({ id, text: id, x: i * 500, y: 0, width: 200, height: 100, shape: "rect" })),
+    edges: [{ id: "edge", sourceId: "a", targetId: "b", mode: "straight", sourcePort: "right", targetPort: "left", autoLabel: false, label: "fk" }] }]);
+  const label = canvasSceneNodes(((await read()).value as any).scene).find(n => n.data?.kind === "connector-label")!;
+  expect(label).toMatchObject({ x: 302, y: 36, data: { offset: { x: 0, y: 0 } } });
+  const before = await read();
+  await expect(edit([{ type: "createFlowchart", id: "conflict", x: 0, y: 500,
+    nodes: ["x", "y"].map((id, i) => ({ id, text: id, x: i * 500, y: 0, width: 200, height: 100, shape: "rect" })),
+    edges: [{ id: "bad", sourceId: "x", targetId: "y", mode: "elbow", autoLabel: true, labelOffset: { x: 0, y: 0 }, label: "fk" }] }])).rejects.toThrow("不能同时提供");
+  expect(await read()).toEqual(before);
+});
+
 it("creates editable native diagrams, topics, tables and device children and restores the exact checkpoint", async () => {
   await edit([
     {

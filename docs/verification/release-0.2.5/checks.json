@@ -1,0 +1,33 @@
+{
+  "passed": true,
+  "tests": {
+    "passed": 3035,
+    "skipped": 10,
+    "failed": 0
+  },
+  "typecheck": true,
+  "productionBundles": [
+    "canvas-renderer",
+    "web"
+  ],
+  "documentation": {
+    "pages": 79,
+    "languages": [
+      "en",
+      "zh-cn"
+    ],
+    "linkCheck": true,
+    "build": true
+  },
+  "postgresMcpMatrix": {
+    "17": 14,
+    "18": 14
+  },
+  "githubDatabaseMatrix": "https://github.com/smartdoca/doca/actions/runs/39293628822",
+  "githubDocumentation": "https://github.com/smartdoca/doca/actions/runs/39293628746",
+  "actualCodexMcpCalls": 42,
+  "architectures": [
+    "linux/amd64",
+    "linux/arm64"
+  ]
+}

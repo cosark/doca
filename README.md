@@ -71,6 +71,7 @@ Doca 把**在线文档、Markdown、在线表格、幻灯片、无限画布、�
 | **在线文档与协同编辑** | 富文本、Markdown、表格、幻灯片和画布，支持实时协同、评论与历史记录。 |
 | **知识管理** | 带文档目录的知识库，以及支持编排、来源溯源和人工审阅的多人共建知识册。 |
 | **个人 AI 助手** | 围绕有权限访问的文档与文件工作，读取 PDF/Office 附件，生成与编辑图片，准备浏览器草稿。需要配置可用的模型和服务。 |
+| **MCP 服务** | 让 Codex 等外部 AI 使用已授权的 Doca 工具和 SKILL；支持个人服务和管理员代用户集成。 |
 | **文件与分享** | 个人文件、共享文件夹、邀请、权限、分享链接、搜索、通知和回收站。支持本地或兼容 S3 的文件存储。 |
 | **账号与语言** | 密码、OIDC、Google、GitHub、微信扫码和 QQ 登录，中英文界面。外部登录需配置对应服务。 |
 | **私有化部署与扩展** | Docker 部署，单机 SQLite，多副本共享 PostgreSQL、Redis 和文件存储。业务插件通过公开 `@smartdoca/plugin-sdk` 扩展。 |
@@ -90,11 +91,11 @@ Doca 把**在线文档、Markdown、在线表格、幻灯片、无限画布、�
 
 ## Docker 快速开始
 
-需要 Git、Docker Engine、Docker Compose，以及通过反向代理访问的 HTTP(S) 地址。本流程在新空数据库中安装已发布的 0.2.4 镜像。已有部署更换版本前，先阅读[发行要求](https://smartdoca.github.io/doca/#/zh-cn/releases/0.2.4)并保留原数据。
+需要 Git、Docker Engine、Docker Compose，以及通过反向代理访问的 HTTP(S) 地址。本流程在新空数据库中安装已发布的 0.2.5 镜像。已有部署更换版本前，先阅读[发行要求](https://smartdoca.github.io/doca/#/zh-cn/releases/0.2.5)并保留原数据。
 
 ```sh
 # 1. 拉取对应发行版代码
-git clone --branch v0.2.4 --depth 1 https://github.com/smartdoca/doca.git
+git clone --branch v0.2.5 --depth 1 https://github.com/smartdoca/doca.git
 cd doca
 
 # 2. 配置环境变量
@@ -138,7 +139,7 @@ pnpm dev
 - [部署与配置](https://smartdoca.github.io/doca/#/zh-cn/operations/deployment)
 - [插件开发](https://smartdoca.github.io/doca/#/zh-cn/plugins/plugin-development)
 - [HTTP API](https://smartdoca.github.io/doca/#/zh-cn/reference/api)，运行中的应用还提供 `/api/openapi.json`。
-- [发行记录](https://smartdoca.github.io/doca/#/zh-cn/releases/0.2.4)
+- [发行记录](https://smartdoca.github.io/doca/#/zh-cn/releases/0.2.5)
 - [文档源码](docs/README.zh-CN.md)
 
 预览文档时，执行 `pnpm docs:dev` 并打开 `http://127.0.0.1:39140/#/zh-cn/`。`pnpm docs:check` 校验双语覆盖和本地链接。GitHub Pages 设置见[文档维护](docs/documentation.zh-CN.md)。

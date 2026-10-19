@@ -1,3 +1,4 @@
+import { createMcpStructure, mcpTables } from "./mcp-schema.js";
 import {
   BOOK_PAYLOAD_BASELINE,
   BOOK_PAYLOAD_UPGRADE,
@@ -438,6 +439,7 @@ export async function createCurrentStructure(db: Kysely<any>) {
   await createKnowledgeBookSchema(db);
   await createHistorySchema(db);
   await createMobileSchema(db);
+  await createMcpStructure(db);
   await sql
     .raw(
       `CREATE TABLE schema_baseline (id varchar(64) primary key, created_at varchar(32) not null, structure_json text default '{}' not null)`,
@@ -449,6 +451,7 @@ export async function createCurrentStructure(db: Kysely<any>) {
 // Historical values come from the latest DDL; installed footprints prevent repairing lost data as an upgrade.
 export const schemaEvolution = {
   newTables: [
+    ...mcpTables,
     "file_folder_link_members",
     "file_folder_invitations",
     ...bookPayloadTables,
