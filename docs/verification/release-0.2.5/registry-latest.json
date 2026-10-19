@@ -1,0 +1,19 @@
+{
+  "passed": true,
+  "image": "smartdoca/doca:latest",
+  "indexDigest": "sha256:9c8dda749d38dd8349f7acdde46aab8e1a9891a22a699cf9a2e8dd15d338877b",
+  "platforms": [
+    {
+      "os": "linux",
+      "arch": "amd64",
+      "manifestDigest": "sha256:eb9311c595e933949668ebd098ebe1f224e8ab77486b550860f8bafd4ffc2d24",
+      "configDigest": "sha256:fb33c59498323f2d28259ee04811cf22733ce6da67fb377ce8af0c5d5c2de23d"
+    },
+    {
+      "os": "linux",
+      "arch": "arm64",
+      "manifestDigest": "sha256:a368c29e773dbda76d62cd1afa6d0207927b3bd102f29ad16b6979f3e2357c5d",
+      "configDigest": "sha256:b8f687997eabf0ce1c2950c1843f73cb0eeed1d878c11611a027a4dc33f839aa"
+    }
+  ]
+}

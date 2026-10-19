@@ -33,6 +33,11 @@ for (const arch of ["amd64", "arm64"]) {
       entry.platform?.os === "linux" && entry.platform?.architecture === arch,
   );
   assert(manifest, `Missing Linux ${arch} image`);
+  assert.equal(
+    manifest.digest,
+    accepted.images[arch].manifestDigest,
+    `Published ${arch} manifest differs from the accepted image`,
+  );
   const child = JSON.parse(
     await docker(
       "buildx",
@@ -44,7 +49,7 @@ for (const arch of ["amd64", "arm64"]) {
   );
   assert.equal(
     child.config.digest,
-    accepted.images[arch].configId,
+    accepted.images[arch].configDigest,
     `Published ${arch} filesystem differs from the accepted image`,
   );
   platforms.push({
