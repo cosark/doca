@@ -1,0 +1,38 @@
+{
+  "passed": true,
+  "repository": "smartdoca/doca",
+  "tags": [
+    {
+      "tag": "0.2.6",
+      "digest": "sha256:3d9ee2e114ac1d5d52fdbf5f76aa7cc1758e1935742ad1dcbb0d31ffa6e44860",
+      "platforms": [
+        {
+          "architecture": "amd64",
+          "manifest": "sha256:b7f7eac7f769ea477263d413d2b58d9056aebcba7b9eceb3ef9c4a65c0d7fb60",
+          "config": "sha256:c93e55a02fde926ed310df1fa5cb0fec6aec3cca288eb576bde6edab3d23322b"
+        },
+        {
+          "architecture": "arm64",
+          "manifest": "sha256:8b6dffe006ecb20184ce1da4fd05574b611d17a9cd860abeda8c4dba2737c55f",
+          "config": "sha256:839a8766b0119ccc2eb31e06fd98dac131f0b3c2b96c5db8b9b6e7c0123eb120"
+        }
+      ]
+    },
+    {
+      "tag": "latest",
+      "digest": "sha256:3d9ee2e114ac1d5d52fdbf5f76aa7cc1758e1935742ad1dcbb0d31ffa6e44860",
+      "platforms": [
+        {
+          "architecture": "amd64",
+          "manifest": "sha256:b7f7eac7f769ea477263d413d2b58d9056aebcba7b9eceb3ef9c4a65c0d7fb60",
+          "config": "sha256:c93e55a02fde926ed310df1fa5cb0fec6aec3cca288eb576bde6edab3d23322b"
+        },
+        {
+          "architecture": "arm64",
+          "manifest": "sha256:8b6dffe006ecb20184ce1da4fd05574b611d17a9cd860abeda8c4dba2737c55f",
+          "config": "sha256:839a8766b0119ccc2eb31e06fd98dac131f0b3c2b96c5db8b9b6e7c0123eb120"
+        }
+      ]
+    }
+  ]
+}

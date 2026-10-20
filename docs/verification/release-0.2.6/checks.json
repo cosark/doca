@@ -1,0 +1,21 @@
+{
+  "passed": true,
+  "version": "0.2.6",
+  "compose": "configuration parses; only image version and its comment change",
+  "documentation": {
+    "pages": 80,
+    "languages": 2,
+    "links": "passed",
+    "build": "passed"
+  },
+  "productionBuild": "passed",
+  "deploymentBundle": {
+    "version": "0.2.6",
+    "imageOnly": true,
+    "checksum": "0dadf2c9bd65cea5b047c0e5030d891d929364dbc5d3dd31500a183fe893eaad  doca-deploy-v0.2.6.tar.gz"
+  },
+  "containerHealth": {
+    "amd64": "version 0.2.6; HTTP 200",
+    "arm64": "version 0.2.6; HTTP 200"
+  }
+}
