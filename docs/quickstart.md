@@ -2,9 +2,9 @@
 
 [中文](quickstart.zh-CN.md)
 
-This guide installs Doca 0.1.22 on one server with the published Docker image, SQLite, and local file storage. You need Git, Docker Engine, the Docker Compose plugin, and a domain pointing at the server. A reverse proxy on that server can serve HTTPS or trusted internal HTTP. You do not need Node.js or pnpm to run the image.
+This guide installs Doca 0.2.6 on one server with the published Docker image, SQLite, and local file storage. You need Git, Docker Engine, the Docker Compose plugin, and a domain pointing at the server. A reverse proxy on that server can serve HTTPS or trusted internal HTTP. You do not need Node.js or pnpm to run the image.
 
-This is a fresh installation. Existing deployments must read the [release requirements](releases/0.1.22.md) first: reviewed additive changes upgrade automatically within the supported compatibility generation; incompatible baselines and semantic changes require separate handling. Preserve existing databases, files, and configuration.
+This is a fresh installation. Existing deployments must read the [release requirements](releases/0.2.6.md) first: reviewed additive changes upgrade automatically within the supported compatibility generation; incompatible baselines and semantic changes require separate handling. Preserve existing databases, files, and configuration.
 
 If the server cannot reach GitHub, transfer Compose, the environment example, the security policy, and administrator scripts without cloning source. See [deploy without GitHub access](deployment-without-github.md) for copyable Compose and `.env` files, offline image delivery, and initialization.
 
@@ -13,7 +13,7 @@ If the server cannot reach GitHub, transfer Compose, the environment example, th
 Use the checkout matching the image so Compose and the administrator scripts match the release:
 
 ```sh
-git clone --branch v0.1.22 --depth 1 https://github.com/smartdoca/doca.git
+git clone --branch v0.2.6 --depth 1 https://github.com/smartdoca/doca.git
 cd doca
 ```
 
@@ -58,7 +58,7 @@ Caddy terminates TLS and forwards HTTP and WebSocket traffic. DNS must point to 
 docker compose pull
 ```
 
-Compose uses `docker.io/smartdoca/doca:0.1.22`. This step downloads the prebuilt image; it does not build the source checkout.
+Compose uses `docker.io/smartdoca/doca:0.2.6`. This step downloads the prebuilt image; it does not build the source checkout.
 
 ## 4. Start Doca
 
@@ -70,7 +70,7 @@ docker compose ps
 Wait for the container to become healthy. The health response is:
 
 ```json
-{"status":"ok","version":"0.1.22"}
+{"status":"ok","version":"0.2.6"}
 ```
 
 If startup fails, inspect `docker compose logs --tail=100 doca`. The Compose port is bound to `127.0.0.1`; browser access uses the configured HTTP(S) origin through the proxy.
