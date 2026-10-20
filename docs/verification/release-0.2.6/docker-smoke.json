@@ -1,0 +1,32 @@
+[
+  {
+    "status": "fulfilled",
+    "value": {
+      "arch": "x64",
+      "uid": 1000,
+      "health": 200,
+      "web": 200,
+      "mcpMenu": true,
+      "hashes": {
+        "packages/web-plugin-registry/src/navigation.ts": "4dad8413b5588fb3b4e8e2a5d8130c889f130a644f3c5c1c6c899b59c3a5997b",
+        "packages/i18n/src/catalogs/en.ts": "057cd524d4ca58a3c6091c11220b83c22804df863a39858bfcca4a2780a8b04d",
+        "packages/i18n/src/catalogs/zh.ts": "9b257b4e1cb924b10770529e2d7f0f932e14488f8c8c27f38b204f58f06cd07c"
+      }
+    }
+  },
+  {
+    "status": "fulfilled",
+    "value": {
+      "arch": "arm64",
+      "uid": 1000,
+      "health": 200,
+      "web": 200,
+      "mcpMenu": true,
+      "hashes": {
+        "packages/web-plugin-registry/src/navigation.ts": "4dad8413b5588fb3b4e8e2a5d8130c889f130a644f3c5c1c6c899b59c3a5997b",
+        "packages/i18n/src/catalogs/en.ts": "057cd524d4ca58a3c6091c11220b83c22804df863a39858bfcca4a2780a8b04d",
+        "packages/i18n/src/catalogs/zh.ts": "9b257b4e1cb924b10770529e2d7f0f932e14488f8c8c27f38b204f58f06cd07c"
+      }
+    }
+  }
+]

@@ -1,0 +1,14 @@
+{
+  "sourceRevision": "0bb131a10483ad979ff18919e37bd9c76492dd11",
+  "indexDigest": "sha256:3d9ee2e114ac1d5d52fdbf5f76aa7cc1758e1935742ad1dcbb0d31ffa6e44860",
+  "images": {
+    "amd64": {
+      "manifestDigest": "sha256:b7f7eac7f769ea477263d413d2b58d9056aebcba7b9eceb3ef9c4a65c0d7fb60",
+      "configDigest": "sha256:c93e55a02fde926ed310df1fa5cb0fec6aec3cca288eb576bde6edab3d23322b"
+    },
+    "arm64": {
+      "manifestDigest": "sha256:8b6dffe006ecb20184ce1da4fd05574b611d17a9cd860abeda8c4dba2737c55f",
+      "configDigest": "sha256:839a8766b0119ccc2eb31e06fd98dac131f0b3c2b96c5db8b9b6e7c0123eb120"
+    }
+  }
+}
