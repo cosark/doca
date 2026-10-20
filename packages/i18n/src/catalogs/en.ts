@@ -2905,6 +2905,7 @@ export const en = {
   "home.libraries": "Libraries",
   "home.mine": "My documents",
   "home.titleColumn": "Title",
+  "home.type": "Document type",
   "home.location": "Location",
   "home.owner": "Owner",
   "home.created": "Date created",

@@ -479,8 +479,8 @@
 .document-table-row {
   display: grid;
   grid-template-columns:
-    minmax(190px, 2.4fr) 96px minmax(100px, 1fr) minmax(75px, 0.8fr)
-    minmax(110px, 1fr) minmax(110px, 1fr) 34px;
+    minmax(190px, 2.4fr) 96px 100px minmax(100px, 1fr)
+    minmax(75px, 0.8fr) minmax(110px, 1fr) 34px;
   align-items: center;
   gap: 16px;
 }
@@ -595,6 +595,7 @@
   text-overflow: ellipsis;
   white-space: nowrap;
 }
+.table-type,
 .table-location,
 .table-owner {
   overflow: hidden;
@@ -867,8 +868,8 @@
     grid-template-columns: minmax(170px, 2fr) 96px minmax(80px, 1fr) 75px 105px 30px;
     gap: 10px;
   }
-  .document-table-head > :nth-child(5),
-  .document-table-row > :nth-child(5) {
+  .dashboard .document-table-head > .table-owner,
+  .dashboard .document-table-row > .table-owner {
     display: none;
   }
   .document-table {
@@ -962,8 +963,8 @@
   .document-table-row {
     grid-template-columns: minmax(165px, 2fr) 96px 90px 100px 25px;
   }
-  .document-table-head > :nth-child(4),
-  .document-table-row > :nth-child(4) {
+  .dashboard .document-table-head > .table-location,
+  .dashboard .document-table-row > .table-location {
     display: none;
   }
   .account-page {
@@ -995,8 +996,8 @@
 .dashboard-trash .document-table-head,
 .dashboard-trash .document-table-row {
   grid-template-columns:
-    minmax(190px, 2.4fr) 96px minmax(100px, 1fr) minmax(75px, 0.8fr)
-    minmax(110px, 1fr) minmax(110px, 1fr) auto;
+    minmax(190px, 2.4fr) 96px 100px minmax(100px, 1fr)
+    minmax(75px, 0.8fr) minmax(110px, 1fr) auto;
 }
 .trash-row-actions {
   display: flex;
