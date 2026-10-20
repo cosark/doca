@@ -95,6 +95,7 @@ const icons: Record<string, typeof Package> = {
   files: FolderOpen,
   ai: Sparkles,
   preferences: Settings,
+  mcp: Server,
   account: UserRound,
   discover: Search,
   trash: Trash2,

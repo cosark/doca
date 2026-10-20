@@ -79,6 +79,7 @@ export const builtinNavigation: NavigationEntry[] = [
   ["trash", "Trash", "回收站", "/trash", undefined, 80],
   ["account", "Profile", "个人资料", "/account", "/account", 90],
   ["preferences", "Settings", "设置", "/preferences", "/settings", 100],
+  ["mcp", "MCP services", "MCP 服务", "/mcp", undefined, 105],
   ["tickets", "Tickets", "工单", "/tickets", undefined, 110],
   ["admin", "Administration", "管理后台", "/admin", undefined, 120],
 ].map(([id, en, zh, webPath, mobilePath, order]) => ({
@@ -92,7 +93,7 @@ export const builtinNavigation: NavigationEntry[] = [
   allowedSlots: pageSlots.filter(
     (s) => !s.startsWith("mobile.") || !!mobilePath,
   ),
-  defaults: (id === "account" || id === "preferences" || id === "admin"
+  defaults: (id === "account" || id === "preferences" || id === "mcp" || id === "admin"
     ? ["web.user"]
     : id === "tickets"
       ? ["web.topRight"]

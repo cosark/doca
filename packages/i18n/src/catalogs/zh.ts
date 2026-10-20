@@ -2693,6 +2693,7 @@ export const zh = {
   "home.libraries": "知识库",
   "home.mine": "个人文档",
   "home.titleColumn": "标题",
+  "home.type": "文档类型",
   "home.location": "位置",
   "home.owner": "所有者",
   "home.created": "创建时间",

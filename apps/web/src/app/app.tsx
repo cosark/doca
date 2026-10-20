@@ -501,8 +501,42 @@ function WorkspaceApp() {
     if (!bootstrap?.siteName) return;
     const siteTitle = t("app.documentTitle", { site: bootstrap.siteName });
     const { text: resourceTitle } = splitTitleIcon(currentDetail?.resource.title.trim() ?? "");
-    document.title = resourceId && resourceTitle ? resourceTitle : siteTitle;
-  }, [bootstrap?.siteName, t, resourceId, currentDetail?.resource.title]);
+    if (resourceId) {
+      document.title = resourceTitle || `${t("nav.opening")} · ${bootstrap.siteName}`;
+      return;
+    }
+    if (!bootstrap.user) {
+      document.title = siteTitle;
+      return;
+    }
+    const path = hash.slice(1).split("?")[0] || "/home";
+    const routeTitleKey = titleKeys[path.slice(1).split("/")[0]!];
+    const navigation = navigationLayout.entries.find((entry) => entry.webPath === hash.slice(1))
+      ?? navigationLayout.entries.find((entry) => entry.webPath === path);
+    const pluginNavigation = pluginNavigationByScope.get(scope);
+    let pageTitle = navigation?.title[locale]
+      ?? (pluginNavigation && activePluginIds.has(pluginNavigation.pluginId)
+        ? pluginMessage(locale, pluginNavigation.labelKey)
+        : routeTitleKey ? t(routeTitleKey) : "");
+    if (path === "/files") {
+      const folder = fileTrail[0]?.type === "system"
+        ? fileTrail.at(-1)
+        : undefined;
+      pageTitle = folder && !(folder.type === "system" && folder.id === "root")
+        ? folder.name
+        : t("nav.files");
+    } else if (sharedFolderId) {
+      pageTitle = fileTrail[0]?.id === sharedFolderId
+        ? fileTrail.at(-1)?.name ?? sharedFolderName
+        : sharedFolderName;
+    } else if (bookContextId && bookContext?.resource.id === bookContextId && bookContext.userId === bootstrap.user.id) {
+      pageTitle = bookContext.resource.title;
+    }
+    const { text } = splitTitleIcon(pageTitle.trim());
+    document.title = text ? `${text} · ${bootstrap.siteName}` : siteTitle;
+  }, [bootstrap?.siteName, bootstrap?.user?.id, t, locale, hash, resourceId,
+    currentDetail?.resource.title, navigationLayout, pluginNavigationByScope, scope,
+    bootstrap?.plugins, fileTrail, sharedFolderId, sharedFolderName, bookContextId, bookContext]);
   useEffect(() => {
     const href = documentFavicon(currentDetail?.resource ?? null);
     const icon = document.querySelector<HTMLLinkElement>('link[rel="icon"]');

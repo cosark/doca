@@ -2,7 +2,7 @@ import { ResourceAccessTag } from "@web/features/documents/resource-access-tag.j
 import { splitTitleIcon } from "@web/shared/utils/resource-title.js";
 import { CollectionAction } from "@web/features/discovery/collection-action.js";
 import { useI18n } from "@web/shared/i18n.js";
-import { htmlLang } from "@doca/i18n";
+import { htmlLang, type MessageKey } from "@doca/i18n";
 import { Feedback } from "@web/shared/components/feedback.js";
 import { Select } from "@web/shared/components/select.js";
 import { DocumentAuthor } from "@web/features/documents/document-author.js";
@@ -40,6 +40,13 @@ import { navigateBackOr } from "@web/shared/utils/back-navigation.js";
 import { EmptyTrash, FileTrash, TrashPreview } from "@web/features/trash/trash.js";
 
 const empty: Page = { items: [], total: 0, nextCursor: null };
+const documentTypeKeys: Record<Resource["format"], MessageKey> = {
+  rich_text: "shell.type.rich",
+  markdown: "shell.type.markdown",
+  spreadsheet: "shell.type.sheet",
+  canvas: "shell.type.canvas",
+  presentation: "shell.type.slides",
+};
 function recentGroup(value?: string | null) {
   if (!value) return "earlier";
   const visited = new Date(value);
@@ -235,9 +242,9 @@ export function Dashboard({
     <div className="document-table-head">
       <span>{t("home.titleColumn")}</span>
       <span className="table-access">{t("resourceAccess.column")}</span>
-      <span>{t("home.location")}</span>
-      <span>{t("home.owner")}</span>
-      <button onClick={() => setSort("created_at")}>{t("home.created")}</button>
+      <span className="table-type">{t("home.type")}</span>
+      <span className="table-location">{t("home.location")}</span>
+      <span className="table-owner">{t("home.owner")}</span>
       <button
         onClick={() =>
           setSort(sort === "visited_at" ? "updated_at" : "visited_at")
@@ -597,6 +604,9 @@ export function Dashboard({
                   )}
                 </div>
                 <span className="table-access">{r.kind === "document" && <ResourceAccessTag state={r.access_state} />}</span>
+                <span className="table-type">
+                  {t(r.kind === "library" ? "home.libraries" : documentTypeKeys[r.format])}
+                </span>
                 <span
                   className={`table-location ${r.inLibrary || r.library_id || r.kind === "library" ? "in-library" : "personal"}`}
                   title={
@@ -626,9 +636,6 @@ export function Dashboard({
                     />
                   )}
                 </span>
-                <time title={new Date(r.created_at).toLocaleString(htmlLang(locale))}>
-                  {date(r.created_at)}
-                </time>
                 <time
                   title={
                     (sort === "visited_at" ? r.visited_at : r.updated_at)
