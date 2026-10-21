@@ -31,7 +31,7 @@
 | 画板 | PNG/JPEG/WebP/SVG 素材 | PNG/SVG | 导入为图片素材；不恢复原生图层，不承诺编辑数据往返 |
 | 演示文稿 | PPTX，最大 30 MB | PPTX | 基础文字、图形、表格和图片；复杂母版/动画可能简化，不支持旧 PPT |
 
-当前安装包：`@smartdoca/slate` 0.4.23、`@smartdoca/sheet` 0.2.4、`@smartdoca/markdown` 0.4.3、`@smartdoca/canvas` 0.5.6、`@smartdoca/slides` 0.3.0-alpha.3。导入分派见 `apps/web/src/features/documents/file-transfer.tsx`，导出见各宿主编辑器适配器。PDF 导入经过识别/转换与素材重新上传，不承诺保留原始页布局。复用版本号时以 hash 命名包并更新 lockfile；独立外部应用和复杂文件仍需逐项验收。
+当前安装包：`@smartdoca/slate` 0.4.23、`@smartdoca/sheet` 0.2.5、`@smartdoca/markdown` 0.4.3、`@smartdoca/canvas` 0.5.8、`@smartdoca/slides` 0.3.0-alpha.3。导入分派见 `apps/web/src/features/documents/file-transfer.tsx`，导出见各宿主编辑器适配器。PDF 导入经过识别/转换与素材重新上传，不承诺保留原始页布局。复用版本号时以 hash 命名包并更新 lockfile；独立外部应用和复杂文件仍需逐项验收。
 
 ## 按在线样式导出 PDF 与可编辑导入
 
@@ -76,3 +76,11 @@ Doca 0.1.31 锁定正式 npm 包 `@smartdoca/canvas` 0.5.2，替代上文临时 
 Canvas 图片先选中再预览；复制 PNG 像素通过宿主 resolveDownloadUrl 鉴权，阅读模式也可用。历史/回收站预览保留原有访问参数，服务端仍拒绝不支持的审计资源访问。Sheet 使用包内原生筛选渲染及当前内联图片几何/预览，不修复传入的文档数据。资产 UUID、ACL、临时 presence、永久锚点、持久 ACK 和原 update 保持原归属。已有历史读取器、虚拟工作表恢复、规范化代码和已批准显示默认值仅审计，不扩展其兼容行为。
 
 回退依据为原 Canvas 0.5.5 / Sheet 0.2.3 制品、依赖和锁文件（源码提交 589a3589820770d218bea418fe7c93cd10583f95）；制品身份见 docs/verification/editor-packages-2026-10-20/package-audit.json。服务端与 Web 一起更新，回退前保留后续写入，不承诺旧界面与新图形行为一致。验证只使用隔离数据库/文档，未部署；通过项目及未覆盖范围见[接入验证](verification/editor-packages-2026-10-20/README.md)。
+
+## Canvas 0.5.8 与 Sheet 0.2.5 对接 — 2026-10-21
+
+Doca 锁定 npm 正式发布的 `@smartdoca/canvas` 0.5.8 和 `@smartdoca/sheet` 0.2.5。相对 Canvas 0.5.6 / Sheet 0.2.4，公共类型、入口和依赖不变，Canvas model 与 Sheet model/XLSX 运行时代码逐字节一致。Sheet 的 Yjs 会话先恢复原生筛选器，再计算同批单元格/筛选更新；恢复或排序后刷新未改变的条件。该修复只调整投影，不改变 schema 6 编码或不可变 baseline。
+
+Canvas 包含 0.5.7 的样式、平移、提及、重做及嵌入式视图菜单修复，以及 0.5.8 的无绑定连接线整体拖动。网格和背景色仅为视图状态；显式编辑仍经现有模型、撤销栈、宿主 outbox 和持久 ACK。Canvas 保持 `aidcanvas-yjs` schema 1，Sheet 保持 `exlsx-cell-registers` schema 6。本次没有新增宿主适配器、兼容行为、数据转换、历史字段默认值、DDL 或 epoch/checkpoint/待确认消息改写。已有历史读取、虚拟工作表恢复、规范化函数及此前获批的显示规则保留原有路径，未重新设计。
+
+使用隔离的合成文档和数据库验证。发布包身份、运行时代码比对、通过项目和限制见[对接验证](verification/editor-packages-2026-10-21/README.md)。回退保留源提交 `31fca12f48a54f1c2ce3caeec6a0d976e164ac4e` 的依赖、锁文件、工作区配置和制品；服务端和 Web 一起重建，保留后续写入。未使用用户文档/数据库，未部署。

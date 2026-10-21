@@ -81,6 +81,7 @@ export function AccountMenu({
         </div>
         <nav aria-label={t("account.menuNav")}>
           <NavigationArea slot="web.user" />
+          <a href="#/browser-assistant" onClick={close}><House size={16}/>{t("clipper.title")}</a>
           {showWorkspaceLink && (
             <a href="#/home" onClick={close}>
               <House size={16} />

@@ -9,6 +9,7 @@ import React, { useState, useEffect, useRef } from "react";
 import { X } from "lucide-react";
 import { api, type Resource } from "@web/shared/api.js";
 import { useI18n } from "@web/shared/i18n.js";
+import { MoveDestinationTree, type MoveDestination } from "./move-destination-tree.js";
 import "@web/features/documents/dialogs.css";
 
 export function Dialog({
@@ -212,7 +213,7 @@ export function MoveDialog({
   const { t } = useI18n();
   const personal = resource.library_id === null;
   const [mode, setMode] = useState<"subtree" | "current">("subtree"),
-    [destination, setDestination] = useState(""),
+    [destination, setDestination] = useState<MoveDestination>(null),
     [error, setError] = useState(""),
     [busy, setBusy] = useState(false);
   return (
@@ -221,7 +222,7 @@ export function MoveDialog({
       close={close}
       className="modal-compact document-move-dialog"
     >
-      <fieldset className="document-move-modes">
+      <fieldset className="document-move-modes" disabled={busy}>
         <legend>{t("dialog.moveMode")}</legend>
         <label className="document-move-choice">
           <input
@@ -230,7 +231,7 @@ export function MoveDialog({
             checked={mode === "subtree"}
             onChange={() => {
               setMode("subtree");
-              if (personal && destination === "__personal__") setDestination("");
+              if (personal && destination === "__personal__") setDestination(null);
             }}
           />
           <span>{personal ? t("dialog.moveCurrent") : t("dialog.moveTree")}</span>
@@ -254,25 +255,14 @@ export function MoveDialog({
             ? t("dialog.copyCurrentHint")
             : t("dialog.copyOneHint")}
       </p>
-      <label>
-        {t("dialog.destination")}
-        <Select
-          value={destination}
-          onChange={(e) => setDestination(e.target.value)}
-        >
-          <option value="">{t("dialog.chooseDestination")}</option>
-          {(mode === "current" || resource.library_id) && (
-            <option value="__personal__">{t("search.locationPersonal")}</option>
-          )}
-          {targets
-            .filter((r) => r.id !== resource.id && !r.deleted_at)
-            .map((r) => (
-              <option key={r.id} value={r.id}>
-                {r.kind === "library" ? t("shell.kind.library") : t("shell.type.rich")} · {r.title}
-              </option>
-            ))}
-        </Select>
-      </label>
+      <MoveDestinationTree
+        libraries={targets}
+        resource={resource}
+        moving={mode === "subtree"}
+        value={destination}
+        onChange={setDestination}
+        disabled={busy}
+      />
       <p className="subtle">{t("discovery.moveHelp")}</p>
       {error && <Feedback message={error} tone="error" />}
       <footer>
@@ -282,7 +272,7 @@ export function MoveDialog({
           disabled={busy || !destination}
           onClick={async () => {
             setBusy(true);
-            const target = targets.find((r) => r.id === destination);
+            const target = typeof destination === "object" ? destination : null;
             try {
               const parentId =
                   target?.kind === "document" ? target.id : null,

@@ -10,8 +10,8 @@ The current checkout integrates five editors. Use actual installed exports; targ
 | --- | --- | --- |
 | Rich text | @smartdoca/slate 0.4.23 | document-editor.tsx |
 | Markdown | @smartdoca/markdown 0.4.3 | markdown-editor.tsx |
-| Spreadsheet | @smartdoca/sheet 0.2.4 | spreadsheet-editor.tsx |
-| Canvas | @smartdoca/canvas 0.5.6 | canvas-editor.tsx |
+| Spreadsheet | @smartdoca/sheet 0.2.5 | spreadsheet-editor.tsx |
+| Canvas | @smartdoca/canvas 0.5.8 | canvas-editor.tsx |
 | Slides | @smartdoca/slides 0.3.0-alpha.3 | presentation-editor.tsx |
 
 Entries are in the [document feature](../apps/web/src/features/documents). Packages own models, editing commands, undo, rendering, selections, and conversion. The host owns identity, ACLs, uploads/downloads, references, user cards, navigation, comments, and collaboration transport. Locale updates chrome without translating content or rebuilding the editor.
@@ -166,3 +166,11 @@ The owner explicitly approved the upstream Canvas view rules for existing diagra
 Canvas images now select first and preview on the next click. PNG clipboard copying uses the host's `resolveDownloadUrl` authorization, including readonly views; snapshot/trash preview adapters preserve their existing access flags, and the server continues rejecting unsupported audit asset access. Sheet uses the shipped native filter renderer and live inline-image geometry/preview; image rendering does not repair incoming document data. Asset UUIDs, ACL checks, transient presence, permanent anchors, durable ACKs and original updates keep their existing ownership.
 
 Existing historical readers, virtual worksheet recovery, normalization helpers and approved display defaults remain in their established paths; they were audited but are not redesigned or extended here. Retain the preceding Canvas 0.5.5 / Sheet 0.2.3 registry artifacts, package pins and lockfile from source revision `589a3589820770d218bea418fe7c93cd10583f95`; artifact identities are recorded in `docs/verification/editor-packages-2026-10-20/package-audit.json`. Update server and Web together. Preserve subsequent writes before rollback; the earlier UI is not guaranteed to render newer diagram interactions identically. No user database or document is used for verification and no deployment is performed. See the [integration verification](verification/editor-packages-2026-10-20/README.md) for passed cases and limits.
+
+## Canvas 0.5.8 and Sheet 0.2.5 integration — 2026-10-21
+
+Doca pins the official npm `@smartdoca/canvas` 0.5.8 and `@smartdoca/sheet` 0.2.5 artifacts. Relative to Canvas 0.5.6 / Sheet 0.2.4, public declarations, entrypoint maps and dependencies are unchanged. Canvas model and Sheet model/XLSX runtime bytes are unchanged. Sheet's Yjs session restores native filters before recalculating combined cell/filter updates and refreshes unchanged criteria after recovery or sorting; this changes projection, not schema-6 encoding or immutable baselines.
+
+Canvas includes 0.5.7's style, wheel, mention and redo fixes, embedded view controls, and 0.5.8's native unbound-connector body translation. Grid/background choices remain view state. Native edit gestures use the existing model, undo, host outbox and durable ACKs. Canvas remains `aidcanvas-yjs` schema 1; Sheet remains `exlsx-cell-registers` schema 6. No host API adapter, new compatibility behavior, stored-data conversion, historical-field default, DDL or epoch/checkpoint/pending-message rewrite is introduced. Existing historical readers, virtual worksheet recovery, normalization helpers and previously approved display rules remain in their established paths without redesign.
+
+Verification uses isolated synthetic documents and databases. Published artifact identities, runtime comparisons, passed checks and limits are recorded in [the integration verification](verification/editor-packages-2026-10-21/README.md). Keep the preceding pins, lockfile, workspace configuration and artifacts from source revision `31fca12f48a54f1c2ce3caeec6a0d976e164ac4e` for package rollback; rebuild server and Web together and preserve later writes. No user document/database or deployment is used.

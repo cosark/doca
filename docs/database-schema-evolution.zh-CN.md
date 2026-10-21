@@ -74,3 +74,14 @@ PostgreSQL 获得结构锁后须读取最新目录，让并发宿主能看到前
 已有隔离验证覆盖 SQLite 和 PostgreSQL 17、18 的旧结构及已有数据、空的新表、可空和必填默认字段、重复与并发启动、默认值及空值约束变化、插件数据保留、已安装字段丢失拒绝。0.1.22 还使用实际 0.1.20 镜像创建 PostgreSQL 18 旧库后再升级。文件夹用例覆盖通知、工单、确认授权、实时权限、过期和并发名额校验；这些记录不替代未来改动自己的验收。
 
 知识册结构对齐已按[实施方案](knowledge-book-payload-storage-plan.zh-CN.md)明确批准：0.1.24 对 `doca-2026-10-09-history-storage-v1` 沿用最新 DDL 和普通对比器对齐结构，同一 schema 锁事务中记录目标代际。全部业务行、旧 SQL 知识册成果及当前发布指针原样保留，不自动清理或转换，不新增旧正文运行时读取适配。残留旧成果人工处理；代际记录目标结构，不代表旧 JSON 已可读取。需要把旧成果保留为新版原生对象格式时，可在首次启动前执行既有可选无损维护。四张元数据表属于最新 DDL，复查和 footprint 记录继续事务完成。验收见[验证记录](knowledge-book-storage-verification.zh-CN.md)。
+
+
+## 已批准的浏览器助手增量
+
+首次发布通过最新 DDL 与 `schemaEvolution` 新增七张空表，保持 `doca-2026-10-12-book-payload-storage-v1` 代际：`browser_clipper_profiles`、`browser_clipper_connections`、`browser_clipper_activations`、`browser_clipper_receipts`、`browser_clipper_assistant_sessions`、`browser_clipper_web_sessions`、`browser_clipper_login_codes`。原有文档、权限与配置行全部保留。
+
+上线前，用户明确批准将 v1 激活包 / 180 天 token 改为绑定网站登录会话的认证。旧 v1 配置、激活入口和凭证拒绝且不转换。原五张表、旧凭证字段/记录、收录方案、回执和会话保留，旧激活记录不参与认证；两张新表从空开始，不推断历史授权。既有手机、MCP 和业务插件认证继续独立。
+
+公开站点配置使用严格 v2 格式。60 秒单次授权码加 SHA-256 verifier 校验换取 10 分钟访问凭证，绑定确切的网站会话和安装连接。退出和会话撤销使访问失效；撤销连接还会阻止自动重新授权，直至用户显式恢复。浏览器作业 ID 区分同一会话内的网站普通任务，不因插件撤销取消后者。退出、密钥轮换和撤销不删除已提交文档或图片。
+
+[登录验收记录](verification/browser-clipper-login-2026-10-21/README.md)覆盖正式 0.2.6 创建的 SQLite / PostgreSQL 17/18 旧库：原 124 张表摘要保留、七张新增为空、重复/并发启动。另有保留上线前 v1 行后新增两张空会话表、拒绝旧凭证，以及待审差异无部分写入的测试。部署前备份数据库、文件卷及原凭证主密钥，同步更新服务端、Web 与扩展。降级须另行确认数据保全及授权处理，避免旧二进制恢复旧凭证行为；本次不新增旧认证适配、自动转换、删表或重置数据。

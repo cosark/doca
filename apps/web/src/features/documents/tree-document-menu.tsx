@@ -86,6 +86,11 @@ export function TreeDocumentMenu({
         const result = await api<{ id: string }>(
           `/resources/${resource.id}/copy`,
           "POST",
+          {
+            parentId: resource.parent_id,
+            libraryId: resource.library_id,
+            includeChildren: true,
+          },
         );
         changed();
         location.hash = "/r/" + result.id;

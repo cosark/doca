@@ -1,0 +1,9 @@
+
+ RUN  v4.1.11 /Users/zhangsiwen/dev/dsh/doca
+
+
+ Test Files  2 passed (2)
+      Tests  30 passed (30)
+   Start at  05:04:39
+   Duration  1.40s (transform 514ms, setup 34ms, import 1.26s, tests 158ms, environment 0ms)
+

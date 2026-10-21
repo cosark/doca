@@ -1,0 +1,20 @@
+{
+  "status": "passed",
+  "runs": [
+    {
+      "run": 1,
+      "status": "passed",
+      "includesConfigurationRotation": true
+    },
+    {
+      "run": 2,
+      "status": "passed",
+      "includesConfigurationRotation": true
+    },
+    {
+      "run": 3,
+      "status": "passed",
+      "includesConfigurationRotation": true
+    }
+  ]
+}

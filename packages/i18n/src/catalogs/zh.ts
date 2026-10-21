@@ -1,6 +1,8 @@
+import { browserClipperZh } from "./browser-clipper.js";
 import type { MessageKey } from "./en";
 
 export const zh = {
+  ...browserClipperZh,
   "mcp.unattendedConfig": "可选：无人值守 Codex 授权",
   "mcp.unattendedHelp": "可选配置会在此客户端预先授权 doca_call。仅当你允许该服务按 Doca 中选定的权限直接执行、无需逐次确认时使用。",
   "mcp.title": "MCP 服务",
@@ -2925,6 +2927,12 @@ export const zh = {
   "doc.online.one": "{count} 人在线",
   "doc.online.other": "{count} 人在线",
   "doc.viewOnline": "查看在线用户",
+  "doc.imagePreview": "图片预览",
+  "doc.imageFit": "适合窗口",
+  "doc.imageReset": "复位图片",
+  "doc.imageCopy": "复制图片",
+  "doc.imageCopyFailed": "无法复制此图片",
+  "doc.imageLoadFailed": "图片加载失败",
   "doc.download": "下载",
   "doc.downloading": "正在生成…",
   "doc.downloadFailed": "下载失败",
@@ -3041,7 +3049,7 @@ export const zh = {
   "doc.cite": "引用给 AI",
   "doc.collect": "收入知识库",
   "doc.copy": "复制文档",
-  "doc.copyHint": "复制此文档及子文档到个人文档",
+  "doc.copyHint": "复制此文档及子文档到同级目录",
   "doc.deleteDocument": "删除文档",
   "doc.menu": "{title}的操作",
   "doc.findExpand": "展开替换",
@@ -3496,6 +3504,7 @@ export const zh = {
   "dialog.copyOneHint":
     "只复制当前文档只需要当前文档的管理权限，子文档不会被复制。",
   "dialog.destination": "目标目录",
+  "dialog.personalDirectory": "个人目录",
   "dialog.chooseDestination": "请选择目标位置",
   "dialog.failed": "操作失败",
   "dialog.confirmMove": "确认迁移",

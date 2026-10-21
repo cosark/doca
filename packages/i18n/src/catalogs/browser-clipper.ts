@@ -1,0 +1,191 @@
+export const browserClipperEn = {
+  "clipper.connecting": "Connecting your browser",
+  "clipper.connectingHelp":
+    "Your Doca sign-in is being linked. Return to the extension when this page closes.",
+  "clipper.loginFailed":
+    "Connection failed. Return to the extension and retry.",
+  "clipper.restoreHelp":
+    "This browser connection was revoked. Restore it in Doca before reconnecting.",
+  "clipper.restore": "Restore connection",
+  "clipper.websiteSession": "Follows this browser's Doca sign-in",
+  "clipper.title": "Browser Assistant",
+  "clipper.description":
+    "Save web pages and original images to Doca. Choose where captures go and use your personal AI assistant alongside any page.",
+  "clipper.profiles": "Capture profiles",
+  "clipper.connections": "Browser connections",
+  "clipper.ai": "AI assistant",
+  "clipper.addProfile": "Create capture profile",
+  "clipper.addConnection": "Connect a browser",
+  "clipper.emptyProfiles":
+    "Create a profile to choose the destination and save strategy for your browser captures.",
+  "clipper.emptyConnections":
+    "Connect each browser separately so you can revoke a lost or exposed token individually.",
+  "clipper.name": "Name",
+  "clipper.strategy": "Save strategy",
+  "clipper.create": "Create a new document",
+  "clipper.append": "Append to a document",
+  "clipper.library": "Library",
+  "clipper.personal": "Personal documents",
+  "clipper.parent": "Parent document",
+  "clipper.libraryRoot": "Library root",
+  "clipper.target": "Append to",
+  "clipper.chooseDocument": "Choose a document",
+  "clipper.titleTemplate": "Title rule",
+  "clipper.titleHelp":
+    "Use {title} for the page title and {date} for its capture date.",
+  "clipper.instruction": "AI organization preference",
+  "clipper.default": "Default profile",
+  "clipper.enabled": "Enabled",
+  "clipper.disabled": "Disabled",
+  "clipper.save": "Save profile",
+  "clipper.edit": "Edit",
+  "clipper.cancel": "Cancel",
+  "clipper.saved": "Saved",
+  "clipper.search": "Search destinations",
+  "clipper.more": "Load more",
+  "clipper.images": "Original images are archived with the content.",
+  "clipper.profileDestination": "Configured destination",
+  "clipper.connectionName": "Browser name",
+  "clipper.connectionPlaceholder": "For example, Chrome on my laptop",
+  "clipper.enableAI": "Enable Doca AI assistant for this connection",
+  "clipper.download": "Download configured extension",
+  "clipper.generate": "Generate replacement configuration",
+  "clipper.revoke": "Revoke",
+  "clipper.revokeAll": "Revoke all connections",
+  "clipper.revoked": "Revoked",
+  "clipper.pending": "Not signed in",
+  "clipper.active": "Connected",
+  "clipper.expired": "Expired",
+  "clipper.created": "Created {date}",
+  "clipper.expires": "Expires {date}",
+  "clipper.aiEnabled": "AI enabled",
+  "clipper.aiDisabled": "Capture only",
+  "clipper.tokenHint": "Token ending {hint}",
+  "clipper.configTitle": "Connect your browser",
+  "clipper.copy": "Copy site configuration",
+  "clipper.copied": "Configuration copied",
+  "clipper.downloadHelp":
+    "Download, unzip, then open chrome://extensions or edge://extensions. Enable Developer mode and load the unzipped extension folder. Your Doca sign-in is used automatically.",
+  "clipper.siteAccess":
+    "The selection toolbar and original-image transfer require HTTP(S) site access. Page material is sent only when you capture it or explicitly attach it to AI.",
+  "clipper.revokeTitle": "Revoke browser authorization",
+  "clipper.revokeHelp":
+    "The selected connection will stop accepting captures, uploads and assistant requests. Associated AI tasks are cancelled. Saved documents and images remain available.",
+  "clipper.revokeAllHelp":
+    "All browser connections stop working and their AI tasks are cancelled. Restore a connection explicitly in Doca before reconnecting. Saved documents and images are retained.",
+  "clipper.revokeConfirm": "Revoke authorization",
+  "clipper.revokedNotice": "Browser authorization revoked",
+  "clipper.aiHelp":
+    "Use your Doca models and conversations in the browser sidebar. New documents, edits and searches stay within the selected capture profile’s authorized scope.",
+  "clipper.aiExamples":
+    "Ask it to organize an article into symptoms, causes, diagnostic steps and solutions, or archive the original page with its images.",
+  "clipper.aiPrivacy":
+    "Opening a page does not send its content to AI. Attach a page or selection explicitly. Conversations created by the extension can be continued in Doca.",
+  "clipper.formatHelp":
+    "Append supports rich text and Markdown documents. Knowledge-book generated pages remain read-only.",
+  "clipper.unavailable": "Destination unavailable",
+  "clipper.error.clipper_connection_revoked":
+    "Connection revoked. Restore it explicitly in Doca.",
+  "clipper.error.clipper_invalid_target": "Choose a valid destination.",
+  "clipper.error.clipper_target_unsupported":
+    "Choose a rich-text or Markdown document.",
+  "clipper.error.clipper_knowledge_book_readonly":
+    "Knowledge-book generated content is read-only. Save to a regular library.",
+  "clipper.error.clipper_profile_changed":
+    "The profile changed. Reload before saving.",
+  "clipper.error.clipper_connection_changed":
+    "The connection changed. Reload and retry.",
+  "clipper.error.clipper_invalid_input": "Check the form and try again.",
+};
+export const browserClipperZh: Record<keyof typeof browserClipperEn, string> = {
+  "clipper.connecting": "正在连接浏览器",
+  "clipper.connectingHelp":
+    "正在验证当前 Doca 登录状态，完成后返回插件继续使用。",
+  "clipper.loginFailed": "连接未完成，请返回插件重试。",
+  "clipper.restoreHelp": "此浏览器连接已撤销，请先在 Doca 恢复连接后再使用。",
+  "clipper.restore": "恢复连接",
+  "clipper.websiteSession": "跟随当前浏览器的 Doca 登录状态",
+  "clipper.title": "浏览器助手",
+  "clipper.description":
+    "把网页与原图收录到 Doca，设置保存位置与策略，在网页旁使用你的个人 AI 助手。",
+  "clipper.profiles": "收录方案",
+  "clipper.connections": "浏览器连接",
+  "clipper.ai": "AI 助手",
+  "clipper.addProfile": "新建收录方案",
+  "clipper.addConnection": "连接一个浏览器",
+  "clipper.emptyProfiles": "创建收录方案，设置浏览器收录内容的保存位置与方式。",
+  "clipper.emptyConnections":
+    "每个浏览器单独建立连接，设备丢失或 token 泄漏时可以单独撤销。",
+  "clipper.name": "名称",
+  "clipper.strategy": "保存方式",
+  "clipper.create": "每次新建文档",
+  "clipper.append": "追加到指定文档",
+  "clipper.library": "保存到知识库",
+  "clipper.personal": "个人文档",
+  "clipper.parent": "父文档位置",
+  "clipper.libraryRoot": "知识库根目录",
+  "clipper.target": "追加到",
+  "clipper.chooseDocument": "选择文档",
+  "clipper.titleTemplate": "标题规则",
+  "clipper.titleHelp": "用 {title} 表示网页标题，{date} 表示收录日期。",
+  "clipper.instruction": "AI 整理偏好",
+  "clipper.default": "默认收录方案",
+  "clipper.enabled": "启用",
+  "clipper.disabled": "已停用",
+  "clipper.save": "保存方案",
+  "clipper.edit": "编辑",
+  "clipper.cancel": "取消",
+  "clipper.saved": "已保存",
+  "clipper.search": "搜索保存位置",
+  "clipper.more": "加载更多",
+  "clipper.images": "正文与原图一起归档到 Doca。",
+  "clipper.profileDestination": "已设置的保存位置",
+  "clipper.connectionName": "浏览器名称",
+  "clipper.connectionPlaceholder": "例如：工作电脑 Chrome",
+  "clipper.enableAI": "为此连接启用 Doca AI 助手",
+  "clipper.download": "下载已配置扩展",
+  "clipper.generate": "生成替换配置",
+  "clipper.revoke": "撤销连接",
+  "clipper.revokeAll": "撤销全部连接",
+  "clipper.revoked": "已撤销",
+  "clipper.pending": "未登录",
+  "clipper.active": "已连接",
+  "clipper.expired": "已到期",
+  "clipper.created": "创建于 {date}",
+  "clipper.expires": "到期时间 {date}",
+  "clipper.aiEnabled": "已启用 AI",
+  "clipper.aiDisabled": "仅收录",
+  "clipper.tokenHint": "Token 尾号 {hint}",
+  "clipper.configTitle": "连接你的浏览器",
+  "clipper.copy": "复制站点配置",
+  "clipper.copied": "配置已复制",
+  "clipper.downloadHelp":
+    "下载并解压，打开 chrome://extensions 或 edge://extensions，开启开发者模式，加载已解压的扩展文件夹。使用时跟随当前浏览器的 Doca 登录状态，未登录则打开登录页。",
+  "clipper.siteAccess":
+    "选区工具框与原图传输需要 HTTP(S) 站点访问权限。只有收录或明确附加给 AI 时才会发送网页内容。",
+  "clipper.revokeTitle": "撤销浏览器授权",
+  "clipper.revokeHelp":
+    "撤销后，该连接无法继续收录、上传图片或使用 AI 助手，关联的 AI 任务也会取消。已经保存的文档和图片会保留。",
+  "clipper.revokeAllHelp":
+    "所有浏览器连接立即失效，关联 AI 任务将取消。重新使用需在 Doca 手动恢复连接，已保存的文档与图片保留。",
+  "clipper.revokeConfirm": "撤销授权",
+  "clipper.revokedNotice": "浏览器授权已撤销",
+  "clipper.aiHelp":
+    "在浏览器侧边栏使用 Doca 的模型与个人会话，新建、编辑和检索遵循所选收录方案的授权范围。",
+  "clipper.aiExamples":
+    "例如：将文章整理成故障现象、原因、排查步骤和解决方案，或把网页原文与原图一起归档。",
+  "clipper.aiPrivacy":
+    "打开网页不会自动发送内容给 AI。需要明确附加网页或选区，扩展创建的会话也可以在 Doca 中继续。",
+  "clipper.formatHelp":
+    "追加支持富文本和 Markdown 文档。知识册生成的成果保持只读。",
+  "clipper.unavailable": "保存位置不可用",
+  "clipper.error.clipper_connection_revoked":
+    "连接已撤销或到期，请生成新配置。",
+  "clipper.error.clipper_invalid_target": "请选择有效的保存位置。",
+  "clipper.error.clipper_target_unsupported": "请选择富文本或 Markdown 文档。",
+  "clipper.error.clipper_knowledge_book_readonly":
+    "知识册成果不可直接写入，请选择普通知识库。",
+  "clipper.error.clipper_profile_changed": "方案已修改，请刷新后重新保存。",
+  "clipper.error.clipper_connection_changed": "连接状态已变化，请刷新后重试。",
+  "clipper.error.clipper_invalid_input": "请检查表单内容后重试。",
+};

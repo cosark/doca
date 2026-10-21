@@ -56,6 +56,91 @@ const ordered = async (parent: string | null, library: string | null = null) =>
     )
     .sort((a, b) => a.tree_order! - b.tree_order!)
     .map((r) => r.id);
+it.each([false, true])(
+  "copies a document beside its source and retains its subtree (nested=%s)",
+  async (nested) => {
+    const parent = nested ? await create("Parent") : null;
+    const source = await create("Source", parent?.id);
+    const first = await create("First", source.id);
+    const second = await create("Second", source.id);
+    const grandchild = await create("Grandchild", second.id);
+    await content.arrange(actor, second.id, {
+      version: second.version,
+      targetId: first.id,
+      placement: "before",
+    });
+    const before = await db.selectFrom("resources").selectAll().execute();
+
+    const copied = await content.copy(actor, source.id, {
+      parentId: source.parent_id,
+      libraryId: source.library_id,
+      includeChildren: true,
+    });
+
+    const rows = await db.selectFrom("resources").selectAll().execute();
+    const copies = rows.filter((r) => !before.some((old) => old.id === r.id));
+    expect(copies).toHaveLength(4);
+    expect(copies.every((r) => r.library_id === lib.id)).toBe(true);
+    expect(copies.every((r) => r.access_mode === "inherit")).toBe(true);
+    expect(copies.find((r) => r.id === copied.id)).toMatchObject({
+      parent_id: parent?.id ?? null,
+      title: "Source 副本",
+    });
+    expect(await ordered(parent?.id ?? null, lib.id)).toEqual([
+      source.id,
+      copied.id,
+    ]);
+    const copiedFirst = copies.find((r) => r.title === "First")!;
+    const copiedSecond = copies.find((r) => r.title === "Second")!;
+    expect(await ordered(copied.id, lib.id)).toEqual([
+      copiedSecond.id,
+      copiedFirst.id,
+    ]);
+    expect(copies.find((r) => r.title === "Grandchild")).toMatchObject({
+      parent_id: copiedSecond.id,
+    });
+    expect(before.map((r) => rows.find((row) => row.id === r.id))).toEqual(before);
+    expect(copies.some((r) => r.id === grandchild.id)).toBe(false);
+  },
+);
+it.each([false, true])(
+  "requires write access to the copy destination (nested=%s)",
+  async (nested) => {
+    const parent = nested ? await create("Parent") : null;
+    const source = await create("Source", parent?.id);
+    const child = await create("Child", source.id);
+    await content.permissions(actor, lib.id, {
+      version: lib.version,
+      accessMode: "custom",
+      grants: [{ userId: peer.id, role: "reader" }],
+    });
+    const input = {
+      parentId: source.parent_id,
+      libraryId: source.library_id,
+      includeChildren: true,
+    };
+    const before = await db.selectFrom("resources").selectAll().execute();
+    await expect(content.copy(peer, source.id, input)).rejects.toMatchObject({
+      status: 403,
+    });
+    expect(await db.selectFrom("resources").selectAll().execute()).toEqual(before);
+
+    const latest = (await content.detail(actor, lib.id)).resource;
+    await content.permissions(actor, lib.id, {
+      version: latest.version,
+      grants: [{ userId: peer.id, role: "editor" }],
+    });
+    const copied = await content.copy(peer, source.id, input);
+    expect((await content.detail(actor, copied.id)).resource).toMatchObject({
+      parent_id: parent?.id ?? null,
+      library_id: lib.id,
+      owner_id: peer.id,
+    });
+    const children = await ordered(copied.id, lib.id);
+    expect(children).toHaveLength(1);
+    expect(children[0]).not.toBe(child.id);
+  },
+);
 it.each(["inherit", "custom"] as const)(
   "drag preserves %s access mode and follows the new parent only when inherited",
   async (accessMode) => {
