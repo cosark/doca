@@ -876,28 +876,29 @@ export function createResourceCommands(
             r = get(ctx, id, currentOnly ? "manage_structure" : "read_content");
           if (currentOnly && r.kind !== "document")
             fail(400, "仅支持复制当前文档");
-          let destinationParent: string | null = null,
-            destinationLibrary: string | null = null;
-          if (currentOnly) {
-            destinationParent = input.parentId ?? null;
-            destinationLibrary = input.libraryId ?? null;
-            if (destinationParent) {
-              const parent = get(ctx, destinationParent, "manage_structure");
-              if (parent.kind !== "document") fail(400, "目标目录必须是文档");
-              if (parent.library_id === null) fail(400, "个人文档不支持子文档");
-              if (
-                destinationLibrary !== null &&
-                destinationLibrary !== parent.library_id
-              )
-                fail(400, "目标目录与知识库不一致");
-              destinationLibrary = parent.library_id;
-            } else if (destinationLibrary) {
-              if (
-                get(ctx, destinationLibrary, "manage_structure").kind !==
-                "library"
-              )
-                fail(400, "目标知识库无效");
-            }
+          const destinationParent = input.parentId ?? null,
+            destinationPermission = currentOnly
+              ? "manage_structure"
+              : "edit_content";
+          let destinationLibrary = input.libraryId ?? null;
+          if (r.kind === "library" && (destinationParent || destinationLibrary))
+            fail(400, "知识库不能嵌套");
+          if (destinationParent) {
+            const parent = get(ctx, destinationParent, destinationPermission);
+            if (parent.kind !== "document") fail(400, "目标目录必须是文档");
+            if (parent.library_id === null) fail(400, "个人文档不支持子文档");
+            if (
+              destinationLibrary !== null &&
+              destinationLibrary !== parent.library_id
+            )
+              fail(400, "目标目录与知识库不一致");
+            destinationLibrary = parent.library_id;
+          } else if (destinationLibrary) {
+            if (
+              get(ctx, destinationLibrary, destinationPermission).kind !==
+              "library"
+            )
+              fail(400, "目标知识库无效");
           }
           if (destinationLibrary && await ctx.tx.selectFrom("knowledge_books").select("id").where("id", "=", destinationLibrary).executeTakeFirst()) fail(403, "Knowledge book content is generated only by its workflow");
           if (await ctx.tx.selectFrom("knowledge_books").select("id").where("id", "=", r.id).executeTakeFirst()) fail(403, "Copy knowledge book configuration through the knowledge book API");
@@ -924,14 +925,14 @@ export function createResourceCommands(
             const x = pending.splice(i, 1)[0]!;
             await checkCreation(ctx.tx, actor.id, x.kind, x.format);
             const now = new Date().toISOString();
-            const copiedParentId = currentOnly
+            const copiedParentId = x.id === id
               ? destinationParent
               : (mapping.get(x.parent_id ?? "") ?? null);
             const copiedLibraryId = currentOnly
               ? destinationLibrary
-              : (mapping.get(x.library_id ?? "") ?? null);
+              : (mapping.get(x.library_id ?? "") ?? destinationLibrary);
             const copiedAccessMode =
-              currentOnly && destinationLibrary
+              destinationLibrary
                 ? ("inherit" as const)
                 : ("custom" as const);
             await ctx.tx
@@ -941,13 +942,13 @@ export function createResourceCommands(
                 content_bytes: 0,
                 cover_asset_id: null,
                 id: mapping.get(x.id)!,
-                tree_order: currentOnly
+                tree_order: x.id === id
                   ? await nextTreeOrder(
                       ctx,
-                      destinationParent,
-                      destinationLibrary,
+                      copiedParentId,
+                      copiedLibraryId,
                     )
-                  : (await nextTreeOrder(ctx, null, null)) + targets.indexOf(x),
+                  : x.tree_order,
                 owner_id: actor.id,
                 last_editor_id: actor.id,
                 last_edited_at: now,

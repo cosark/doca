@@ -80,6 +80,7 @@ COPY --from=build /app/package.json /app/tsconfig.json ./
 COPY --from=build /app/node_modules ./node_modules
 COPY --from=build /app/packages ./packages
 COPY --from=build /app/apps/server ./apps/server
+COPY --from=build /app/apps/browser-extension ./apps/browser-extension
 COPY --from=build /app/apps/web/dist ./apps/web/dist
 
 

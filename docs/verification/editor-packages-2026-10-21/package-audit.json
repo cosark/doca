@@ -1,0 +1,85 @@
+{
+  "date": "2026-10-21",
+  "previousSourceRevision": "31fca12f48a54f1c2ce3caeec6a0d976e164ac4e",
+  "packages": {
+    "sheet": {
+      "from": "0.2.4",
+      "to": "0.2.5",
+      "tarball": "https://registry.npmjs.org/@smartdoca/sheet/-/sheet-0.2.5.tgz",
+      "integrity": "sha512-vQtUSW55o+807DjtdppA0xR8oubidW4vqbcoJuigM1S0RE5VzT9ZDttMvvUsDGqmiKSLsw2BFe9zQ124tC6vVg==",
+      "archiveSha256": "f9ad80c674c5bf8de1743e9a353992581eff8247564fd260e0acd039b2773479",
+      "exportsEqual": true,
+      "dependenciesEqual": true,
+      "peerDependenciesEqual": true,
+      "publicDeclarationsEqual": true,
+      "runtimes": {
+        "dist/model.js": {
+          "before": "83b86b06dde6ed591be74f2f36a232026b955c73919f4ed00427f558ec1caf1d",
+          "after": "83b86b06dde6ed591be74f2f36a232026b955c73919f4ed00427f558ec1caf1d",
+          "equal": true
+        },
+        "dist/yjs.js": {
+          "before": "62f1a731711640f5f7a94ebd9251ea20f5d92ef866de9075cd28817fb9a00579",
+          "after": "3d9779feb3de7acad2890114dd2a5ec80de760fbf4df39621cfa5aad57e50b4c",
+          "equal": false
+        },
+        "dist/xlsx.js": {
+          "before": "fe3386fa923573bd28aac055168d621de8f2abe47ffc501d6d62cc591a10c8cf",
+          "after": "fe3386fa923573bd28aac055168d621de8f2abe47ffc501d6d62cc591a10c8cf",
+          "equal": true
+        }
+      },
+      "changedFiles": [
+        "dist/yjs.cjs",
+        "dist/yjs.cjs.map",
+        "dist/yjs.js",
+        "dist/yjs.js.map",
+        "package.json"
+      ],
+      "previousIntegrity": "sha512-CopSi/ja9MyQ+CTvcSgCmHfWrxSQOW+xQIrfMxCtro8jUrRoUTCCkqtlJ4T3stjge07AE2Sg8l+0KLyQB6CIng==",
+      "upstreamLocalDistMatchesRegistry": true,
+      "installedDistMatchesRegistry": true,
+      "previousArchiveSha256": "94dfdb587216436ae8df5f4ca9719bf117f885e8dbfd4b20bbfc73990f54ae20"
+    },
+    "canvas": {
+      "from": "0.5.6",
+      "to": "0.5.8",
+      "tarball": "https://registry.npmjs.org/@smartdoca/canvas/-/canvas-0.5.8.tgz",
+      "integrity": "sha512-VhF5sCc1PgVsViIP3NNZBRWu39Lr9rmHmeaZem32dbI7oFRA/wJfLbRK0M4fD6+pZ8lU4ozDVbnQgjG/esG33A==",
+      "archiveSha256": "a65deed20e0cb09995c1d5a6c933262faf2bcb82ae3505911fb50fa6b0bb6256",
+      "exportsEqual": true,
+      "dependenciesEqual": true,
+      "peerDependenciesEqual": true,
+      "publicDeclarationsEqual": true,
+      "runtimes": {
+        "dist/model.js": {
+          "before": "52ad3682cc54f34b46b59eb9f0ff9cb22a28ac35dddc4f73083099ea75ed3b0f",
+          "after": "52ad3682cc54f34b46b59eb9f0ff9cb22a28ac35dddc4f73083099ea75ed3b0f",
+          "equal": true
+        },
+        "dist/io.js": {
+          "before": "e980b2c8075e11852a85769927a7e97069944b7adb4914d43e28417c0775a536",
+          "after": "9ef0b1d13fd621325aeb980d6e809029376b767067fd68d392a503442fd2271e",
+          "equal": false
+        }
+      },
+      "changedFiles": [
+        "CHANGELOG.md",
+        "dist/index.css",
+        "dist/index.js",
+        "dist/io-Cxp7sGxE.js",
+        "dist/io-WiZWW6H6.js",
+        "dist/io.js",
+        "dist/types/editor/runtime/thinking/useRichInline.d.ts",
+        "dist/types/editor/runtime/utils/canvasWheelBoundary.d.ts",
+        "dist/types/i18n/en.d.ts",
+        "examples/doca/main.jsx",
+        "package.json"
+      ],
+      "previousIntegrity": "sha512-fXTkRI9p7TC9xhmIi7APTEVytxbfeXk6onZFDVctUIGjuDeIBePIQj4Ozau1BDV14qaLdp9y2nTI9ND6uNgoVg==",
+      "upstreamLocalDistMatchesRegistry": true,
+      "installedDistMatchesRegistry": true,
+      "previousArchiveSha256": "d22d12a8c921459ac7d5a6ad8d3da267e3be8558fc6bc57fa92586051d2666bc"
+    }
+  }
+}

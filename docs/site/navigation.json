@@ -65,6 +65,11 @@
         "mcp",
         "MCP services",
         "MCP 服务"
+      ],
+      [
+        "browser-assistant",
+        "Browser assistant",
+        "浏览器助手"
       ]
     ]
   },
@@ -271,6 +276,11 @@
     "en": "Releases",
     "zh": "发行记录",
     "pages": [
+      [
+        "releases/0.2.7",
+        "0.2.7",
+        "0.2.7"
+      ],
       [
         "releases/0.2.6",
         "0.2.6",

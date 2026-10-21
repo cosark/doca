@@ -72,13 +72,15 @@ Also `scope=recent|owned` and `kind=document|library`. `sort=created_at|updated_
 | POST /resources | Signed in, and editor on the target | `{title,kind,format,parentId?,libraryId?}` |
 | PATCH /resources/:id | editor | `{title,version}` |
 | POST /resources/:id/move | manager of the whole subtree, editor on the target | `{version,parentId,libraryId}` |
-| POST /resources/:id/copy | reader of the whole subtree. `includeChildren=false` requires manager of the current document | `{parentId,libraryId,includeChildren?}` returns `{id}` |
+| POST /resources/:id/copy | reader of the whole subtree and editor on the target. `includeChildren=false` requires manager of the current document and target | `{parentId?,libraryId?,includeChildren?}` returns `{id}` |
 | POST /resources/:id/trash | manager of every child that is not deleted | `{version}` |
 | POST /resources/:id/restore | manager of the restore batch | `{version}` |
 
 `kind` is document or library. Libraries do not nest. A personal document requires `libraryId=null` and `parentId=null`. `parentId` points at a document in the same library. The create response has no role. GET the detail afterward.
 
 A move inside a library clears direct grants on the moved subtree, sets custom plus invited, keeps each owner and the destination library's governance, and forbids cycles. Moving across libraries or out of a library also requires ownership of the current document and every child, plus management of the whole subtree. A personal document can be moved only by its owner into a library root or node where that owner is manager. Moving a library document back to personal is done by the document owner and flattens the subtree into independent personal documents. Copying only the current document does not copy children. Restore follows `delete_batch` and does not revive a child deleted earlier on its own. Restore the parent first. Copy creates independent ids and copies metadata, the tree, the body, and attachment references. It does not copy comments, permissions, or revocation history.
+
+Subtree copies honor `parentId` and `libraryId`, retain the child hierarchy and order, and inherit the destination's access when copied into a library. The sidebar copy action sends the source document's parent and library so the copy appears in the same directory. A destination requires permission on its parent document, or on the library for a root-level copy.
 
 ## Permissions and ownership
 

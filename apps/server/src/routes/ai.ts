@@ -63,6 +63,7 @@ import {
   writeSecret,
 } from "../services/ai/secrets.js";
 import { registerAIMcp } from "./ai-mcp.js";
+import { registerBrowserAssistant } from "./browser-assistant.js";
 import { searchWeb } from "../services/ai/web-search.js";
 import {
   imageInsertSchema,
@@ -1694,5 +1695,6 @@ export async function registerAI(
     },
   );
   await registerAIMcp(api, db, auth, admin, runner, options);
+  registerBrowserAssistant(api, db, runner);
   return runner;
 }

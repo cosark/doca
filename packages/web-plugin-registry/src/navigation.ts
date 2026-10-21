@@ -134,6 +134,7 @@ for (const [key, zh, en] of [
   ["registration", "注册审核", "Registration"],
   ["access", "权限与可见性", "Permissions"],
   ["ai", "AI 能力", "AI"],
+  ["mcp", "公司 MCP 服务", "Company MCP services"],
   ["file-recognition", "文件识别", "File recognition"],
   ["platform", "站点与服务", "Site settings"],
   ["plugins", "插件商店", "Plugins"],

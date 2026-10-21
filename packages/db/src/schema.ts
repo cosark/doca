@@ -1,4 +1,5 @@
 import type { Kysely } from "kysely";
+import type { BrowserClipperSchema } from "./browser-clipper-types.js";
 import type { KnowledgeBookTables } from "./knowledge-books-types.js";
 export interface User {
   profile_metadata?: string;
@@ -43,7 +44,7 @@ export interface Resource {
   created_at: string;
   updated_at: string;
 }
-export interface Schema extends KnowledgeBookTables {
+export interface Schema extends KnowledgeBookTables, BrowserClipperSchema {
   schema_baseline: {
     id: string;
     created_at: string;

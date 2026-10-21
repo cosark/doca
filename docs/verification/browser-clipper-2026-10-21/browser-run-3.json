@@ -1,0 +1,17 @@
+{
+  "status": "passed",
+  "browserVersion": "154.0.8037.92",
+  "automaticActivation": true,
+  "selectionToolbar": true,
+  "wholePage": true,
+  "originalImageTransfer": true,
+  "appendBroadcastToTwoReplicas": true,
+  "assistantConversation": true,
+  "replacementConfigThroughUi": true,
+  "invalidConfigPreservesConnection": true,
+  "keyRotationRejectsOldToken": true,
+  "revokeAllThroughSettings": true,
+  "oldTokenRejected": true,
+  "savedDocumentRetained": true,
+  "pageErrors": []
+}

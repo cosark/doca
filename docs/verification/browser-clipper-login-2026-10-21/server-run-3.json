@@ -1,0 +1,11 @@
+{
+  "status": "passed",
+  "database": "isolated SQLite",
+  "browser": "disposable Linux Chromium extension",
+  "realModelProvider": false,
+  "completedCaptures": 3,
+  "originalImagesByteExact": 3,
+  "appendRetainsExistingContent": true,
+  "revocationRetainsDocuments": true,
+  "userDataUsed": false
+}

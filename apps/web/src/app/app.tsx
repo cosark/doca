@@ -1,3 +1,5 @@
+import { BrowserClipperConnect } from "@web/features/browser-clipper/browser-clipper-connect.js";
+import { BrowserClipperSettings } from "@web/features/browser-clipper/browser-clipper-settings.js";
 import { McpSettings } from "@web/features/mcp/mcp-settings.js";
 import { ResourceAccessTag } from "@web/features/documents/resource-access-tag.js";
 import { TitleInput } from "@web/features/documents/title-input.js";
@@ -275,7 +277,8 @@ function WorkspaceApp() {
     adminPage = hash.split("?")[0] === "#/admin",
     accountPage = hash === "#/account",
     preferencesPage = hash === "#/preferences",
-    mcpPage = hash === "#/mcp";
+    mcpPage = hash === "#/mcp",
+    browserClipperPage = hash === "#/browser-assistant";
   const ticketId = /^#\/tickets\/([a-f0-9-]{36})$/.exec(hash)?.[1];
   const ticketsPage = !!ticketId || hash.split("?")[0] === "#/tickets" || hash === "#/todos";
   const targetComment = new URLSearchParams(hash.split("?")[1] ?? "").get(
@@ -816,16 +819,9 @@ function WorkspaceApp() {
       let cursor: string | undefined;
       do {
         const p: Page = await api<Page>(
-          `/resources?scope=all${cursor ? `&cursor=${encodeURIComponent(cursor)}` : ""}`,
+          `/resources?scope=all&kind=library${cursor ? `&cursor=${encodeURIComponent(cursor)}` : ""}`,
         );
-        rows.push(
-          ...p.items.filter(
-            (x) =>
-              roleRank(x.role) >= 4 &&
-              (x.kind === "library" ||
-                (x.kind === "document" && !!x.library_id)),
-          ),
-        );
+        rows.push(...p.items);
         cursor = p.nextCursor ?? undefined;
       } while (cursor);
       setTargets(rows);
@@ -853,6 +849,12 @@ function WorkspaceApp() {
       },
       pluginRoute.match,
     );
+  useEffect(() => {
+    if(!hash.startsWith("#/browser-connect?") || !bootstrap || bootstrap.user) return;
+    sessionStorage.setItem("doca.browser-login.pending",hash);
+    const state=new URLSearchParams(hash.split("?")[1]).get("state");
+    window.postMessage({source:"doca-browser-auth",state,status:"login-required"},location.origin);
+  },[hash,bootstrap]);
   if (fatal)
     return (
       <main className="auth">
@@ -876,6 +878,8 @@ function WorkspaceApp() {
       <AuthCompletion
         done={async (status) => {
           setBootstrap(await api("/bootstrap"));
+          const browserPending=sessionStorage.getItem("doca.browser-login.pending");
+          if(browserPending?.startsWith("#/browser-connect?")) {location.hash=browserPending;return;}
           const token = rememberedShareToken();
           location.hash = ["linked", "security_verified"].includes(status)
             ? "/account"
@@ -907,11 +911,12 @@ function WorkspaceApp() {
         logged={async () => {
           setBootstrap(await api("/bootstrap"));
           const token = rememberedShareToken();
-          if (hash.split("?")[0] === "#/shared-files/join") return;
+          if (hash.split("?")[0] === "#/shared-files/join" || hash.startsWith("#/browser-connect?")) return;
           if(token) location.hash = "/s/" + token; else await navigateToDefaultHome().catch(()=>{location.hash="/home"});
         }}
       />
     );
+  if(hash.startsWith("#/browser-connect?") && bootstrap.user) return <BrowserClipperConnect/>;
   if (hash.startsWith("#/m/plugins/") && bootstrap.user) return <main className="mobile-plugin-page">{renderedPluginRoute ?? <p>{t("navigation.unavailable")}</p>}</main>;
   if (shareInvitation)
     return (
@@ -981,7 +986,7 @@ function WorkspaceApp() {
   const user = bootstrap.user;
 
   const displayName = user?.display_name || user?.public_id || user?.id || "用户";
-  if (user && (adminPage || adminPluginPage || accountPage || preferencesPage || mcpPage))
+  if (user && (adminPage || adminPluginPage || accountPage || preferencesPage || mcpPage || browserClipperPage))
     return (
       <div className={`settings-shell ${(adminPage || adminPluginPage) && adminNavigationCollapsed ? "admin-navigation-collapsed" : ""}`}>
         <header className="settings-shell-header">
@@ -1071,11 +1076,12 @@ function WorkspaceApp() {
                 {t("settings.appearance")}
               </a>
               <a className={mcpPage ? "active" : ""} href="#/mcp"><Settings size={18} />{t("mcp.title")}</a>
+              <a className={browserClipperPage ? "active" : ""} href="#/browser-assistant"><Settings size={18} />{t("clipper.title")}</a>
               <p>{t("shell.settingsHint")}</p>
             </aside>
             <main className="personal-settings-content">
               {me ? (
-                mcpPage ? <McpSettings /> : accountPage ? (
+                browserClipperPage ? <BrowserClipperSettings /> : mcpPage ? <McpSettings /> : accountPage ? (
                   <Profile
                     me={me}
                     saved={refreshMe}
