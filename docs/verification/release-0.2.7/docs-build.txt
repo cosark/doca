@@ -1,0 +1,2 @@
+Documentation verified: 82 pages × 2 languages; all local link targets and public heading anchors exist.
+Docsify site prepared: .cache/docs-site (82 bilingual pages).

@@ -1,5 +1,13 @@
 # Doca 0.2.7 verification
 
-Release preparation combines the browser assistant with the current workspace's editor, preview, move/copy and navigation changes. Browser authentication and database acceptance are recorded in [login acceptance](../browser-clipper-login-2026-10-21/README.md); editor package checks are in [editor acceptance](../editor-packages-2026-10-21/README.md).
+This release combines the browser assistant with the current workspace's editor, preview, move/copy and navigation changes. Browser authentication and database acceptance are recorded in [login acceptance](../browser-clipper-login-2026-10-21/README.md); editor package checks are in [editor acceptance](../editor-packages-2026-10-21/README.md).
 
-Image build, runtime checks, registry publication and GitHub release evidence will be recorded here as each completes. This file does not yet assert publication.
+The final [full regression](full-tests.txt) passes 3073 tests with 10 skipped. Production Web/renderer builds and TypeScript pass. [Documentation verification](docs-build.txt) covers 82 pages in both languages, including local targets and public heading anchors. The [deployment bundle](deployment-bundle.txt) pins image 0.2.7 and has a SHA-256 checksum.
+
+Both architecture images pass isolated in-memory database checks as UID 1000: health reports 0.2.7, built Web assets are served, the downloaded extension contains public v2 site configuration, single-use authorization works, uploaded original image bytes are preserved, website logout invalidates access, revoked connections cannot authorize themselves again, and saved documents remain accessible. See [image acceptance](docker-smoke.json). No production database, volume or user document is used.
+
+The [arm64](runtime-arm64.json) and [amd64](runtime-amd64.json) audits each match 459 server/package/renderer/extension files and 476 uncompressed Web files to this checkout. The editor packages and native model/Yjs artifact hashes match. amd64 runs under emulation on the arm64 test host. [Build metadata](image-build-metadata.json) and [accepted manifests](image-build.json) identify runtime source revision `0d2335805899730b68c8bc8944ca784a73e8092a`; later verification records do not change runtime sources.
+
+Registry metadata requests repeatedly failed on the release host. The accepted build uses a read-only copy of pnpm 11.25.0's existing native verification cache for the exact same lockfile and policies, verified at `2026-10-20T20:30:22.371Z`. The [host offline verification](pnpm-host-offline-verification.txt) and both Linux fetch/install stages accept that cache through pnpm's normal policy checks. Dependency integrity checks remain active. The build-only [Dockerfile](Dockerfile.cached-verification) adds this cache mount to the repository Dockerfile; application sources and the frozen lockfile are unchanged. [Cache evidence](pnpm-cache.json) records the lockfile and policy hashes. No credentials are stored in the cache evidence or extension package.
+
+Registry and GitHub publication evidence is added after the accepted candidate is published and checked remotely.
