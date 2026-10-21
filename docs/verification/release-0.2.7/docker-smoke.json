@@ -1,11 +1,11 @@
 {
   "passed": true,
-  "image": "smartdoca/doca:0.2.7-candidate",
+  "image": "smartdoca/doca:0.2.7",
   "results": [
     {
       "passed": true,
       "version": "0.2.7",
-      "arch": "arm64",
+      "arch": "x64",
       "uid": 1000,
       "health": 200,
       "web": 200,
@@ -19,7 +19,7 @@
     {
       "passed": true,
       "version": "0.2.7",
-      "arch": "x64",
+      "arch": "arm64",
       "uid": 1000,
       "health": 200,
       "web": 200,

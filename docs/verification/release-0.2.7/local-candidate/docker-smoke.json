@@ -1,0 +1,34 @@
+{
+  "passed": true,
+  "image": "smartdoca/doca:0.2.7-candidate",
+  "results": [
+    {
+      "passed": true,
+      "version": "0.2.7",
+      "arch": "arm64",
+      "uid": 1000,
+      "health": 200,
+      "web": 200,
+      "publicExtensionPackage": true,
+      "singleUseWebsiteAuthorization": true,
+      "originalImageByteExact": true,
+      "websiteLogoutInvalidatesAccess": true,
+      "revokedConnectionCannotAutoRestore": true,
+      "savedContentPreserved": true
+    },
+    {
+      "passed": true,
+      "version": "0.2.7",
+      "arch": "x64",
+      "uid": 1000,
+      "health": 200,
+      "web": 200,
+      "publicExtensionPackage": true,
+      "singleUseWebsiteAuthorization": true,
+      "originalImageByteExact": true,
+      "websiteLogoutInvalidatesAccess": true,
+      "revokedConnectionCannotAutoRestore": true,
+      "savedContentPreserved": true
+    }
+  ]
+}

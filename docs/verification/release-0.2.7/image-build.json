@@ -1,14 +1,14 @@
 {
-  "sourceRevision": "0d2335805899730b68c8bc8944ca784a73e8092a",
-  "indexDigest": "sha256:2ae0d809f7cfc1d50bec7568d37e7fd2af48e18480c1092a37d8023e1f0d2a5f",
+  "sourceRevision": "4db23cd645d9434271b92fd5d7261a3f61d0335f",
+  "indexDigest": "sha256:4781c35454446e4531cbbacc597e8083c7d8289df055834daa90a4f78e124c70",
   "images": {
     "amd64": {
-      "manifestDigest": "sha256:6675db066727cbe438e642024654fdd614b02c148e8389db867cbf37948d9526",
-      "configDigest": "sha256:10cd0fffa87594ec488015606c6e4f92a75b184dea907bc8417289ff4a3026f9"
+      "manifestDigest": "sha256:b5568e09c36e3389b85b118642416cdb8b8892145a322d2b20f33e546b089f69",
+      "configDigest": "sha256:0f7208ca26f44271779a3b57c419cbc6a2a96b7ecdb5a5fa8282e93961d48474"
     },
     "arm64": {
-      "manifestDigest": "sha256:1230f8d742aaf2510a10f3c7de1843feac6820bbdad9bc8921b26059ee255d5b",
-      "configDigest": "sha256:d640cedfd819f0fbc42c1db12483ef590ea6e216e32ec290dbf7c7350a8e60a8"
+      "manifestDigest": "sha256:0eac6b6b906f963144553bebb02488543cd10e4afec01d0d4640ca6536693c79",
+      "configDigest": "sha256:deeb5c741963cde40b9e4fc48d5ba233344758c9f4bf092cbee58e4a6e5bf740"
     }
   }
 }
