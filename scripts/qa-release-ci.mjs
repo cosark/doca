@@ -30,11 +30,11 @@ if (process.argv[2] === "native") {
   assert.equal(local.Architecture, arch);
   assert.equal(local.Config.Labels["org.opencontainers.image.revision"], revision);
   assert.equal(local.Config.Labels["org.opencontainers.image.version"], version);
-  const indexDigest = digest(image);
-  assert.equal(indexDigest, metadata["containerimage.digest"]);
-  const entry = raw(image).manifests.find((item) => item.platform?.os === "linux" && item.platform?.architecture === arch);
-  assert(entry, `Missing native ${arch} manifest`);
-  const manifest = raw(`smartdoca/doca@${entry.digest}`);
+  const imageDigest = digest(image);
+  assert.equal(imageDigest, metadata["containerimage.digest"]);
+  const manifest = raw(image);
+  assert.equal(manifest.mediaType, "application/vnd.oci.image.manifest.v1+json");
+  assert(Array.isArray(manifest.layers) && manifest.config?.digest);
   const smoke = read(resolve(output, "docker-smoke.json"));
   assert(smoke.passed && smoke.results.length === 1 && smoke.results[0].passed);
   assert.equal(smoke.results[0].arch, arch === "amd64" ? "x64" : "arm64");
@@ -43,8 +43,8 @@ if (process.argv[2] === "native") {
   const evidence = resolve(".cache/ci-image/acceptance");
   mkdirSync(evidence, { recursive: true });
   write(resolve(evidence, "native.json"), {
-    passed: true, version, arch, sourceRevision: revision, image, indexDigest,
-    manifestDigest: entry.digest, configDigest: manifest.config.digest,
+    passed: true, version, arch, sourceRevision: revision, image, imageDigest,
+    manifestDigest: imageDigest, configDigest: manifest.config.digest,
   });
   copyFileSync(resolve(output, "docker-smoke.json"), resolve(evidence, "docker-smoke.json"));
   copyFileSync(resolve(output, `runtime-${arch}.json`), resolve(evidence, `runtime-${arch}.json`));
@@ -54,12 +54,12 @@ if (process.argv[2] === "native") {
   for (const arch of ["amd64", "arm64"]) {
     const record = read(`.cache/ci-inputs/release-image-${arch}/native.json`);
     assert(record.passed && record.arch === arch && record.version === version && record.sourceRevision === revision);
-    assert.equal(digest(record.image), record.indexDigest);
+    assert.equal(digest(record.image), record.imageDigest);
     native[arch] = record;
   }
   docker("buildx", "imagetools", "create",
     "--tag", `smartdoca/doca:${version}`, "--tag", "smartdoca/doca:latest",
-    ...Object.values(native).map((record) => `smartdoca/doca@${record.indexDigest}`));
+    ...Object.values(native).map((record) => `smartdoca/doca@${record.imageDigest}`));
   const indexDigest = digest(`smartdoca/doca:${version}`);
   const index = raw(`smartdoca/doca:${version}`);
   const images = {};
