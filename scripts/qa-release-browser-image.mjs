@@ -62,7 +62,9 @@ try {
 `;
 const run = promisify(execFile),
   results = [];
-for (const arch of ["arm64", "amd64"]) {
+const selectedArch = process.env.DOCA_RELEASE_QA_ARCH;
+assert(!selectedArch || ["arm64", "amd64"].includes(selectedArch));
+for (const arch of selectedArch ? [selectedArch] : ["arm64", "amd64"]) {
   const { stdout } = await run(
     "docker",
     [
