@@ -1,0 +1,2 @@
+Deployment bundle: /Users/zhangsiwen/dev/dsh/doca/.cache/deployment/doca-deploy-v0.2.7.tar.gz
+SHA-256: /Users/zhangsiwen/dev/dsh/doca/.cache/deployment/doca-deploy-v0.2.7.tar.gz.sha256

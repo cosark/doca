@@ -113,6 +113,7 @@ const adminIcons: Record<string, typeof Package> = {
   "doca.admin.registration": UserCheck,
   "doca.admin.access": ShieldCheck,
   "doca.admin.ai": Sparkles,
+  "doca.admin.mcp": Server,
   "doca.admin.file-recognition": ScanText,
   "doca.admin.platform": Server,
   "doca.admin.plugins": Blocks,

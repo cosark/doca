@@ -1,0 +1,30 @@
+{
+  "sheet": {
+    "sourceRevision": "67f0b13",
+    "testFile": "src/nativeFilterSession.test.ts",
+    "sourcePassed": 2,
+    "publishedArtifactPassed": 2,
+    "publishedArtifactHarness": "The same native Univer tests, with ./session aliased to the official 0.2.5 dist/yjs.js. Dependencies supplied by the upstream checkout; no package runtime source changed."
+  },
+  "canvas": {
+    "sourceRevision": "a075ce5",
+    "tests": [
+      "tests/browser/connector-translate.spec.mjs",
+      "tests/browser/feedback-followup.spec.mjs",
+      "tests/browser/packaged-editors.spec.mjs"
+    ],
+    "passed": 27,
+    "sourceBrowserTests": 21,
+    "builtPackageBrowserTests": 6,
+    "builtDistMatchesOfficialRegistry": true
+  },
+  "host": {
+    "typecheck": "passed",
+    "serverCanvasBuild": "passed",
+    "webBuild": "passed",
+    "testFiles": 13,
+    "passed": 49,
+    "skipped": 1,
+    "skipReason": "DOCA_TEST_REDIS_URL is not configured"
+  }
+}

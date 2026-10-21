@@ -1,5 +1,7 @@
+import { browserClipperEn } from "./browser-clipper.js";
 /** English copy is the source catalog. Every other locale must provide these keys. */
 export const en = {
+  ...browserClipperEn,
   "mcp.unattendedConfig": "Optional: unattended Codex authorization",
   "mcp.unattendedHelp": "The optional configuration preapproves doca_call in this client. Use it only for a service whose selected Doca permissions you intend to allow without individual confirmations.",
   "mcp.title": "MCP services",
@@ -3269,7 +3271,7 @@ export const en = {
   "doc.cite": "Cite to AI",
   "doc.collect": "Add to a library",
   "doc.copy": "Copy document",
-  "doc.copyHint": "Copy this document and its children into your documents",
+  "doc.copyHint": "Copy this document and its children into the same folder",
   "doc.deleteDocument": "Delete document",
   "doc.menu": "{title} actions",
   "doc.findExpand": "Show replace",
@@ -3736,6 +3738,7 @@ export const en = {
   "dialog.copyOneHint":
     "Copying only this document needs manage access here. Children are not copied.",
   "dialog.destination": "Destination",
+  "dialog.personalDirectory": "Personal documents",
   "dialog.chooseDestination": "Choose a destination",
   "dialog.failed": "That didn’t work",
   "dialog.confirmMove": "Move",

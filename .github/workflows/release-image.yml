@@ -1,0 +1,122 @@
+name: Release container image
+
+on:
+  workflow_dispatch:
+  push:
+    branches: [codex/release-0.2.7]
+    paths: [".github/workflows/release-image.yml", "scripts/qa-release-ci.mjs"]
+
+permissions:
+  contents: read
+
+concurrency:
+  group: release-image-${{ github.ref }}
+  cancel-in-progress: false
+
+jobs:
+  native:
+    name: Native ${{ matrix.arch }} image
+    runs-on: ${{ matrix.runner }}
+    timeout-minutes: 40
+    strategy:
+      fail-fast: false
+      matrix:
+        include:
+          - arch: amd64
+            runner: ubuntu-24.04
+          - arch: arm64
+            runner: ubuntu-24.04-arm
+    steps:
+      - uses: actions/checkout@v4
+      - name: Free space for the render-runtime image
+        run: sudo rm -rf /usr/local/lib/android /usr/share/dotnet /opt/ghc /usr/local/.ghcup
+      - uses: actions/setup-node@v4
+        with:
+          node-version: "22"
+      - name: Install and build the comparison sources
+        run: |
+          corepack enable && corepack prepare pnpm@11.25.0 --activate
+          pnpm install --frozen-lockfile
+          pnpm build
+          echo "VERSION=$(node -p 'require("./package.json").version')" >> "$GITHUB_ENV"
+      - uses: docker/setup-docker-action@v5
+        with:
+          daemon-config: |
+            {"features":{"containerd-snapshotter":true}}
+      - uses: docker/setup-buildx-action@v3
+      - name: Sign in to the image registry
+        env:
+          DOCKERHUB_USER: ${{ secrets.DOCA_RELEASE_DOCKERHUB_USER }}
+          DOCKERHUB_TOKEN: ${{ secrets.DOCA_RELEASE_DOCKERHUB_TOKEN }}
+        run: |
+          test -n "$DOCKERHUB_USER" && test -n "$DOCKERHUB_TOKEN"
+          printf '%s' "$DOCKERHUB_TOKEN" | docker login --username "$DOCKERHUB_USER" --password-stdin
+      - name: Build the native candidate
+        env:
+          ARCH: ${{ matrix.arch }}
+        run: |
+          mkdir -p .cache/ci-image
+          docker buildx build --platform "linux/$ARCH" --load \
+            --tag "smartdoca/doca:$VERSION-candidate" \
+            --label "org.opencontainers.image.revision=$GITHUB_SHA" \
+            --label "org.opencontainers.image.version=$VERSION" \
+            --label org.opencontainers.image.source=https://github.com/smartdoca/doca \
+            --metadata-file .cache/ci-image/image-build-metadata.json .
+      - name: Verify original images, sign-in, logout and revocation
+        env:
+          DOCA_RELEASE_QA_ARCH: ${{ matrix.arch }}
+        run: node scripts/qa-release-browser-image.mjs
+      - name: Compare every runtime and Web file
+        env:
+          ARCH: ${{ matrix.arch }}
+        run: node scripts/qa-release-runtime-audit.mjs "$ARCH"
+      - name: Push and verify the accepted native image
+        env:
+          ARCH: ${{ matrix.arch }}
+        run: |
+          export DOCA_RELEASE_PUBLISHED_NATIVE_IMAGE="smartdoca/doca:$VERSION-build-$GITHUB_RUN_ID-$ARCH"
+          docker tag "smartdoca/doca:$VERSION-candidate" "$DOCA_RELEASE_PUBLISHED_NATIVE_IMAGE"
+          docker push "$DOCA_RELEASE_PUBLISHED_NATIVE_IMAGE"
+          node scripts/qa-release-ci.mjs native "$ARCH"
+      - uses: actions/upload-artifact@v4
+        with:
+          name: release-image-${{ matrix.arch }}
+          path: .cache/ci-image/acceptance/
+          include-hidden-files: true
+          if-no-files-found: error
+      - name: Clear runner registry credentials
+        if: always()
+        run: docker logout
+  publish:
+    name: Publish and verify both architectures
+    needs: native
+    runs-on: ubuntu-24.04
+    timeout-minutes: 15
+    steps:
+      - uses: actions/checkout@v4
+      - uses: actions/setup-node@v4
+        with:
+          node-version: "22"
+      - uses: docker/setup-buildx-action@v3
+      - uses: actions/download-artifact@v4
+        with:
+          pattern: release-image-*
+          path: .cache/ci-inputs
+      - name: Sign in to the image registry
+        env:
+          DOCKERHUB_USER: ${{ secrets.DOCA_RELEASE_DOCKERHUB_USER }}
+          DOCKERHUB_TOKEN: ${{ secrets.DOCA_RELEASE_DOCKERHUB_TOKEN }}
+        run: |
+          test -n "$DOCKERHUB_USER" && test -n "$DOCKERHUB_TOKEN"
+          printf '%s' "$DOCKERHUB_TOKEN" | docker login --username "$DOCKERHUB_USER" --password-stdin
+      - name: Assemble version/latest and verify the accepted manifests
+        run: node scripts/qa-release-ci.mjs publish
+      - uses: actions/upload-artifact@v4
+        with:
+          name: release-published
+          path: .cache/ci-published/
+          include-hidden-files: true
+          if-no-files-found: error
+      - name: Clear runner registry credentials
+        if: always()
+        run: docker logout

@@ -1,0 +1,299 @@
+{
+  "buildx.build.provenance": {
+    "builder": {
+      "id": ""
+    },
+    "buildType": "https://mobyproject.org/buildkit@v1",
+    "materials": [
+      {
+        "uri": "pkg:docker/node@22-bookworm-slim?platform=linux%2Famd64",
+        "digest": {
+          "sha256": "c3de60bf2f9dd0ac6370e6117950ff62d6e339527e7472301c9c78a017978392"
+        }
+      }
+    ],
+    "invocation": {
+      "configSource": {
+        "entryPoint": "Dockerfile"
+      },
+      "parameters": {
+        "frontend": "dockerfile.v0",
+        "args": {
+          "label:org.opencontainers.image.revision": "4db23cd645d9434271b92fd5d7261a3f61d0335f",
+          "label:org.opencontainers.image.source": "https://github.com/smartdoca/doca",
+          "label:org.opencontainers.image.version": "0.2.7"
+        },
+        "locals": [
+          {
+            "name": "context"
+          },
+          {
+            "name": "dockerfile"
+          }
+        ],
+        "root": {
+          "configSource": {
+            "path": "Dockerfile"
+          },
+          "request": {
+            "args": {
+              "label:org.opencontainers.image.revision": "4db23cd645d9434271b92fd5d7261a3f61d0335f",
+              "label:org.opencontainers.image.source": "https://github.com/smartdoca/doca",
+              "label:org.opencontainers.image.version": "0.2.7",
+              "vcs:localdir:context": ".",
+              "vcs:localdir:dockerfile": ".",
+              "vcs:revision": "4db23cd645d9434271b92fd5d7261a3f61d0335f",
+              "vcs:source": "https://github.com/smartdoca/doca"
+            }
+          }
+        },
+        "compatibilityVersion": 30
+      },
+      "environment": {
+        "dockerfileVersion": "1.27.0",
+        "github_actor": "smartdoca",
+        "github_actor_id": "334543768",
+        "github_event_name": "push",
+        "github_event_payload": {
+          "after": "4db23cd645d9434271b92fd5d7261a3f61d0335f",
+          "base_ref": null,
+          "before": "149af2fb2e8fbad1fae7cb36fc6cd92e9218c681",
+          "commits": [
+            {
+              "author": {
+                "email": "",
+                "name": "张思文"
+              },
+              "committer": {
+                "email": "",
+                "name": "张思文"
+              },
+              "distinct": true,
+              "id": "4db23cd645d9434271b92fd5d7261a3f61d0335f",
+              "message": "Validate native OCI manifests before assembling the release index",
+              "timestamp": "2026-10-21T11:21:36+08:00",
+              "tree_id": "3c01077a751bf1e360f268076f23b3b1b0e2135c",
+              "url": "https://github.com/smartdoca/doca/commit/4db23cd645d9434271b92fd5d7261a3f61d0335f"
+            }
+          ],
+          "compare": "https://github.com/smartdoca/doca/compare/149af2fb2e8f...4db23cd645d9",
+          "created": false,
+          "deleted": false,
+          "forced": false,
+          "head_commit": {
+            "author": {
+              "email": "",
+              "name": "张思文"
+            },
+            "committer": {
+              "email": "",
+              "name": "张思文"
+            },
+            "distinct": true,
+            "id": "4db23cd645d9434271b92fd5d7261a3f61d0335f",
+            "message": "Validate native OCI manifests before assembling the release index",
+            "timestamp": "2026-10-21T11:21:36+08:00",
+            "tree_id": "3c01077a751bf1e360f268076f23b3b1b0e2135c",
+            "url": "https://github.com/smartdoca/doca/commit/4db23cd645d9434271b92fd5d7261a3f61d0335f"
+          },
+          "pusher": {
+            "email": "smartdoca@163.com",
+            "name": "smartdoca"
+          },
+          "ref": "refs/heads/codex/release-0.2.7",
+          "repository": {
+            "allow_forking": true,
+            "archive_url": "https://api.github.com/repos/smartdoca/doca/{archive_format}{/ref}",
+            "archived": false,
+            "assignees_url": "https://api.github.com/repos/smartdoca/doca/assignees{/user}",
+            "blobs_url": "https://api.github.com/repos/smartdoca/doca/git/blobs{/sha}",
+            "branches_url": "https://api.github.com/repos/smartdoca/doca/branches{/branch}",
+            "clone_url": "https://github.com/smartdoca/doca.git",
+            "collaborators_url": "https://api.github.com/repos/smartdoca/doca/collaborators{/collaborator}",
+            "comments_url": "https://api.github.com/repos/smartdoca/doca/comments{/number}",
+            "commits_url": "https://api.github.com/repos/smartdoca/doca/commits{/sha}",
+            "compare_url": "https://api.github.com/repos/smartdoca/doca/compare/{base}...{head}",
+            "contents_url": "https://api.github.com/repos/smartdoca/doca/contents/{+path}",
+            "contributors_url": "https://api.github.com/repos/smartdoca/doca/contributors",
+            "created_at": 1790524556,
+            "default_branch": "main",
+            "deployments_url": "https://api.github.com/repos/smartdoca/doca/deployments",
+            "description": "Doca｜开源文档管理与知识库，支持多人协同编辑、在线文档、Markdown、表格、幻灯片、画布和 AI 助手。Self-hosted document management, knowledge base \u0026 real-time collaborative editing for individuals and small teams.",
+            "disabled": false,
+            "downloads_url": "https://api.github.com/repos/smartdoca/doca/downloads",
+            "events_url": "https://api.github.com/repos/smartdoca/doca/events",
+            "fork": false,
+            "forks": 3,
+            "forks_count": 3,
+            "forks_url": "https://api.github.com/repos/smartdoca/doca/forks",
+            "full_name": "smartdoca/doca",
+            "git_commits_url": "https://api.github.com/repos/smartdoca/doca/git/commits{/sha}",
+            "git_refs_url": "https://api.github.com/repos/smartdoca/doca/git/refs{/sha}",
+            "git_tags_url": "https://api.github.com/repos/smartdoca/doca/git/tags{/sha}",
+            "git_url": "git://github.com/smartdoca/doca.git",
+            "has_discussions": false,
+            "has_downloads": true,
+            "has_issues": true,
+            "has_pages": true,
+            "has_projects": true,
+            "has_pull_requests": true,
+            "has_wiki": true,
+            "homepage": "https://d.smartdoca.cc",
+            "hooks_url": "https://api.github.com/repos/smartdoca/doca/hooks",
+            "html_url": "https://github.com/smartdoca/doca",
+            "id": 1391081062,
+            "is_template": false,
+            "issue_comment_url": "https://api.github.com/repos/smartdoca/doca/issues/comments{/number}",
+            "issue_events_url": "https://api.github.com/repos/smartdoca/doca/issues/events{/number}",
+            "issues_url": "https://api.github.com/repos/smartdoca/doca/issues{/number}",
+            "keys_url": "https://api.github.com/repos/smartdoca/doca/keys{/key_id}",
+            "labels_url": "https://api.github.com/repos/smartdoca/doca/labels{/name}",
+            "language": "TypeScript",
+            "languages_url": "https://api.github.com/repos/smartdoca/doca/languages",
+            "license": {
+              "key": "mit",
+              "name": "MIT License",
+              "node_id": "MDc6TGljZW5zZTEz",
+              "spdx_id": "MIT",
+              "url": "https://api.github.com/licenses/mit"
+            },
+            "master_branch": "main",
+            "merges_url": "https://api.github.com/repos/smartdoca/doca/merges",
+            "milestones_url": "https://api.github.com/repos/smartdoca/doca/milestones{/number}",
+            "mirror_url": null,
+            "name": "doca",
+            "node_id": "R_kgDOUuo2Zg",
+            "notifications_url": "https://api.github.com/repos/smartdoca/doca/notifications{?since,all,participating}",
+            "open_issues": 1,
+            "open_issues_count": 1,
+            "owner": {
+              "avatar_url": "https://avatars.githubusercontent.com/u/334543768?v=4",
+              "email": "smartdoca@163.com",
+              "events_url": "https://api.github.com/users/smartdoca/events{/privacy}",
+              "followers_url": "https://api.github.com/users/smartdoca/followers",
+              "following_url": "https://api.github.com/users/smartdoca/following{/other_user}",
+              "gists_url": "https://api.github.com/users/smartdoca/gists{/gist_id}",
+              "gravatar_id": "",
+              "html_url": "https://github.com/smartdoca",
+              "id": 334543768,
+              "login": "smartdoca",
+              "name": "smartdoca",
+              "node_id": "U_kgDOE_C7mA",
+              "organizations_url": "https://api.github.com/users/smartdoca/orgs",
+              "received_events_url": "https://api.github.com/users/smartdoca/received_events",
+              "repos_url": "https://api.github.com/users/smartdoca/repos",
+              "site_admin": false,
+              "starred_url": "https://api.github.com/users/smartdoca/starred{/owner}{/repo}",
+              "subscriptions_url": "https://api.github.com/users/smartdoca/subscriptions",
+              "type": "User",
+              "url": "https://api.github.com/users/smartdoca",
+              "user_view_type": "public"
+            },
+            "private": false,
+            "pull_request_creation_policy": "all",
+            "pulls_url": "https://api.github.com/repos/smartdoca/doca/pulls{/number}",
+            "pushed_at": 1792552902,
+            "releases_url": "https://api.github.com/repos/smartdoca/doca/releases{/id}",
+            "size": 73968,
+            "ssh_url": "git@github.com:smartdoca/doca.git",
+            "stargazers": 366,
+            "stargazers_count": 366,
+            "stargazers_url": "https://api.github.com/repos/smartdoca/doca/stargazers",
+            "statuses_url": "https://api.github.com/repos/smartdoca/doca/statuses/{sha}",
+            "subscribers_url": "https://api.github.com/repos/smartdoca/doca/subscribers",
+            "subscription_url": "https://api.github.com/repos/smartdoca/doca/subscription",
+            "svn_url": "https://github.com/smartdoca/doca",
+            "tags_url": "https://api.github.com/repos/smartdoca/doca/tags",
+            "teams_url": "https://api.github.com/repos/smartdoca/doca/teams",
+            "topics": [
+              "ai-assistant",
+              "canvas",
+              "collaborative-editing",
+              "docker",
+              "document-management",
+              "knowledge-base",
+              "markdown",
+              "online-office",
+              "presentation",
+              "react",
+              "real-time-collaboration",
+              "rich-text-editor",
+              "self-hosted",
+              "spreadsheet",
+              "typescript",
+              "yjs"
+            ],
+            "trees_url": "https://api.github.com/repos/smartdoca/doca/git/trees{/sha}",
+            "updated_at": "2026-10-21T02:53:38Z",
+            "url": "https://api.github.com/repos/smartdoca/doca",
+            "visibility": "public",
+            "watchers": 366,
+            "watchers_count": 366,
+            "web_commit_signoff_required": false
+          },
+          "sender": {
+            "avatar_url": "https://avatars.githubusercontent.com/u/334543768?v=4",
+            "events_url": "https://api.github.com/users/smartdoca/events{/privacy}",
+            "followers_url": "https://api.github.com/users/smartdoca/followers",
+            "following_url": "https://api.github.com/users/smartdoca/following{/other_user}",
+            "gists_url": "https://api.github.com/users/smartdoca/gists{/gist_id}",
+            "gravatar_id": "",
+            "html_url": "https://github.com/smartdoca",
+            "id": 334543768,
+            "login": "smartdoca",
+            "node_id": "U_kgDOE_C7mA",
+            "organizations_url": "https://api.github.com/users/smartdoca/orgs",
+            "received_events_url": "https://api.github.com/users/smartdoca/received_events",
+            "repos_url": "https://api.github.com/users/smartdoca/repos",
+            "site_admin": false,
+            "starred_url": "https://api.github.com/users/smartdoca/starred{/owner}{/repo}",
+            "subscriptions_url": "https://api.github.com/users/smartdoca/subscriptions",
+            "type": "User",
+            "url": "https://api.github.com/users/smartdoca",
+            "user_view_type": "public"
+          }
+        },
+        "github_job": "native",
+        "github_ref": "refs/heads/codex/release-0.2.7",
+        "github_ref_name": "codex/release-0.2.7",
+        "github_ref_protected": "false",
+        "github_ref_type": "branch",
+        "github_repository": "smartdoca/doca",
+        "github_repository_id": "1391081062",
+        "github_repository_owner": "smartdoca",
+        "github_repository_owner_id": "334543768",
+        "github_run_attempt": "1",
+        "github_run_id": "39538138862",
+        "github_run_number": "2",
+        "github_runner_arch": "X64",
+        "github_runner_environment": "github-hosted",
+        "github_runner_image_os": "ubuntu24",
+        "github_runner_image_version": "20261012.334.1",
+        "github_runner_name": "GitHub Actions 1000000389",
+        "github_runner_os": "Linux",
+        "github_runner_tracking_id": "github_4ff6e3b7-f35f-4f3c-8906-303b16f0688e",
+        "github_server_url": "https://github.com",
+        "github_triggering_actor": "smartdoca",
+        "github_workflow": "Release container image",
+        "github_workflow_ref": "smartdoca/doca/.github/workflows/release-image.yml@refs/heads/codex/release-0.2.7",
+        "github_workflow_sha": "4db23cd645d9434271b92fd5d7261a3f61d0335f",
+        "platform": "linux/amd64"
+      }
+    }
+  },
+  "buildx.build.ref": "builder-a0220142-1039-4cc7-b692-461e314bc633/builder-a0220142-1039-4cc7-b692-461e314bc6330/nu8vqzlfazjzfyeibukyukf7e",
+  "containerimage.descriptor": {
+    "mediaType": "application/vnd.oci.image.manifest.v1+json",
+    "digest": "sha256:b5568e09c36e3389b85b118642416cdb8b8892145a322d2b20f33e546b089f69",
+    "size": 2963,
+    "annotations": {
+      "org.opencontainers.image.created": "2026-10-21T03:26:42Z"
+    },
+    "platform": {
+      "architecture": "amd64",
+      "os": "linux"
+    }
+  },
+  "containerimage.digest": "sha256:b5568e09c36e3389b85b118642416cdb8b8892145a322d2b20f33e546b089f69",
+  "image.name": "docker.io/smartdoca/doca:0.2.7-candidate"
+}

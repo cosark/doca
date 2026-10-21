@@ -1,0 +1,10 @@
+{
+  "passed": true,
+  "version": "0.2.7",
+  "arch": "amd64",
+  "sourceRevision": "4db23cd645d9434271b92fd5d7261a3f61d0335f",
+  "image": "smartdoca/doca:0.2.7-build-39538138862-amd64",
+  "imageDigest": "sha256:b5568e09c36e3389b85b118642416cdb8b8892145a322d2b20f33e546b089f69",
+  "manifestDigest": "sha256:b5568e09c36e3389b85b118642416cdb8b8892145a322d2b20f33e546b089f69",
+  "configDigest": "sha256:0f7208ca26f44271779a3b57c419cbc6a2a96b7ecdb5a5fa8282e93961d48474"
+}

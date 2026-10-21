@@ -1,0 +1,326 @@
+.clipper-settings {
+  max-width: 1080px;
+  margin: 0 auto;
+  padding: 38px 42px 70px;
+  color: var(--text-color, #1f2937);
+}
+.clipper-page-header {
+  display: flex;
+  align-items: flex-start;
+  gap: 17px;
+  margin-bottom: 28px;
+}
+.clipper-page-header h1 {
+  font-size: 25px;
+  letter-spacing: -0.5px;
+  line-height: 1.4;
+  margin: 0 0 9px;
+}
+.clipper-page-header p {
+  font-size: 14px;
+  line-height: 1.8;
+  color: #7b8595;
+  margin: 0;
+  max-width: 700px;
+}
+.clipper-page-icon {
+  padding: 13px;
+  border-radius: 14px;
+  color: #3370ff;
+  background: #edf3ff;
+  flex: none;
+}
+.clipper-section {
+  padding-top: 30px;
+}
+.clipper-section-head {
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  gap: 16px;
+  margin-bottom: 18px;
+}
+.clipper-section h2 {
+  font-size: 16px;
+  margin: 0;
+}
+.clipper-settings button,
+.clipper-form button,
+.clipper-dialog-actions button {
+  display: inline-flex;
+  align-items: center;
+  justify-content: center;
+  gap: 7px;
+}
+.clipper-empty {
+  padding: 48px 24px;
+  text-align: center;
+  color: #8791a1;
+  border: 1px dashed #dce3ef;
+  border-radius: 12px;
+  line-height: 1.8;
+}
+.clipper-row {
+  display: flex;
+  align-items: flex-start;
+  gap: 16px;
+  padding: 23px 0;
+  border-bottom: 1px solid #edf0f5;
+  animation: clipper-appear 0.18s ease-out;
+}
+.clipper-row-icon {
+  background: #f4f7fc;
+  color: #6980a3;
+  padding: 10px;
+  border-radius: 10px;
+  flex: none;
+}
+.clipper-row-body {
+  flex: 1;
+  min-width: 0;
+}
+.clipper-row-body strong {
+  font-size: 15px;
+}
+.clipper-row-body p {
+  font-size: 13px;
+  color: #7b8699;
+  margin: 9px 0 5px;
+}
+.clipper-row-body small {
+  font-size: 12px;
+  color: #94a0b1;
+}
+.clipper-tag {
+  display: inline-block;
+  font-size: 11px;
+  padding: 3px 7px;
+  margin-left: 10px;
+  border-radius: 5px;
+  background: #eff4ff;
+  color: #4a73bd;
+  vertical-align: middle;
+}
+.clipper-tag.muted {
+  background: #f2f3f6;
+  color: #99a0aa;
+}
+.is-revoked .clipper-row-body {
+  opacity: 0.65;
+}
+.clipper-actions {
+  display: flex;
+  gap: 14px;
+  flex-wrap: wrap;
+  margin-top: 16px;
+}
+.clipper-actions button {
+  font-size: 12px;
+  border: 0;
+  background: transparent;
+  color: #4173cf;
+  padding: 0;
+}
+.clipper-settings .clipper-danger-link {
+  font-size: 12px;
+  border: 0;
+  background: transparent;
+  color: #be6464;
+  padding: 5px;
+}
+.clipper-revoke-all {
+  display: flex;
+  justify-content: flex-end;
+  margin-top: 22px;
+}
+.clipper-install {
+  display: flex;
+  align-items: flex-start;
+  gap: 12px;
+  background: #f7f9fc;
+  border: 1px solid #e8edf4;
+  border-radius: 10px;
+  padding: 17px 19px;
+  color: #7887a0;
+  margin: 12px 0;
+}
+.clipper-install svg {
+  flex: none;
+  color: #6986b1;
+  margin-top: 3px;
+}
+.clipper-install p {
+  margin: 0;
+  font-size: 13px;
+  line-height: 1.9;
+  color: #65748a;
+}
+.clipper-install small {
+  font-size: 12px;
+  line-height: 1.8;
+  display: block;
+  margin-top: 7px;
+}
+.clipper-ai {
+  max-width: 680px;
+  padding-top: 42px;
+}
+.clipper-ai > svg {
+  color: #7093d8;
+  margin-bottom: 16px;
+}
+.clipper-ai p {
+  line-height: 1.95;
+  color: #748096;
+  font-size: 14px;
+}
+.clipper-ai blockquote {
+  border-left: 3px solid #a8bfe8;
+  margin: 22px 0;
+  padding: 12px 20px;
+  background: #f8faff;
+  color: #526b91;
+  line-height: 1.9;
+}
+.clipper-form {
+  display: flex;
+  flex-direction: column;
+  gap: 17px;
+}
+.clipper-form > label {
+  display: flex;
+  flex-direction: column;
+  gap: 8px;
+  font-size: 13px;
+}
+.clipper-form input:not([type="checkbox"]),
+.clipper-form textarea {
+  border: 1px solid #dce2ec;
+  border-radius: 7px;
+  padding: 10px 12px;
+  font: inherit;
+  width: 100%;
+  outline: none;
+}
+.clipper-form input:focus,
+.clipper-form textarea:focus {
+  border-color: #7199e9;
+  box-shadow: 0 0 0 3px #3370ff0d;
+}
+.clipper-form small {
+  font-size: 12px;
+  line-height: 1.8;
+  color: #8c97a8;
+}
+.clipper-form .clipper-toggle {
+  flex-direction: row;
+  align-items: center;
+  gap: 9px;
+}
+.clipper-toggle input {
+  accent-color: #3370ff;
+}
+.clipper-form footer,
+.clipper-dialog-actions {
+  display: flex;
+  justify-content: flex-end;
+  gap: 10px;
+  margin-top: 10px;
+}
+.clipper-search {
+  display: flex;
+  gap: 9px;
+}
+.clipper-search input {
+  min-width: 0;
+  flex: 1;
+}
+.clipper-search button {
+  flex: none;
+  white-space: nowrap;
+}
+.clipper-config {
+  font-family: ui-monospace, SFMono-Regular, monospace !important;
+  font-size: 12px !important;
+  line-height: 1.75;
+  resize: vertical;
+}
+.clipper-danger {
+  background: #c84e4e;
+  color: #fff;
+  border: 1px solid #c84e4e;
+  border-radius: 6px;
+  padding: 8px 15px;
+}
+.clipper-dialog {
+  max-width: 640px !important;
+}
+.clipper-settings button {
+  transition:
+    background 0.16s,
+    color 0.16s;
+}
+.clipper-settings button:active {
+  transform: translateY(1px);
+}
+@keyframes clipper-appear {
+  from {
+    opacity: 0;
+    transform: translateY(3px);
+  }
+  to {
+    opacity: 1;
+    transform: translateY(0);
+  }
+}
+@media (max-width: 760px) {
+  .clipper-settings {
+    padding: 25px 20px;
+  }
+  .clipper-row {
+    gap: 10px;
+  }
+  .clipper-section-head {
+    align-items: flex-start;
+  }
+  .clipper-section-head button {
+    font-size: 12px;
+  }
+  .clipper-row-icon {
+    display: none;
+  }
+}
+@media (prefers-reduced-motion: reduce) {
+  .clipper-row {
+    animation: none;
+  }
+  .clipper-settings button {
+    transition: none;
+  }
+}
+
+.clipper-settings .platform-settings-tabs {
+  display: flex;
+  gap: 4px;
+  flex-wrap: wrap;
+  width: fit-content;
+  max-width: 100%;
+  padding: 4px;
+  border: 1px solid #e5e8ee;
+  border-radius: 9px;
+  background: #f7f8fa;
+}
+.clipper-settings .platform-settings-tabs button {
+  border: 0;
+  background: transparent;
+  color: #667085;
+  padding: 8px 14px;
+  border-radius: 6px;
+  white-space: nowrap;
+}
+.clipper-settings .platform-settings-tabs button.active {
+  color: #2459ce;
+  background: #edf3ff;
+  font-weight: 600;
+  box-shadow: 0 1px 2px #1f23290d;
+}

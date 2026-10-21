@@ -1,0 +1,11 @@
+{
+  "passed": true,
+  "sourceRevision": "4db23cd645d9434271b92fd5d7261a3f61d0335f",
+  "indexDigest": "sha256:4781c35454446e4531cbbacc597e8083c7d8289df055834daa90a4f78e124c70",
+  "workflow": "https://github.com/smartdoca/doca/actions/runs/39538138862",
+  "architectures": [
+    "amd64",
+    "arm64"
+  ],
+  "nativeRunners": true
+}

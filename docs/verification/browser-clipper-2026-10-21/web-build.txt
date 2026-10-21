@@ -1,0 +1,494 @@
+(!) Your Vite config uses features that are unsupported by `configLoader: 'native'`, which is planned to become the default in a future major version of Vite:
+  - import "./prismjs-language-esm" without a file extension (apps/web/vite.config.ts:6:36). Add the file extension
+Set `VITE_CONFIG_NATIVE_IGNORE_WARNING=true` to suppress this warning.
+vite v8.2.2 building client environment for production...
+transforming...
+✓ 15990 modules transformed.
+
+(!) outDir /Users/zhangsiwen/dev/dsh/doca/.local/browser-clipper-qa/web is not inside project root and will not be emptied.
+Use --emptyOutDir to override.
+
+rendering chunks...
+computing gzip size...
+.local/browser-clipper-qa/web/index.html                                           3.26 kB │ gzip:     0.88 kB
+.local/browser-clipper-qa/web/assets/KaTeX_Size3-Regular-CTq5MqoE.woff             4.42 kB
+.local/browser-clipper-qa/web/assets/KaTeX_Size4-Regular-Dl5lxZxV.woff2            4.92 kB
+.local/browser-clipper-qa/web/assets/KaTeX_Size2-Regular-Dy4dx90m.woff2            5.20 kB
+.local/browser-clipper-qa/web/assets/KaTeX_Size1-Regular-mCD8mA8B.woff2            5.46 kB
+.local/browser-clipper-qa/web/assets/KaTeX_Size4-Regular-BF-4gkZK.woff             5.98 kB
+.local/browser-clipper-qa/web/assets/KaTeX_Size2-Regular-oD1tc_U0.woff             6.18 kB
+.local/browser-clipper-qa/web/assets/KaTeX_Size1-Regular-C195tn64.woff             6.49 kB
+.local/browser-clipper-qa/web/assets/KaTeX_Caligraphic-Regular-Di6jR-x-.woff2      6.90 kB
+.local/browser-clipper-qa/web/assets/KaTeX_Caligraphic-Bold-Dq_IR9rO.woff2         6.91 kB
+.local/browser-clipper-qa/web/assets/KaTeX_Size3-Regular-DgpXs0kz.ttf              7.58 kB
+.local/browser-clipper-qa/web/assets/KaTeX_Caligraphic-Regular-CTRA-rTL.woff       7.65 kB
+.local/browser-clipper-qa/web/assets/KaTeX_Caligraphic-Bold-BEiXGLvX.woff          7.71 kB
+.local/browser-clipper-qa/web/assets/KaTeX_Script-Regular-D3wIWfF6.woff2           9.64 kB
+.local/browser-clipper-qa/web/assets/KaTeX_SansSerif-Regular-DDBCnlJ7.woff2       10.34 kB
+.local/browser-clipper-qa/web/assets/KaTeX_Size4-Regular-DWFBv043.ttf             10.36 kB
+.local/browser-clipper-qa/web/assets/KaTeX_Script-Regular-D5yQViql.woff           10.58 kB
+.local/browser-clipper-qa/web/assets/KaTeX_Fraktur-Regular-CTYiF6lA.woff2         11.31 kB
+.local/browser-clipper-qa/web/assets/KaTeX_Fraktur-Bold-CL6g_b3V.woff2            11.34 kB
+.local/browser-clipper-qa/web/assets/KaTeX_Size2-Regular-B7gKUWhC.ttf             11.50 kB
+.local/browser-clipper-qa/web/assets/KaTeX_SansSerif-Italic-C3H0VqGB.woff2        12.02 kB
+.local/browser-clipper-qa/web/assets/KaTeX_SansSerif-Bold-D1sUS0GD.woff2          12.21 kB
+.local/browser-clipper-qa/web/assets/KaTeX_Size1-Regular-Dbsnue_I.ttf             12.22 kB
+.local/browser-clipper-qa/web/assets/KaTeX_SansSerif-Regular-CS6fqUqJ.woff        12.31 kB
+.local/browser-clipper-qa/web/assets/KaTeX_Caligraphic-Regular-wX97UBjC.ttf       12.34 kB
+.local/browser-clipper-qa/web/assets/KaTeX_Caligraphic-Bold-ATXxdsX0.ttf          12.36 kB
+.local/browser-clipper-qa/web/assets/KaTeX_Fraktur-Regular-Dxdc4cR9.woff          13.20 kB
+.local/browser-clipper-qa/web/assets/KaTeX_Fraktur-Bold-BsDP51OF.woff             13.29 kB
+.local/browser-clipper-qa/web/assets/KaTeX_Typewriter-Regular-CO6r4hn1.woff2      13.56 kB
+.local/browser-clipper-qa/web/assets/KaTeX_SansSerif-Italic-DN2j7dab.woff         14.11 kB
+.local/browser-clipper-qa/web/assets/KaTeX_SansSerif-Bold-DbIhKOiC.woff           14.40 kB
+.local/browser-clipper-qa/web/assets/KaTeX_Typewriter-Regular-C0xS9mPB.woff       16.02 kB
+.local/browser-clipper-qa/web/assets/KaTeX_Math-BoldItalic-CZnvNsCZ.woff2         16.40 kB
+.local/browser-clipper-qa/web/assets/KaTeX_Math-Italic-t53AETM-.woff2             16.44 kB
+.local/browser-clipper-qa/web/assets/KaTeX_Script-Regular-C5JkGWo-.ttf            16.64 kB
+.local/browser-clipper-qa/web/assets/KaTeX_Main-BoldItalic-DxDJ3AOS.woff2         16.78 kB
+.local/browser-clipper-qa/web/assets/KaTeX_Main-Italic-NWA7e6Wa.woff2             16.98 kB
+.local/browser-clipper-qa/web/assets/KaTeX_Math-BoldItalic-iY-2wyZ7.woff          18.66 kB
+.local/browser-clipper-qa/web/assets/KaTeX_Math-Italic-DA0__PXp.woff              18.74 kB
+.local/browser-clipper-qa/web/assets/KaTeX_Main-BoldItalic-SpSLRI95.woff          19.41 kB
+.local/browser-clipper-qa/web/assets/KaTeX_SansSerif-Regular-BNo7hRIc.ttf         19.43 kB
+.local/browser-clipper-qa/web/assets/KaTeX_Fraktur-Regular-CB_wures.ttf           19.57 kB
+.local/browser-clipper-qa/web/assets/KaTeX_Fraktur-Bold-BdnERNNW.ttf              19.58 kB
+.local/browser-clipper-qa/web/assets/KaTeX_Main-Italic-BMLOBm91.woff              19.67 kB
+.local/browser-clipper-qa/web/assets/KaTeX_SansSerif-Italic-YYjJ1zSn.ttf          22.36 kB
+.local/browser-clipper-qa/web/assets/KaTeX_SansSerif-Bold-CFMepnvq.ttf            24.50 kB
+.local/browser-clipper-qa/web/assets/KaTeX_Main-Bold-Cx986IdX.woff2               25.32 kB
+.local/browser-clipper-qa/web/assets/KaTeX_Main-Regular-B22Nviop.woff2            26.27 kB
+.local/browser-clipper-qa/web/assets/KaTeX_Typewriter-Regular-D3Ib7_Hf.ttf        27.55 kB
+.local/browser-clipper-qa/web/assets/KaTeX_AMS-Regular-BQhdFMY1.woff2             28.07 kB
+.local/browser-clipper-qa/web/assets/KaTeX_Main-Bold-Jm3AIy58.woff                29.91 kB
+.local/browser-clipper-qa/web/assets/KaTeX_Main-Regular-Dr94JaBh.woff             30.77 kB
+.local/browser-clipper-qa/web/assets/KaTeX_Math-BoldItalic-B3XSjfu4.ttf           31.19 kB
+.local/browser-clipper-qa/web/assets/KaTeX_Math-Italic-flOr_0UB.ttf               31.30 kB
+.local/browser-clipper-qa/web/assets/KaTeX_Main-BoldItalic-DzxPMmG6.ttf           32.96 kB
+.local/browser-clipper-qa/web/assets/KaTeX_AMS-Regular-DMm9YOAa.woff              33.51 kB
+.local/browser-clipper-qa/web/assets/KaTeX_Main-Italic-3WenGoN9.ttf               33.58 kB
+.local/browser-clipper-qa/web/assets/google-g-CpxN0HWb.png                        33.66 kB
+.local/browser-clipper-qa/web/assets/KaTeX_Main-Bold-waoOVXN0.ttf                 51.33 kB
+.local/browser-clipper-qa/web/assets/KaTeX_Main-Regular-ypZvNtVU.ttf              53.58 kB
+.local/browser-clipper-qa/web/assets/KaTeX_AMS-Regular-DRggAlZN.ttf               63.63 kB
+.local/browser-clipper-qa/web/cad/libredwg-parser-worker.js                      201.46 kB
+.local/browser-clipper-qa/web/cad/mtext-renderer-worker.js                     1,192.82 kB
+.local/browser-clipper-qa/web/assets/pdf.worker.min-iDqQPrd3.mjs               1,232.30 kB
+.local/browser-clipper-qa/web/assets/NotoSansSC-Regular-IiqkIpFG.woff2         3,985.67 kB
+.local/browser-clipper-qa/web/cad/libredwg-web.wasm                            9,496.80 kB │ gzip: 2,217.43 kB
+.local/browser-clipper-qa/web/assets/plugin-elements-CET0eDXw.css                  0.61 kB │ gzip:     0.32 kB
+.local/browser-clipper-qa/web/assets/discovery-DaXAkz7i.css                        1.13 kB │ gzip:     0.50 kB
+.local/browser-clipper-qa/web/assets/file-transfer-CLfaNDaM.css                    1.45 kB │ gzip:     0.57 kB
+.local/browser-clipper-qa/web/assets/ai-chat-Cu1xhN90.css                          1.63 kB │ gzip:     0.56 kB
+.local/browser-clipper-qa/web/assets/feedback-cq11E-I-.css                         1.69 kB │ gzip:     0.64 kB
+.local/browser-clipper-qa/web/assets/document-editor-C4mYjywu.css                  2.31 kB │ gzip:     0.85 kB
+.local/browser-clipper-qa/web/assets/index-B_2bZuSR.css                            3.52 kB │ gzip:     1.16 kB
+.local/browser-clipper-qa/web/assets/surface-DU_Ab_ei.css                         10.36 kB │ gzip:     2.74 kB
+.local/browser-clipper-qa/web/assets/navigation-DoN1h-GF.css                      10.47 kB │ gzip:     2.62 kB
+.local/browser-clipper-qa/web/assets/editor-BdigiXmG.css                          11.89 kB │ gzip:     3.04 kB
+.local/browser-clipper-qa/web/assets/markdown-MBjrQFDk.css                        12.35 kB │ gzip:     3.28 kB
+.local/browser-clipper-qa/web/assets/katex-D1Bj3pDB.css                           29.79 kB │ gzip:     7.97 kB
+.local/browser-clipper-qa/web/assets/knowledge-books--Ti4MFtJ.css                 33.89 kB │ gzip:     7.00 kB
+.local/browser-clipper-qa/web/assets/ai-k7U89X-W.css                              35.65 kB │ gzip:     7.89 kB
+.local/browser-clipper-qa/web/assets/ai-markdown-U6_NwQUu.css                     40.17 kB │ gzip:    10.55 kB
+.local/browser-clipper-qa/web/assets/admin-Cr4YGQ4C.css                           40.87 kB │ gzip:     7.97 kB
+.local/browser-clipper-qa/web/assets/styles-rx1D_9ww.css                          45.62 kB │ gzip:     9.58 kB
+.local/browser-clipper-qa/web/assets/dist-H7Qs0hC-.css                           102.48 kB │ gzip:    16.67 kB
+.local/browser-clipper-qa/web/assets/extensions-Cq4zZ7vv.css                     104.58 kB │ gzip:    19.48 kB
+.local/browser-clipper-qa/web/assets/open-file-viewer-preview-CdHRPGaj.css       113.81 kB │ gzip:    18.78 kB
+.local/browser-clipper-qa/web/assets/dist-61MfMxLr.css                           115.79 kB │ gzip:    19.37 kB
+.local/browser-clipper-qa/web/assets/rich-plugin-elements-C5-WGjcW.css           143.79 kB │ gzip:    26.25 kB
+.local/browser-clipper-qa/web/assets/index-Bqcw-CI3.css                          152.78 kB │ gzip:    28.64 kB
+.local/browser-clipper-qa/web/assets/cpp-EDJNJWGR-BNK7GzbI.js                      0.06 kB │ gzip:     0.06 kB
+.local/browser-clipper-qa/web/assets/button-Hqba2CEk.js                            0.06 kB │ gzip:     0.08 kB
+.local/browser-clipper-qa/web/assets/esm-5_m_sYUO.js                               0.06 kB │ gzip:     0.08 kB
+.local/browser-clipper-qa/web/assets/pdf.worker.min-C5102xSr.js                    0.06 kB │ gzip:     0.08 kB
+.local/browser-clipper-qa/web/assets/core-BJeBhw6I.js                              0.06 kB │ gzip:     0.07 kB
+.local/browser-clipper-qa/web/assets/scala-V5QQ35QA-DdGVJV0q.js                    0.06 kB │ gzip:     0.07 kB
+.local/browser-clipper-qa/web/assets/katex.min-BrQRRmaO.js                         0.07 kB │ gzip:     0.09 kB
+.local/browser-clipper-qa/web/assets/php-TTFBGZ5Q-C35cnlOX.js                      0.07 kB │ gzip:     0.08 kB
+.local/browser-clipper-qa/web/assets/napi-canvas-vXY-6DeJ.js                       0.08 kB │ gzip:     0.09 kB
+.local/browser-clipper-qa/web/assets/__vite-browser-external-DpH90L5b.js           0.09 kB │ gzip:     0.10 kB
+.local/browser-clipper-qa/web/assets/tsx-A26VGWUK-RVojlo4r.js                      0.10 kB │ gzip:     0.08 kB
+.local/browser-clipper-qa/web/assets/io-DF6ojixk.js                                0.11 kB │ gzip:     0.11 kB
+.local/browser-clipper-qa/web/assets/channel-Df-xLpar.js                           0.11 kB │ gzip:     0.12 kB
+.local/browser-clipper-qa/web/assets/pie-WAS4IAKB-BkSTK6KM.js                      0.12 kB │ gzip:     0.13 kB
+.local/browser-clipper-qa/web/assets/info-A6RAGUB7-DNiM6MW6.js                     0.12 kB │ gzip:     0.13 kB
+.local/browser-clipper-qa/web/assets/radar-RG4KPBEZ-ymOfNW7I.js                    0.12 kB │ gzip:     0.13 kB
+.local/browser-clipper-qa/web/assets/packet-AYTQ26CC-C4EHUAzU.js                   0.12 kB │ gzip:     0.13 kB
+.local/browser-clipper-qa/web/assets/pptx-CSiF1fIc.js                              0.12 kB │ gzip:     0.11 kB
+.local/browser-clipper-qa/web/assets/cynefin-OW5HDTMX-B7JP5WcM.js                  0.12 kB │ gzip:     0.13 kB
+.local/browser-clipper-qa/web/assets/treemap-WGGIJYW6-L1FedAzz.js                  0.12 kB │ gzip:     0.13 kB
+.local/browser-clipper-qa/web/assets/wardley-WFR3VGLG-BU-g6L7U.js                  0.12 kB │ gzip:     0.13 kB
+.local/browser-clipper-qa/web/assets/gitGraph-4MIJSDKK-De5ASUSY.js                 0.12 kB │ gzip:     0.13 kB
+.local/browser-clipper-qa/web/assets/railroad-74A4TZTK-CwWB40du.js                 0.12 kB │ gzip:     0.13 kB
+.local/browser-clipper-qa/web/assets/treeView-Q6P3EWNA-CkV-8YWk.js                 0.12 kB │ gzip:     0.13 kB
+.local/browser-clipper-qa/web/assets/railroad-peg-WCYAUIDC-Qz11I2dz.js             0.13 kB │ gzip:     0.13 kB
+.local/browser-clipper-qa/web/assets/architecture-7GRP2DOG-iqZodW6v.js             0.13 kB │ gzip:     0.13 kB
+.local/browser-clipper-qa/web/assets/railroad-abnf-HS5TGJTU-DGUx-UBP.js            0.13 kB │ gzip:     0.13 kB
+.local/browser-clipper-qa/web/assets/railroad-ebnf-LZEXJU2U-isA18bJo.js            0.13 kB │ gzip:     0.13 kB
+.local/browser-clipper-qa/web/assets/asset-path-0fxtMbyH.js                        0.13 kB │ gzip:     0.13 kB
+.local/browser-clipper-qa/web/assets/eventmodeling-NTZA5JFV-C4d4RnR4.js            0.13 kB │ gzip:     0.13 kB
+.local/browser-clipper-qa/web/assets/init-C-OQMol4.js                              0.14 kB │ gzip:     0.12 kB
+.local/browser-clipper-qa/web/assets/chunk-Y2CYZVJY-DsF7k-Jl.js                    0.15 kB │ gzip:     0.14 kB
+.local/browser-clipper-qa/web/assets/minus-qg8bfowm.js                             0.15 kB │ gzip:     0.15 kB
+.local/browser-clipper-qa/web/assets/range-EplFIxc7.js                             0.17 kB │ gzip:     0.16 kB
+.local/browser-clipper-qa/web/assets/Tableau10-C-q0Q2RN.js                         0.18 kB │ gzip:     0.17 kB
+.local/browser-clipper-qa/web/assets/callSuper-BDzRTJUh.js                         0.18 kB │ gzip:     0.16 kB
+.local/browser-clipper-qa/web/assets/chunk-2Q5K7J3B-C1jixKkw.js                    0.19 kB │ gzip:     0.16 kB
+.local/browser-clipper-qa/web/assets/chunk-JWPE2WC7-DVXcaiue.js                    0.22 kB │ gzip:     0.17 kB
+.local/browser-clipper-qa/web/assets/extends-CvVTau-c.js                           0.23 kB │ gzip:     0.18 kB
+.local/browser-clipper-qa/web/assets/headless-nnTCI1dX.js                          0.23 kB │ gzip:     0.19 kB
+.local/browser-clipper-qa/web/assets/rotate-ccw-DwCGLBqC.js                        0.24 kB │ gzip:     0.21 kB
+.local/browser-clipper-qa/web/assets/chunk-XXDRQBXY-C5Ep7MuP.js                    0.26 kB │ gzip:     0.22 kB
+.local/browser-clipper-qa/web/assets/paperclip-DjYHxVZ6.js                         0.27 kB │ gzip:     0.22 kB
+.local/browser-clipper-qa/web/assets/panel-right-close-Cf5yjNmV.js                 0.27 kB │ gzip:     0.22 kB
+.local/browser-clipper-qa/web/assets/settings-2-CSJRt9uH.js                        0.29 kB │ gzip:     0.22 kB
+.local/browser-clipper-qa/web/assets/ellipsis-Dpl-xZZv.js                          0.29 kB │ gzip:     0.21 kB
+.local/browser-clipper-qa/web/assets/workflow-HKNMQND-.js                          0.30 kB │ gzip:     0.23 kB
+.local/browser-clipper-qa/web/assets/list-tree-Dyd9aLjE.js                         0.33 kB │ gzip:     0.22 kB
+.local/browser-clipper-qa/web/assets/policies-BpxGbscj.js                          0.35 kB │ gzip:     0.24 kB
+.local/browser-clipper-qa/web/assets/chunk-5VM5RSS4-ZNzvKenW.js                    0.36 kB │ gzip:     0.27 kB
+.local/browser-clipper-qa/web/assets/download-XZ3RrkFX.js                          0.37 kB │ gzip:     0.26 kB
+.local/browser-clipper-qa/web/assets/objectWithoutProperties-COKjVg74.js           0.38 kB │ gzip:     0.25 kB
+.local/browser-clipper-qa/web/assets/prism-tsx-Dy4JnuVi.js                         0.40 kB │ gzip:     0.28 kB
+.local/browser-clipper-qa/web/assets/prism-properties-UjVDzC-Q.js                  0.40 kB │ gzip:     0.28 kB
+.local/browser-clipper-qa/web/assets/math-DKewXP6Y.js                              0.42 kB │ gzip:     0.20 kB
+.local/browser-clipper-qa/web/assets/quote-81ffPdH0.js                             0.42 kB │ gzip:     0.22 kB
+.local/browser-clipper-qa/web/assets/prism-ignore--glCcbOI.js                      0.43 kB │ gzip:     0.28 kB
+.local/browser-clipper-qa/web/assets/scan-text-f9sZeTZ6.js                         0.44 kB │ gzip:     0.27 kB
+.local/browser-clipper-qa/web/assets/prism-editorconfig-Bh0p7Vpr.js                0.45 kB │ gzip:     0.31 kB
+.local/browser-clipper-qa/web/assets/ai-upload-errors-DBVJ9RUd.js                  0.50 kB │ gzip:     0.24 kB
+.local/browser-clipper-qa/web/assets/ai-B4wA6i8d.js                                0.52 kB │ gzip:     0.28 kB
+.local/browser-clipper-qa/web/assets/pa-C54UG8eN-Bj-XExX_.js                       0.52 kB │ gzip:     0.22 kB
+.local/browser-clipper-qa/web/assets/json5-EAGAEIPM-CTwaRWiw.js                    0.53 kB │ gzip:     0.38 kB
+.local/browser-clipper-qa/web/assets/or-50rxpoq4-Cf5-bcl5.js                       0.56 kB │ gzip:     0.23 kB
+.local/browser-clipper-qa/web/assets/chunk-POPQ4Y6H-Cffv94lo.js                    0.57 kB │ gzip:     0.40 kB
+.local/browser-clipper-qa/web/assets/flowDiagram-HODETNUW-DfPRiRiM.js              0.57 kB │ gzip:     0.31 kB
+.local/browser-clipper-qa/web/assets/gu-Bjl0l-cf-COW9d1dt.js                       0.57 kB │ gzip:     0.23 kB
+.local/browser-clipper-qa/web/assets/ordinal-v-7IHRQf.js                           0.59 kB │ gzip:     0.34 kB
+.local/browser-clipper-qa/web/assets/now-fdb1ev71.js                               0.59 kB │ gzip:     0.38 kB
+.local/browser-clipper-qa/web/assets/prism-json-DmHHfAGy.js                        0.59 kB │ gzip:     0.37 kB
+.local/browser-clipper-qa/web/assets/hi-DsAaTPCC-CiihDo6Q.js                       0.60 kB │ gzip:     0.24 kB
+.local/browser-clipper-qa/web/assets/mr-CjWJPVmH-DGtESPcG.js                       0.60 kB │ gzip:     0.24 kB
+.local/browser-clipper-qa/web/assets/as-BPtSu6VN-F6qyW8uH.js                       0.62 kB │ gzip:     0.25 kB
+.local/browser-clipper-qa/web/assets/bn-NCLZcWHi-BGS6_hxH.js                       0.62 kB │ gzip:     0.25 kB
+.local/browser-clipper-qa/web/assets/te-B5Spl2Jk-BjTOzs5s.js                       0.62 kB │ gzip:     0.24 kB
+.local/browser-clipper-qa/web/assets/ids-DTJ1wilq-DdjxhbXO.js                      0.62 kB │ gzip:     0.34 kB
+.local/browser-clipper-qa/web/assets/kn-C6Lov-DP-BuXzi7S-.js                       0.63 kB │ gzip:     0.25 kB
+.local/browser-clipper-qa/web/assets/src-DQbRWuki.js                               0.63 kB │ gzip:     0.30 kB
+.local/browser-clipper-qa/web/assets/version-preview-BFGSxNrV.js                   0.65 kB │ gzip:     0.44 kB
+.local/browser-clipper-qa/web/assets/infoDiagram-27XIBGKW-DU7RDUKd.js              0.65 kB │ gzip:     0.41 kB
+.local/browser-clipper-qa/web/assets/prism-r-gV0du0ts.js                           0.66 kB │ gzip:     0.49 kB
+.local/browser-clipper-qa/web/assets/markdown-preview-CFVQAeq3.js                  0.70 kB │ gzip:     0.44 kB
+.local/browser-clipper-qa/web/assets/ta-BcghgTbD-B5_ztYXp.js                       0.70 kB │ gzip:     0.24 kB
+.local/browser-clipper-qa/web/assets/prism-ini-C_KIxN1s.js                         0.71 kB │ gzip:     0.35 kB
+.local/browser-clipper-qa/web/assets/prism-lua-CxMV3_Cq.js                         0.73 kB │ gzip:     0.50 kB
+.local/browser-clipper-qa/web/assets/document-search-navigation-CxUXA7Bp.js        0.76 kB │ gzip:     0.49 kB
+.local/browser-clipper-qa/web/assets/classDiagram-ZZMXUADV-C8IlcfQh.js             0.77 kB │ gzip:     0.45 kB
+.local/browser-clipper-qa/web/assets/classDiagram-v2-VYDZK3BY-C8IlcfQh.js          0.77 kB │ gzip:     0.45 kB
+.local/browser-clipper-qa/web/assets/stateDiagram-v2-MP3YSRHH-BLlCaCqn.js          0.78 kB │ gzip:     0.45 kB
+.local/browser-clipper-qa/web/assets/pick-C43jECME.js                              0.78 kB │ gzip:     0.47 kB
+.local/browser-clipper-qa/web/assets/prism-less-wX4KdwhS.js                        0.79 kB │ gzip:     0.44 kB
+.local/browser-clipper-qa/web/assets/ml-2xLVYkVY-Ct0js8Am.js                       0.80 kB │ gzip:     0.29 kB
+.local/browser-clipper-qa/web/assets/prism-nginx-CYwcXVJa.js                       0.82 kB │ gzip:     0.46 kB
+.local/browser-clipper-qa/web/assets/isObject-BNleAbAq.js                          0.83 kB │ gzip:     0.41 kB
+.local/browser-clipper-qa/web/assets/swimlanesDiagram-VR7AAH4N-eBGKvDRH.js         0.83 kB │ gzip:     0.48 kB
+.local/browser-clipper-qa/web/assets/pi-B9cgjyG1-o9084kBf.js                       0.85 kB │ gzip:     0.35 kB
+.local/browser-clipper-qa/web/assets/prism-erlang-W-WEEsId.js                      0.86 kB │ gzip:     0.54 kB
+.local/browser-clipper-qa/web/assets/sizeCapture-INFHLROL-B0uUizjq.js              0.87 kB │ gzip:     0.51 kB
+.local/browser-clipper-qa/web/assets/debounce-BQF8WH3p.js                          1.02 kB │ gzip:     0.54 kB
+.local/browser-clipper-qa/web/assets/prism-makefile-BtLMXKXu.js                    1.04 kB │ gzip:     0.63 kB
+.local/browser-clipper-qa/web/assets/prism-toml--HtOJOxY.js                        1.05 kB │ gzip:     0.57 kB
+.local/browser-clipper-qa/web/assets/prism-protobuf-7Y1RXuF_.js                    1.07 kB │ gzip:     0.58 kB
+.local/browser-clipper-qa/web/assets/prism-elm-COQTr8D8.js                         1.11 kB │ gzip:     0.68 kB
+.local/browser-clipper-qa/web/assets/prism-latex-D0pp18zl.js                       1.11 kB │ gzip:     0.55 kB
+.local/browser-clipper-qa/web/assets/prism-go-DLJ3dIcA.js                          1.12 kB │ gzip:     0.71 kB
+.local/browser-clipper-qa/web/assets/preload-helper-Czpn1I53.js                    1.19 kB │ gzip:     0.67 kB
+.local/browser-clipper-qa/web/assets/prism-markup-templating-oDgP0hvx.js           1.20 kB │ gzip:     0.64 kB
+.local/browser-clipper-qa/web/assets/dist-DMuQfuhn.js                              1.26 kB │ gzip:     0.70 kB
+.local/browser-clipper-qa/web/assets/zh-latn-pinyin-BdYb-Ey_-CW52gdb_.js           1.27 kB │ gzip:     0.21 kB
+.local/browser-clipper-qa/web/assets/prism-dot-B-lU5w5r.js                         1.28 kB │ gzip:     0.68 kB
+.local/browser-clipper-qa/web/assets/rolldown-runtime-C0FnF6B9.js                  1.29 kB │ gzip:     0.71 kB
+.local/browser-clipper-qa/web/assets/canvas-rich-extensions-BIordMjP.js            1.37 kB │ gzip:     0.73 kB
+.local/browser-clipper-qa/web/assets/chunk-GVQU2GXP-1TYiRu03.js                    1.41 kB │ gzip:     0.78 kB
+.local/browser-clipper-qa/web/assets/prism-typescript-BwDhgBLn.js                  1.42 kB │ gzip:     0.67 kB
+.local/browser-clipper-qa/web/assets/base64-js-cqevimvB.js                         1.44 kB │ gzip:     0.78 kB
+.local/browser-clipper-qa/web/assets/prism-scss-Bye_gVy-.js                        1.46 kB │ gzip:     0.71 kB
+.local/browser-clipper-qa/web/assets/defineProperty-Cburl96d.js                    1.47 kB │ gzip:     0.74 kB
+.local/browser-clipper-qa/web/assets/prism-hcl-BlsRM9P1.js                         1.49 kB │ gzip:     0.67 kB
+.local/browser-clipper-qa/web/assets/prism-scala-B3upZuBD.js                       1.49 kB │ gzip:     0.79 kB
+.local/browser-clipper-qa/web/assets/eu-Ctv_kq9Z-D1jw9zt8.js                       1.51 kB │ gzip:     0.21 kB
+.local/browser-clipper-qa/web/assets/railroadDiagram-O6MQD6OU-BShT18Ux.js          1.66 kB │ gzip:     0.77 kB
+.local/browser-clipper-qa/web/assets/prism-docker-C_vT-7rs.js                      1.67 kB │ gzip:     0.81 kB
+.local/browser-clipper-qa/web/assets/prism-groovy-09hwOWGr.js                      1.70 kB │ gzip:     0.95 kB
+.local/browser-clipper-qa/web/assets/prism-dart-BD-Ul2jn.js                        1.71 kB │ gzip:     0.91 kB
+.local/browser-clipper-qa/web/assets/ticks-BwZhNCX8.js                             1.76 kB │ gzip:     0.79 kB
+.local/browser-clipper-qa/web/assets/prism-batch-Bh0UWpWP.js                       1.77 kB │ gzip:     0.73 kB
+.local/browser-clipper-qa/web/assets/abnfDiagram-VCTEODGH-BE5ggqSz.js              1.85 kB │ gzip:     0.89 kB
+.local/browser-clipper-qa/web/assets/dist-B7OHp69Q.js                              1.87 kB │ gzip:     0.83 kB
+.local/browser-clipper-qa/web/assets/chunk-P2QGCYS3-DIUDkRFa.js                    1.94 kB │ gzip:     0.95 kB
+.local/browser-clipper-qa/web/assets/prism-elixir-DeNZ7lf4.js                      1.95 kB │ gzip:     0.94 kB
+.local/browser-clipper-qa/web/assets/chunk-F27PBJKO-Au2iLCrJ.js                    1.97 kB │ gzip:     0.88 kB
+.local/browser-clipper-qa/web/assets/prism-http-DhBtWkaa.js                        1.97 kB │ gzip:     0.95 kB
+.local/browser-clipper-qa/web/assets/undo-2-CgmxiTXM.js                            2.00 kB │ gzip:     1.04 kB
+.local/browser-clipper-qa/web/assets/pegDiagram-XKGWAZYB-M0yWwiuq.js               2.01 kB │ gzip:     0.93 kB
+.local/browser-clipper-qa/web/assets/prism-kotlin-CFmD6Sh8.js                      2.05 kB │ gzip:     1.03 kB
+.local/browser-clipper-qa/web/assets/prism-c-CEQw2htk.js                           2.06 kB │ gzip:     1.05 kB
+.local/browser-clipper-qa/web/assets/ebnfDiagram-PWID7BFC-IhrgG7XB.js              2.06 kB │ gzip:     0.89 kB
+.local/browser-clipper-qa/web/assets/prism-yaml-BAvk6YvJ.js                        2.11 kB │ gzip:     0.95 kB
+.local/browser-clipper-qa/web/assets/prism-powershell-DSOG2Ps-.js                  2.23 kB │ gzip:     1.34 kB
+.local/browser-clipper-qa/web/assets/prism-fsharp-B8d2whU1.js                      2.24 kB │ gzip:     1.20 kB
+.local/browser-clipper-qa/web/assets/prism-python-Cz2itNEE.js                      2.26 kB │ gzip:     1.18 kB
+.local/browser-clipper-qa/web/assets/pt-Cum2_NUC-CrkeeQaZ.js                       2.28 kB │ gzip:     0.30 kB
+.local/browser-clipper-qa/web/assets/surface-preview-DTv-fSJF.js                   2.42 kB │ gzip:     1.28 kB
+.local/browser-clipper-qa/web/assets/id-DifDyWg9-C3Hzl2m4.js                       2.43 kB │ gzip:     0.63 kB
+.local/browser-clipper-qa/web/assets/feedback-Cn7MqR9A.js                          2.44 kB │ gzip:     1.16 kB
+.local/browser-clipper-qa/web/assets/prism-jsx-DT5OH3pL.js                         2.54 kB │ gzip:     1.07 kB
+.local/browser-clipper-qa/web/assets/oc-P_i3-xLA-W5_I63nO.js                       2.55 kB │ gzip:     0.66 kB
+.local/browser-clipper-qa/web/assets/prism-rust-DciSCNSj.js                        2.61 kB │ gzip:     1.27 kB
+.local/browser-clipper-qa/web/assets/prism-graphql-MHeOTiEz.js                     2.67 kB │ gzip:     1.25 kB
+.local/browser-clipper-qa/web/assets/possibleConstructorReturn-CrNIe3rQ.js         2.69 kB │ gzip:     1.16 kB
+.local/browser-clipper-qa/web/assets/prism-cpp-BGO-bNgk.js                         2.69 kB │ gzip:     1.28 kB
+.local/browser-clipper-qa/web/assets/kmr-Cfwhwuff-DfPyPgkK.js                      2.72 kB │ gzip:     0.80 kB
+.local/browser-clipper-qa/web/assets/prism-java-C9TG-TIC.js                        2.90 kB │ gzip:     1.31 kB
+.local/browser-clipper-qa/web/assets/STLLoader-B5XXmkGH.js                         2.92 kB │ gzip:     1.40 kB
+.local/browser-clipper-qa/web/assets/prism-haskell-v3pWfWeq.js                     3.08 kB │ gzip:     1.62 kB
+.local/browser-clipper-qa/web/assets/prism-swift-BJAfA0ct.js                       3.09 kB │ gzip:     1.41 kB
+.local/browser-clipper-qa/web/assets/createLucideIcon-C84aaOyl.js                  3.13 kB │ gzip:     1.50 kB
+.local/browser-clipper-qa/web/assets/prism-clojure-DOP9-S-R.js                     3.14 kB │ gzip:     1.58 kB
+.local/browser-clipper-qa/web/assets/fi-RW5VB8Yp-mParSSSy.js                       3.18 kB │ gzip:     0.77 kB
+.local/browser-clipper-qa/web/assets/la-DuvHjUWw-Bwiuou7l.js                       3.18 kB │ gzip:     0.62 kB
+.local/browser-clipper-qa/web/assets/pms-BRGfm5gS-DfOt2RSi.js                      3.37 kB │ gzip:     0.92 kB
+.local/browser-clipper-qa/web/assets/prism-sql-CPMaoZYC.js                         3.39 kB │ gzip:     1.96 kB
+.local/browser-clipper-qa/web/assets/arc-C4K1nZhv.js                               3.44 kB │ gzip:     1.44 kB
+.local/browser-clipper-qa/web/assets/dist-dut-wRGd.js                              3.59 kB │ gzip:     1.58 kB
+.local/browser-clipper-qa/web/assets/it-Bt_Meacx-HiFRunf5.js                       3.62 kB │ gzip:     0.88 kB
+.local/browser-clipper-qa/web/assets/rm-C0MIK9N4-CNhvXnnG.js                       3.66 kB │ gzip:     0.95 kB
+.local/browser-clipper-qa/web/assets/mul-ethi-D_CMSMEq-D6ioGuYP.js                 3.68 kB │ gzip:     1.07 kB
+.local/browser-clipper-qa/web/assets/prism-ruby-CFo4O6Tj.js                        3.69 kB │ gzip:     1.57 kB
+.local/browser-clipper-qa/web/assets/plugin-elements-CY8J9Kvc.js                   3.76 kB │ gzip:     1.78 kB
+.local/browser-clipper-qa/web/assets/fur-AC12wySk-tJv2icDr.js                      3.89 kB │ gzip:     1.03 kB
+.local/browser-clipper-qa/web/assets/jsx-runtime-DZ5gdoTW.js                       3.95 kB │ gzip:     1.52 kB
+.local/browser-clipper-qa/web/assets/tr-CIHIuzqc-DvQDK0dA.js                       3.96 kB │ gzip:     0.33 kB
+.local/browser-clipper-qa/web/assets/linear-CFqi6LFl.js                            4.05 kB │ gzip:     1.69 kB
+.local/browser-clipper-qa/web/assets/surface-sync-f4O-HwYN.js                      4.05 kB │ gzip:     2.01 kB
+.local/browser-clipper-qa/web/assets/diagram-Z3DM3KII-DPlX9ljD.js                  4.28 kB │ gzip:     1.84 kB
+.local/browser-clipper-qa/web/assets/discovery-2TO1QJo_.js                         4.38 kB │ gzip:     1.78 kB
+.local/browser-clipper-qa/web/assets/defaultLocale-BFoDCU3G.js                     4.63 kB │ gzip:     2.12 kB
+.local/browser-clipper-qa/web/assets/mn-cyrl-x-lmc-3aetruI8-BJqn49ay.js            4.82 kB │ gzip:     1.20 kB
+.local/browser-clipper-qa/web/assets/treemap-C5HqZvI3.js                           4.84 kB │ gzip:     1.88 kB
+.local/browser-clipper-qa/web/assets/el-monoton-D3aKqTz2-CuqNQIvE.js               4.86 kB │ gzip:     0.88 kB
+.local/browser-clipper-qa/web/assets/tslib.es6--pjuVNBv.js                         4.88 kB │ gzip:     1.91 kB
+.local/browser-clipper-qa/web/assets/select-BRQ2STgy.js                            5.44 kB │ gzip:     2.35 kB
+.local/browser-clipper-qa/web/assets/fflate.module-DXbirBWY.js                     5.56 kB │ gzip:     2.78 kB
+.local/browser-clipper-qa/web/assets/chunk-PWAF6VOD-DP1sPNhU.js                    5.83 kB │ gzip:     2.68 kB
+.local/browser-clipper-qa/web/assets/diagram-UQ7AKVKN-XtTcVVbf.js                  6.06 kB │ gzip:     2.55 kB
+.local/browser-clipper-qa/web/assets/pieDiagram-E7YTZNPT-BySGDiLY.js               6.15 kB │ gzip:     2.57 kB
+.local/browser-clipper-qa/web/assets/prism-bash-CBr84cu9.js                        6.27 kB │ gzip:     3.13 kB
+.local/browser-clipper-qa/web/assets/graphlib-fCQr0TUY.js                          6.34 kB │ gzip:     2.00 kB
+.local/browser-clipper-qa/web/assets/pdf-import-Bjq6pU5M.js                        6.40 kB │ gzip:     3.15 kB
+.local/browser-clipper-qa/web/assets/prism-php-C1ofPs72.js                         6.41 kB │ gzip:     2.07 kB
+.local/browser-clipper-qa/web/assets/ia-Cr4TJH0c-B1i9kDPT.js                       6.48 kB │ gzip:     1.84 kB
+.local/browser-clipper-qa/web/assets/prism-csharp-DvyqFMi-.js                      6.49 kB │ gzip:     2.58 kB
+.local/browser-clipper-qa/web/assets/PLYLoader-GBa3jUw3.js                         6.66 kB │ gzip:     2.51 kB
+.local/browser-clipper-qa/web/assets/togeojson-Bv_LOTTZ.js                         6.73 kB │ gzip:     2.68 kB
+.local/browser-clipper-qa/web/assets/src-CL4Hiily.js                               6.86 kB │ gzip:     2.43 kB
+.local/browser-clipper-qa/web/assets/cop-C3sk0IUo-Dw82IjCr.js                      6.88 kB │ gzip:     0.69 kB
+.local/browser-clipper-qa/web/assets/canvas-editor-1NJD9B4Z.js                     6.95 kB │ gzip:     3.22 kB
+.local/browser-clipper-qa/web/assets/open-file-viewer-preview-B3caEx4s.js          7.03 kB │ gzip:     2.89 kB
+.local/browser-clipper-qa/web/assets/presentation-editor-CmQOmoo-.js               7.12 kB │ gzip:     3.31 kB
+.local/browser-clipper-qa/web/assets/ro-0fmdH0HA-Bov_DAVD.js                       7.26 kB │ gzip:     2.15 kB
+.local/browser-clipper-qa/web/assets/react-C21x__mS.js                             7.53 kB │ gzip:     2.88 kB
+.local/browser-clipper-qa/web/assets/ca-SUf6Y2Om-DrduLk3W.js                       7.81 kB │ gzip:     1.14 kB
+.local/browser-clipper-qa/web/assets/TDSLoader-Bo7XEWJu.js                         8.01 kB │ gzip:     2.61 kB
+.local/browser-clipper-qa/web/assets/Middleware-BUfA2B5V.js                        8.11 kB │ gzip:     3.48 kB
+.local/browser-clipper-qa/web/assets/diagram-S7CK7UJ4-DiS22lIy.js                  8.19 kB │ gzip:     3.65 kB
+.local/browser-clipper-qa/web/assets/user-round-DjoppVwZ.js                        8.22 kB │ gzip:     2.96 kB
+.local/browser-clipper-qa/web/assets/sortBy-rSaIM7tn.js                            8.32 kB │ gzip:     3.43 kB
+.local/browser-clipper-qa/web/assets/viewport.esm.min-mVn1gL7n.js                  8.47 kB │ gzip:     3.50 kB
+.local/browser-clipper-qa/web/assets/model-find-92IqCBBZ.js                        8.52 kB │ gzip:     3.49 kB
+.local/browser-clipper-qa/web/assets/OBJLoader-WHmdaFPU.js                         8.74 kB │ gzip:     2.89 kB
+.local/browser-clipper-qa/web/assets/la-x-classic-yTyAOQEt-aO_2QO0y.js             8.92 kB │ gzip:     2.34 kB
+.local/browser-clipper-qa/web/assets/region-comments-DdhX6zFc.js                   8.94 kB │ gzip:     3.37 kB
+.local/browser-clipper-qa/web/assets/segmented-CmFnrbB-.js                         9.24 kB │ gzip:     3.54 kB
+.local/browser-clipper-qa/web/assets/rendered-pdf-BJtAzfZq.js                      9.54 kB │ gzip:     3.99 kB
+.local/browser-clipper-qa/web/assets/chunk-L3NEJ4N5-D4Qt_n_M.js                    9.68 kB │ gzip:     2.97 kB
+.local/browser-clipper-qa/web/assets/sa-CKY9c_Vq-CvBCyoRG.js                       9.70 kB │ gzip:     1.66 kB
+.local/browser-clipper-qa/web/assets/cynefinDiagram-5FMLGOSQ-Buet1l1H.js           9.93 kB │ gzip:     3.50 kB
+.local/browser-clipper-qa/web/assets/stateDiagram-D77RDMKH-BhGGr2ql.js            10.63 kB │ gzip:     3.74 kB
+.local/browser-clipper-qa/web/assets/diagram-VSXAHHWV-DQMPIlEc.js                 10.65 kB │ gzip:     4.12 kB
+.local/browser-clipper-qa/web/assets/dagre-GXQ25YYZ-CHpC7hdt.js                   10.97 kB │ gzip:     4.15 kB
+.local/browser-clipper-qa/web/assets/diagram-VX7I27RA-DpM8duSk.js                 11.06 kB │ gzip:     3.84 kB
+.local/browser-clipper-qa/web/assets/lib-LWWbZfYg.js                              11.14 kB │ gzip:     5.22 kB
+.local/browser-clipper-qa/web/assets/hr-DT1SBBes-D_vEJhf2.js                      11.36 kB │ gzip:     0.96 kB
+.local/browser-clipper-qa/web/assets/hy-e995ysyO-Cjfrs2ZM.js                      11.93 kB │ gzip:     0.30 kB
+.local/browser-clipper-qa/web/assets/mn-cyrl-lHM4n0oC-DN6sz9R4.js                 12.14 kB │ gzip:     2.14 kB
+.local/browser-clipper-qa/web/assets/spin-DCGYKd_r.js                             12.46 kB │ gzip:     5.12 kB
+.local/browser-clipper-qa/web/assets/sl-DpiklF-D-B8FnrXi1.js                      12.59 kB │ gzip:     3.43 kB
+.local/browser-clipper-qa/web/assets/da-CCDXfXtG-BWliw5hZ.js                      12.71 kB │ gzip:     3.49 kB
+.local/browser-clipper-qa/web/assets/spreadsheet-xlsx-D--fRqYj.js                 12.76 kB │ gzip:     5.45 kB
+.local/browser-clipper-qa/web/assets/3MFLoader-_vVNcLzk.js                        13.63 kB │ gzip:     4.53 kB
+.local/browser-clipper-qa/web/assets/hsb-DC_ITc1e-kb5QeNH1.js                     13.95 kB │ gzip:     1.96 kB
+.local/browser-clipper-qa/web/assets/markdown-editor-DDJ0eBeQ.js                  14.31 kB │ gzip:     5.83 kB
+.local/browser-clipper-qa/web/assets/lt-BBe8DlDF-B3cgXplB.js                      14.76 kB │ gzip:     3.63 kB
+.local/browser-clipper-qa/web/assets/book-graph-I1e1Ofzm.js                       15.43 kB │ gzip:     5.90 kB
+.local/browser-clipper-qa/web/assets/chunk-SVP7TREG-Cpf2araV.js                   15.64 kB │ gzip:     4.36 kB
+.local/browser-clipper-qa/web/assets/tableCommands-BJaD9rP7-DY_zbVwD.js           16.07 kB │ gzip:     5.45 kB
+.local/browser-clipper-qa/web/assets/mermaid-parser.core-DK0kgowR.js              16.59 kB │ gzip:     3.93 kB
+.local/browser-clipper-qa/web/assets/union-BueUScNI.js                            16.94 kB │ gzip:     6.38 kB
+.local/browser-clipper-qa/web/assets/tk-BMbKB10q-UHPz-lif.js                      16.95 kB │ gzip:     0.92 kB
+.local/browser-clipper-qa/web/assets/file-transfer-CiSRO2FG.js                    17.12 kB │ gzip:     6.76 kB
+.local/browser-clipper-qa/web/assets/ishikawaDiagram-5VMMS53U-BVbt48Uu.js         17.31 kB │ gzip:     6.53 kB
+.local/browser-clipper-qa/web/assets/i18n-DnDKx3du.js                             17.52 kB │ gzip:     5.52 kB
+.local/browser-clipper-qa/web/assets/el-polyton-ogVWcTzh-B5J5pGHR.js              17.62 kB │ gzip:     2.83 kB
+.local/browser-clipper-qa/web/assets/navigation-5SSwnwyH.js                       18.56 kB │ gzip:     6.84 kB
+.local/browser-clipper-qa/web/assets/prism-eM1LCGcz.js                            18.85 kB │ gzip:     7.13 kB
+.local/browser-clipper-qa/web/assets/OrbitControls-CSm9erb9.js                    19.71 kB │ gzip:     4.39 kB
+.local/browser-clipper-qa/web/assets/xz-decompress-BlOG-Mkh.js                    20.08 kB │ gzip:     9.38 kB
+.local/browser-clipper-qa/web/assets/kanban-definition-UXKFOSKX-CVJ4j99g.js       20.26 kB │ gzip:     7.15 kB
+.local/browser-clipper-qa/web/assets/input-number-D5DAgy5j.js                     20.91 kB │ gzip:     7.61 kB
+.local/browser-clipper-qa/web/assets/spreadsheet-editor-DDgHtMmA.js               21.09 kB │ gzip:     8.36 kB
+.local/browser-clipper-qa/web/assets/chunk-75Z2AOVW-MdaViwnL.js                   22.55 kB │ gzip:     7.54 kB
+.local/browser-clipper-qa/web/assets/sankeyDiagram-P5KCCOFB-DOQc0Jbk.js           22.66 kB │ gzip:     8.16 kB
+.local/browser-clipper-qa/web/assets/la-x-liturgic-CXeQb4FY-BpDOy20C.js           22.81 kB │ gzip:     5.80 kB
+.local/browser-clipper-qa/web/assets/step-CDxrZEEG.js                             23.04 kB │ gzip:     7.62 kB
+.local/browser-clipper-qa/web/assets/journeyDiagram-3NMN7TZE-jVqhdbwh.js          23.15 kB │ gzip:     8.15 kB
+.local/browser-clipper-qa/web/assets/mindmap-definition-YA3MSWOX-DdiZEGdA.js      23.44 kB │ gzip:     7.99 kB
+.local/browser-clipper-qa/web/assets/fr-BC2onEz9-Dc1KqFHa.js                      24.13 kB │ gzip:     4.24 kB
+.local/browser-clipper-qa/web/assets/wardleyDiagram-VM6X3IG4-QsFaDrlO.js          25.19 kB │ gzip:     6.53 kB
+.local/browser-clipper-qa/web/assets/ka-jyoLzyDE-BU45urC7.js                      26.18 kB │ gzip:     4.39 kB
+.local/browser-clipper-qa/web/assets/purify.es-DlWJHwqr.js                        27.00 kB │ gzip:    10.74 kB
+.local/browser-clipper-qa/web/assets/rough.esm-Dy-Kn_BL.js                        27.10 kB │ gzip:     8.85 kB
+.local/browser-clipper-qa/web/assets/dagre-MxFwdUDN.js                            27.79 kB │ gzip:     9.86 kB
+.local/browser-clipper-qa/web/assets/be-CrQ0smca-BYVdQd18.js                      27.82 kB │ gzip:     2.22 kB
+.local/browser-clipper-qa/web/assets/gitGraphDiagram-WWUBYQGX-DRWfxQw-.js         29.00 kB │ gzip:     8.54 kB
+.local/browser-clipper-qa/web/assets/sh-latn-sRy4Tuaj-De-tA-2J.js                 29.56 kB │ gzip:     5.35 kB
+.local/browser-clipper-qa/web/assets/timeline-definition-24CTP7MA-BeiY7KL6.js     30.36 kB │ gzip:     9.95 kB
+.local/browser-clipper-qa/web/assets/erDiagram-RLTQ6QDP-DH22f15o.js               30.69 kB │ gzip:    10.56 kB
+.local/browser-clipper-qa/web/assets/requirementDiagram-BXWQKSXE-DOZjo5dq.js      31.00 kB │ gzip:     9.78 kB
+.local/browser-clipper-qa/web/assets/sr-cyrl-Dpzrbd0W-yGc0Jz1j.js                 31.34 kB │ gzip:     5.58 kB
+.local/browser-clipper-qa/web/assets/sk-_iOeDNrQ-DC8Al4lF.js                      31.69 kB │ gzip:     6.84 kB
+.local/browser-clipper-qa/web/assets/sh-cyrl-BpCRFOmq-UY09gie6.js                 32.27 kB │ gzip:     5.45 kB
+.local/browser-clipper-qa/web/assets/quadrantDiagram-AXDQQJYC-CymdMy_G.js         33.51 kB │ gzip:     9.73 kB
+.local/browser-clipper-qa/web/assets/gl-DZGc-K_G-D9_oxkqv.js                      33.63 kB │ gzip:     4.23 kB
+.local/browser-clipper-qa/web/assets/src-CzEymsAa.js                              35.11 kB │ gzip:    11.73 kB
+.local/browser-clipper-qa/web/assets/index.esm-BrWyMbmy.js                        35.84 kB │ gzip:    11.48 kB
+.local/browser-clipper-qa/web/assets/chunk-OSK3NFVY-D3G1ATGT.js                   36.45 kB │ gzip:     7.96 kB
+.local/browser-clipper-qa/web/assets/MindMapWorkspace-D-WHpTzq-BaLyo4ma.js        37.10 kB │ gzip:    11.12 kB
+.local/browser-clipper-qa/web/assets/chunk-IMKFNOWR-Y8Y8YSpw.js                   37.66 kB │ gzip:    12.28 kB
+.local/browser-clipper-qa/web/assets/UTIF-CDhEjvms.js                             38.49 kB │ gzip:    15.19 kB
+.local/browser-clipper-qa/web/assets/cs-CmAteokq-BI5q4aVA.js                      39.75 kB │ gzip:    10.03 kB
+.local/browser-clipper-qa/web/assets/vennDiagram-4TSXK5OY-CVt427dm.js             41.15 kB │ gzip:    15.11 kB
+.local/browser-clipper-qa/web/assets/blockDiagram-I7D4REHJ-C1re9yCo.js            41.44 kB │ gzip:    13.35 kB
+.local/browser-clipper-qa/web/assets/xychartDiagram-S5SC5T6Z-uzc3kP9d.js          44.02 kB │ gzip:    12.15 kB
+.local/browser-clipper-qa/web/assets/es-DcaaHPU_-CnHE1eri.js                      44.12 kB │ gzip:     6.25 kB
+.local/browser-clipper-qa/web/assets/marked.esm-D7dwggTa.js                       44.32 kB │ gzip:    13.19 kB
+.local/browser-clipper-qa/web/assets/GLTFLoader-CVw7HcGk.js                       44.97 kB │ gzip:    13.34 kB
+.local/browser-clipper-qa/web/assets/pako-C-VMkwyK.js                             45.13 kB │ gzip:    14.37 kB
+.local/browser-clipper-qa/web/assets/FBXLoader-BJnLfDXG.js                        45.62 kB │ gzip:    14.46 kB
+.local/browser-clipper-qa/web/assets/pl-9fg-ESVt-Bv_p-a9x.js                      46.08 kB │ gzip:     7.76 kB
+.local/browser-clipper-qa/web/assets/et-B_spaleu-H7jVbiHv.js                      47.20 kB │ gzip:    11.55 kB
+.local/browser-clipper-qa/web/assets/is-BT8UVRze-DWEBuJpb.js                      48.40 kB │ gzip:    12.89 kB
+.local/browser-clipper-qa/web/assets/chunk-TICWLB2K-0l07-n8_.js                   48.81 kB │ gzip:    15.75 kB
+.local/browser-clipper-qa/web/assets/lib--TwNbGfw.js                              48.91 kB │ gzip:    13.87 kB
+.local/browser-clipper-qa/web/assets/template-surfaces-DZl5Iine.js                51.21 kB │ gzip:    17.79 kB
+.local/browser-clipper-qa/web/assets/chunk-GMAD6QVW-BDze1wWn.js                   51.84 kB │ gzip:    16.69 kB
+.local/browser-clipper-qa/web/assets/export.esm.min-D5CEZBCo.js                   52.77 kB │ gzip:    18.06 kB
+.local/browser-clipper-qa/web/assets/ColladaLoader-nTVwiJ7N.js                    54.45 kB │ gzip:    14.53 kB
+.local/browser-clipper-qa/web/assets/src-D-3Vva6p.js                              54.49 kB │ gzip:    16.69 kB
+.local/browser-clipper-qa/web/assets/sv-CFm5y56M-DeQDoAsB.js                      56.80 kB │ gzip:    14.56 kB
+.local/browser-clipper-qa/web/assets/bg-CrQqGwni-B5xv6TfF.js                      56.92 kB │ gzip:     4.68 kB
+.local/browser-clipper-qa/web/assets/TextArea-DkNruiSY.js                         60.43 kB │ gzip:    18.71 kB
+.local/browser-clipper-qa/web/assets/chunk-SHT3W25Y-dexSE3tB.js                   61.23 kB │ gzip:    19.85 kB
+.local/browser-clipper-qa/web/assets/lib-ChxHCEFV.js                              62.75 kB │ gzip:    23.84 kB
+.local/browser-clipper-qa/web/assets/tag-Bq8ZOtvb.js                              63.80 kB │ gzip:    20.94 kB
+.local/browser-clipper-qa/web/assets/uk-Dir3oxLs-DGVpthWV.js                      63.99 kB │ gzip:     8.55 kB
+.local/browser-clipper-qa/web/assets/postal-mime-BzMcGF_y.js                      64.38 kB │ gzip:    22.08 kB
+.local/browser-clipper-qa/web/assets/c4Diagram-7LVT6UL2-DMv_lYGq.js               64.73 kB │ gzip:    18.53 kB
+.local/browser-clipper-qa/web/assets/dist-BD08FCrl.js                             65.16 kB │ gzip:    19.81 kB
+.local/browser-clipper-qa/web/assets/document-editor-Cig0dvuC.js                  65.85 kB │ gzip:    22.32 kB
+.local/browser-clipper-qa/web/assets/USDLoader-BQQyrioy.js                        65.90 kB │ gzip:    19.29 kB
+.local/browser-clipper-qa/web/assets/th-DWX5iPSo-CFfNau1h.js                      68.62 kB │ gzip:    13.08 kB
+.local/browser-clipper-qa/web/assets/ganttDiagram-EL5Y4UJY-B9C7gfhP.js            69.10 kB │ gzip:    22.76 kB
+.local/browser-clipper-qa/web/assets/grc-DOlGgO8T-DANBReIg.js                     71.61 kB │ gzip:     8.78 kB
+.local/browser-clipper-qa/web/assets/cy-BBPa6z2x-Cag4snSk.js                      80.19 kB │ gzip:    19.18 kB
+.local/browser-clipper-qa/web/assets/cose-bilkent-JH36ORCC-BprARHBa.js            81.25 kB │ gzip:    21.54 kB
+.local/browser-clipper-qa/web/assets/ga-Cn6LkudM-CDuqe3gr.js                      82.06 kB │ gzip:    20.21 kB
+.local/browser-clipper-qa/web/assets/ru-v4l-ayaq-DLdM0nWP.js                      84.95 kB │ gzip:    17.06 kB
+.local/browser-clipper-qa/web/assets/yjs-BMKuCloL.js                              86.63 kB │ gzip:    26.36 kB
+.local/browser-clipper-qa/web/assets/mermaid.core-DTbL80dX.js                     91.02 kB │ gzip:    31.04 kB
+.local/browser-clipper-qa/web/assets/io-Cxp7sGxE-o9Oyhe3n.js                      92.82 kB │ gzip:    33.56 kB
+.local/browser-clipper-qa/web/assets/jszip.min-B7Fa2WXl.js                        95.95 kB │ gzip:    28.50 kB
+.local/browser-clipper-qa/web/assets/index.es-BDRukh-K.js                         97.64 kB │ gzip:    29.85 kB
+.local/browser-clipper-qa/web/assets/index.es-DxttYSGq.js                         98.67 kB │ gzip:    28.80 kB
+.local/browser-clipper-qa/web/assets/knowledge-books-CtChqfzI.js                 102.18 kB │ gzip:    31.29 kB
+.local/browser-clipper-qa/web/assets/schemas-OpslyeWp.js                         104.13 kB │ gzip:    30.17 kB
+.local/browser-clipper-qa/web/assets/chunk-4HAMMTFA-CfCnwPgz.js                  104.85 kB │ gzip:    25.68 kB
+.local/browser-clipper-qa/web/assets/en-gb-B7Al27b_-COWGBqwJ.js                  105.37 kB │ gzip:    26.36 kB
+.local/browser-clipper-qa/web/assets/swimlanes-42K2YHIH-CUFzHb7p.js              111.11 kB │ gzip:    38.00 kB
+.local/browser-clipper-qa/web/assets/lv-Q2BBHnzp-CLjYDJHB.js                     112.67 kB │ gzip:    15.93 kB
+.local/browser-clipper-qa/web/assets/sequenceDiagram-WJ2MYXX4-D802afc2.js        115.73 kB │ gzip:    30.56 kB
+.local/browser-clipper-qa/web/assets/antd-locale-Cu1NswQY.js                     132.55 kB │ gzip:    42.83 kB
+.local/browser-clipper-qa/web/assets/nl-BHQJ6Gvn-8_OIBsy0.js                     138.43 kB │ gzip:    36.50 kB
+.local/browser-clipper-qa/web/assets/lib-DH0u1Q1B.js                             140.06 kB │ gzip:    47.11 kB
+.local/browser-clipper-qa/web/assets/leaflet-src-Ce72Rvpq.js                     148.74 kB │ gzip:    43.39 kB
+.local/browser-clipper-qa/web/assets/architectureDiagram-5GKGNRK7-DESfDO9r.js    148.90 kB │ gzip:    41.12 kB
+.local/browser-clipper-qa/web/assets/cu-CBUlrW6Y-BRCy0UAr.js                     168.79 kB │ gzip:    26.44 kB
+.local/browser-clipper-qa/web/assets/client-_-LRBew4.js                          178.30 kB │ gzip:    56.30 kB
+.local/browser-clipper-qa/web/assets/VRMLLoader-CLfBF5XH.js                      178.82 kB │ gzip:    44.63 kB
+.local/browser-clipper-qa/web/assets/af-DK_CjRn6-CZxsvT2y.js                     179.53 kB │ gzip:    38.70 kB
+.local/browser-clipper-qa/web/assets/admin-CNpZk0M3.js                           188.01 kB │ gzip:    56.45 kB
+.local/browser-clipper-qa/web/assets/shield-check-Bu3356kV.js                    193.63 kB │ gzip:    67.52 kB
+.local/browser-clipper-qa/web/assets/conversion-BkzPRGU-.js                      194.50 kB │ gzip:    65.03 kB
+.local/browser-clipper-qa/web/assets/chunk-DU6HZSFF-BJfXvwSd.js                  208.77 kB │ gzip:    27.59 kB
+.local/browser-clipper-qa/web/assets/web.esm.min-Ch1XAVvz.js                     210.27 kB │ gzip:    68.53 kB
+.local/browser-clipper-qa/web/assets/index-D95alTBx.js                           235.25 kB │ gzip:    69.93 kB
+.local/browser-clipper-qa/web/assets/katex-DfgTfVzX.js                           259.13 kB │ gzip:    77.72 kB
+.local/browser-clipper-qa/web/assets/de-ch-1901-hVThVHVb-_Xg3_np3.js             264.33 kB │ gzip:    71.31 kB
+.local/browser-clipper-qa/web/assets/de-1996-BL6awyxG-BjfWxQKM.js                266.93 kB │ gzip:    71.93 kB
+.local/browser-clipper-qa/web/assets/index.esm-CDYKL0pt.js                       268.39 kB │ gzip:    78.03 kB
+.local/browser-clipper-qa/web/assets/de-1901-CWoAOigE-BlgpCKr2.js                270.03 kB │ gzip:    72.67 kB
+.local/browser-clipper-qa/web/assets/katex-CLsE52k0.js                           283.07 kB │ gzip:    85.92 kB
+.local/browser-clipper-qa/web/assets/dist-D4SOUg_z.js                            310.49 kB │ gzip:    92.19 kB
+.local/browser-clipper-qa/web/assets/lib-CNA0nuD-.js                             339.39 kB │ gzip:    73.59 kB
+.local/browser-clipper-qa/web/assets/no-B8ItS0F3-Cjg1mxae.js                     341.69 kB │ gzip:    89.00 kB
+.local/browser-clipper-qa/web/assets/nb-DI8u59ch-BfDSp4tN.js                     341.70 kB │ gzip:    89.01 kB
+.local/browser-clipper-qa/web/assets/nn-ntZvarUK-BWT83oy8.js                     341.70 kB │ gzip:    89.01 kB
+.local/browser-clipper-qa/web/assets/lib-B6p3bgVY.js                             353.13 kB │ gzip:   175.16 kB
+.local/browser-clipper-qa/web/assets/ai-chat-DFstplNN.js                         356.31 kB │ gzip:   111.27 kB
+.local/browser-clipper-qa/web/assets/chunk-TLE5JN24-C3shoJvr.js                  372.98 kB │ gzip:   130.52 kB
+.local/browser-clipper-qa/web/assets/src-6-Er8zaH.js                             392.58 kB │ gzip:   118.40 kB
+.local/browser-clipper-qa/web/assets/pdf-cpVybMXF.js                             409.77 kB │ gzip:   121.72 kB
+.local/browser-clipper-qa/web/assets/styles-BMYxLy1r.js                          415.34 kB │ gzip:   128.06 kB
+.local/browser-clipper-qa/web/assets/es-DizeVYtd.js                              417.60 kB │ gzip:   119.10 kB
+.local/browser-clipper-qa/web/assets/cytoscape.esm-B-1iW2ft.js                   434.85 kB │ gzip:   137.78 kB
+.local/browser-clipper-qa/web/assets/pdf-Ba1kNkvt.js                             468.18 kB │ gzip:   141.48 kB
+.local/browser-clipper-qa/web/assets/rich-plugin-elements-Bh5n2J5O.js            479.02 kB │ gzip:   139.08 kB
+.local/browser-clipper-qa/web/assets/extensions-CZMiszsd.js                      488.43 kB │ gzip:   142.37 kB
+.local/browser-clipper-qa/web/assets/xlsx-D6lO6xz3.js                            494.40 kB │ gzip:   161.26 kB
+.local/browser-clipper-qa/web/assets/es-DF3fvBY-.js                              518.55 kB │ gzip:   163.41 kB
+.local/browser-clipper-qa/web/assets/hls-Bsw5L549.js                             574.74 kB │ gzip:   178.99 kB
+.local/browser-clipper-qa/web/assets/dist-Drmw4nut.js                            595.68 kB │ gzip:   175.31 kB
+.local/browser-clipper-qa/web/assets/chunk-FOHPRMQF-CoA4358r.js                  662.09 kB │ gzip:   143.16 kB
+.local/browser-clipper-qa/web/assets/dist-C_s83mbk.js                            717.06 kB │ gzip:   223.95 kB
+.local/browser-clipper-qa/web/assets/three.module-DSpsqjQF.js                    722.50 kB │ gzip:   184.37 kB
+.local/browser-clipper-qa/web/assets/ai-markdown-CKA8q_h7.js                     728.04 kB │ gzip:   257.74 kB
+.local/browser-clipper-qa/web/assets/hu-DVk7Y_ka-Ct1fysVO.js                     765.40 kB │ gzip:   172.44 kB
+.local/browser-clipper-qa/web/assets/exceljs.min-C1j2HQXe.js                     929.56 kB │ gzip:   256.44 kB
+.local/browser-clipper-qa/web/assets/esm-BD8fPjvC.js                             998.57 kB │ gzip:   293.73 kB
+.local/browser-clipper-qa/web/assets/pdf-conversion-BGkUQeWJ-B3edC_23.js       1,106.90 kB │ gzip:   499.08 kB
+.local/browser-clipper-qa/web/assets/dist-__elNw2H.js                          1,122.63 kB │ gzip:   371.55 kB
+.local/browser-clipper-qa/web/assets/aiden0z-pptx-renderer.es-CxduXVvR.js      1,128.87 kB │ gzip:   346.34 kB
+.local/browser-clipper-qa/web/assets/pdf.worker-BSLZFJE3.js                    1,210.78 kB │ gzip:   378.41 kB
+.local/browser-clipper-qa/web/assets/lib-DW8R4QZv.js                           1,271.56 kB │ gzip:   276.96 kB
+.local/browser-clipper-qa/web/assets/heic2any-Bvf9yKW0.js                      1,352.14 kB │ gzip:   344.72 kB
+.local/browser-clipper-qa/web/assets/cad-simple-viewer-Vm_JQbX2.js             2,668.32 kB │ gzip:   775.60 kB
+.local/browser-clipper-qa/web/assets/dist-uytfMtne.js                          6,739.24 kB │ gzip: 1,810.30 kB
+
+[plugin builtin:vite-reporter] 
+(!) Some chunks are larger than 500 kB after minification. Consider:
+- Using dynamic import() to code-split the application
+- Use build.rolldownOptions.output.codeSplitting to improve chunking: https://rolldown.rs/reference/OutputOptions.codeSplitting
+- Adjust chunk size limit for this warning via build.chunkSizeWarningLimit.
+✓ built in 2.56s

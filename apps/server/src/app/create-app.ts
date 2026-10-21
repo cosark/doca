@@ -67,6 +67,8 @@ import { transact } from "@db/transactions.js";
 import type { IdentityRuntime } from "../adapters/identity-providers.js";
 import { type StorageRuntime } from "../adapters/storage.js";
 import { registerAssets } from "../routes/assets.js";
+import { registerBrowserClipper } from "../routes/browser-clipper.js";
+import { authenticateBrowserConnection } from "@core/modules/browser-clipper/access.js";
 import { registerPageState } from "../routes/page-state.js";
 import { registerDocumentPdf } from "../routes/document-pdf.js";
 import { registerExperience } from "../routes/experience.js";
@@ -257,6 +259,9 @@ export async function createApp(db: DB, options: CreateAppOptions) {
     if (bearerUser && presentedBearer)
       await renewMobileSession(db, presentedBearer);
     const path = req.url.split("?")[0]!;
+    const browserClipper = !!(req.routeOptions.config as { docaBrowserClipper?: boolean }).docaBrowserClipper;
+    if (browserClipper && req.headers.origin && req.headers.origin !== origin.origin && !/^chrome-extension:\/\/[a-p]{32}$/.test(req.headers.origin))
+      fail(403, "clipper_invalid_origin");
     if (path === "/api/v1/mcp" && req.headers.origin && req.headers.origin !== origin.origin)
       fail(403, "Invalid MCP Origin");
     const mobileCredential =
@@ -271,6 +276,7 @@ export async function createApp(db: DB, options: CreateAppOptions) {
       ].includes(path);
     if (
       !["GET", "HEAD", "OPTIONS"].includes(req.method) &&
+      !browserClipper &&
       !(
         req.url === "/api/v1/mcp" &&
         /^Bearer doca_mcp_v1_[a-f0-9]{64}$/.test(req.headers.authorization ?? "")
@@ -286,9 +292,10 @@ export async function createApp(db: DB, options: CreateAppOptions) {
     const externalPlugin = (
       req.routeOptions.config as { docaPluginExternal?: boolean }
     ).docaPluginExternal;
-    let user = externalPlugin
+    let user: Actor | null = externalPlugin
       ? null
       : (bearerUser ?? (token ? await sessionUser(token) : null));
+    if (browserClipper) user = path === "/api/v1/browser-clipper/token" ? null : (await authenticateBrowserConnection(db, req.headers.authorization)).actor;
     const scopedToken = /(?:^|;\s*)doca_plugin_session=([a-f0-9]{64})(?:;|$)/.exec(req.headers.cookie ?? "")?.[1];
     if(scopedToken && path.startsWith("/api/") && path!=="/api/v1/plugins-mobile/redeem") {
       const scoped=await pluginMobileActor(db,scopedToken,pluginComposition.plugins.map(p=>p.id));
@@ -550,6 +557,7 @@ export async function createApp(db: DB, options: CreateAppOptions) {
   const search = pluginComposition.search;
   registerProfiles(api, db, authenticated);
   registerAssets(api, db, authenticated, actor, admin, runtime.storage, limit);
+  registerBrowserClipper(api, db, authenticated, origin.origin, runtime.storage, realtime.documentChanged, limit);
   const id = Type.String({ format: "uuid" }),
     nullableId = Type.Union([id, Type.Null()]),
     version = Type.Integer({ minimum: 1 }),

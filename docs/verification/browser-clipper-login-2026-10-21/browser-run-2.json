@@ -1,0 +1,22 @@
+{
+  "status": "passed",
+  "browserVersion": "154.0.8037.92",
+  "followsWebsiteLogin": true,
+  "loginPromptAndReturn": true,
+  "websiteLogoutDisconnects": true,
+  "accountSwitchIsolatesDrafts": true,
+  "editableServerAddress": true,
+  "automaticShortTokenRenewal": true,
+  "selectionToolbar": true,
+  "wholePage": true,
+  "originalImageTransfer": true,
+  "appendBroadcastToTwoReplicas": true,
+  "assistantConversation": true,
+  "publicSiteConfiguration": true,
+  "invalidConfigPreservesConnection": true,
+  "keyRotationRejectsOldToken": true,
+  "revokeAllThroughSettings": true,
+  "oldTokenRejected": true,
+  "savedDocumentRetained": true,
+  "pageErrors": []
+}

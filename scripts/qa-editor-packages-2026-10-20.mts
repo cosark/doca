@@ -51,6 +51,9 @@ const web = await createServer({
 const output = resolve(
   process.env.DOCA_QA_OUTPUT ?? "docs/verification/editor-packages-2026-10-20",
 );
+const packageVersions = JSON.parse(
+  await readFile(resolve("package.json"), "utf8"),
+).dependencies;
 await mkdir(output, { recursive: true });
 const checks: string[] = [],
   errors: string[] = [];
@@ -225,6 +228,32 @@ try {
     "released 0.5.5 name-only diagram opens, selects, resizes viewport and reloads without checkpoint writes; twelve native ports",
   );
 
+  await a.page.getByRole("button", { name: "主菜单", exact: true }).click();
+  await a.page
+    .getByRole("menuitemradio", { name: "点阵", exact: true })
+    .click();
+  assert.equal(
+    await a.page.locator(".canvas-stage").getAttribute("data-grid-pattern"),
+    "dots",
+  );
+  await a.page.getByRole("button", { name: "主菜单", exact: true }).click();
+  await a.page
+    .getByRole("menuitemradio", { name: "网格", exact: true })
+    .click();
+  assert.equal(
+    await a.page.locator(".canvas-stage").getAttribute("data-grid-pattern"),
+    "lines",
+  );
+  await a.page.getByRole("button", { name: "主菜单", exact: true }).click();
+  await a.page
+    .getByRole("menuitemradio", { name: "背景色 #edf3ff", exact: true })
+    .click();
+  assert.equal((await preview(canvas.id)).seq, original.seq);
+  assert.equal(a.updates.length, 0);
+  pass(
+    "embedded canvas exposes native grid/background controls without content writes",
+  );
+
   await a.page.locator(".canvas-host").click({ position: { x: 350, y: 240 } });
   const legacyHost = await a.page.locator(".canvas-host").boundingBox();
   assert(legacyHost);
@@ -275,6 +304,94 @@ try {
   pass(
     "explicit legacy resize synchronizes body/text geometry and supports host undo, redo, peer replay and reload",
   );
+
+  const lineDoc = await create("canvas");
+  const lineInitial = await docs.exchange(actor, lineDoc.id, protocol);
+  const lineSeed = CanvasModel.restore({
+    codec: "aidcanvas-yjs",
+    schemaVersion: 1,
+    epochId: lineInitial.epochId!,
+    update: unb64(lineInitial.update),
+  });
+  lineSeed.add({
+    id: "unbound-line",
+    tag: "Path",
+    name: "connector",
+    path: "M 300 240 L 700 420",
+    stroke: "#646a73",
+    strokeWidth: 1.5,
+    hitRadius: 8,
+    editable: true,
+    editConfig: { moveable: false, resizeable: false, rotateable: false },
+    data: {
+      kind: "connector",
+      from: { x: 300, y: 240 },
+      to: { x: 700, y: 420 },
+      sourceId: "",
+      targetId: "",
+      mode: "straight",
+    },
+  });
+  await docs.exchange(actor, lineDoc.id, {
+    ...protocol,
+    epochId: lineInitial.epochId,
+    messageId: crypto.randomUUID(),
+    update: b64(lineSeed.checkpoint().update),
+  });
+  lineSeed.dispose();
+  for (const page of [a.page, b.page]) {
+    await page.goto(origin + "/#/r/" + lineDoc.id);
+    await page.locator(".canvas-host").waitFor();
+    await saved(page);
+  }
+  const beforeLine = await preview(lineDoc.id),
+    lineUpdates = a.updates.length;
+  const lineBox = await a.page.locator(".canvas-host").boundingBox();
+  assert(lineBox);
+  await a.page.mouse.move(lineBox.x + 420, lineBox.y + 294);
+  await a.page.mouse.down();
+  await a.page.mouse.move(lineBox.x + 516, lineBox.y + 246, { steps: 12 });
+  await a.page.locator(".graph-gesture-preview path").waitFor();
+  assert.equal(a.updates.length, lineUpdates);
+  await a.page.mouse.up();
+  await until(
+    async () => (await preview(lineDoc.id)).seq === beforeLine.seq + 1,
+    "connector translation commit",
+  );
+  const movedLine = await preview(lineDoc.id);
+  const line = movedLine.value.scene.children.find(
+    (node: any) => node.id === "unbound-line",
+  );
+  assert.deepEqual(line.data.from, { x: 396, y: 192 });
+  assert.deepEqual(line.data.to, { x: 796, y: 372 });
+  assert.equal(a.updates.length, lineUpdates + 1);
+  await a.page.keyboard.press("ControlOrMeta+z");
+  await until(
+    async () =>
+      JSON.stringify((await preview(lineDoc.id)).value) ===
+      JSON.stringify(beforeLine.value),
+    "connector translation undo",
+  );
+  await a.page.mouse.move(lineBox.x + 900, lineBox.y + 550);
+  await delay(350);
+  await a.page.keyboard.press("ControlOrMeta+Shift+z");
+  await until(
+    async () =>
+      JSON.stringify((await preview(lineDoc.id)).value) ===
+      JSON.stringify(movedLine.value),
+    "connector translation redo after idle",
+  );
+  await b.page.reload();
+  await b.page.locator(".canvas-host").waitFor();
+  await saved(b.page);
+  assert.equal(b.updates.length, 0);
+  assert.deepEqual((await preview(lineDoc.id)).value, movedLine.value);
+  await a.page.screenshot({
+    path: join(output, "canvas-connector-translation.png"),
+  });
+  pass(
+    "unbound connector body drag commits once, preserves redo after idle and restores without peer echo",
+  );
   const imageDoc = await create("canvas");
   diagnosticPage = a.page;
   await a.page.goto(origin + "/#/r/" + imageDoc.id);
@@ -316,9 +433,12 @@ try {
   assert(hostBox);
   const center = { x: hostBox.width / 2, y: hostBox.height / 2 };
   await canvasHost.click({ position: center });
-  assert.equal(await a.page.locator(".document-file-preview").count(), 0);
+  assert.equal(
+    await a.page.getByRole("dialog", { name: "qa.png", exact: true }).count(),
+    0,
+  );
   await canvasHost.click({ position: center });
-  await a.page.locator('.document-file-preview[aria-label="qa.png"]').waitFor();
+  await a.page.getByRole("dialog", { name: "qa.png", exact: true }).waitFor();
   await a.page.screenshot({ path: join(output, "canvas-image-preview.png") });
   await a.page.getByRole("button", { name: "关闭", exact: true }).click();
   const copies: string[] = [];
@@ -524,8 +644,8 @@ try {
     JSON.stringify(
       {
         result: "passed",
-        canvasVersion: "0.5.6",
-        sheetVersion: "0.2.4",
+        canvasVersion: packageVersions["@smartdoca/canvas"],
+        sheetVersion: packageVersions["@smartdoca/sheet"],
         checks,
         errors,
         idleSeconds: 60,

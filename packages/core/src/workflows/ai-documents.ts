@@ -1,4 +1,5 @@
 import { searchExcerpt } from "../modules/discovery/search-excerpts.js";
+import { browserAssistantBoundary } from "../modules/browser-clipper/access.js";
 import { recordVersion } from "../modules/history/repository.js";
 import { createHash, randomUUID } from "node:crypto";
 import * as Y from "yjs";
@@ -187,6 +188,7 @@ export async function checkJob(db: DB, ctx: ToolContext) {
       job.lease_until < new Date().toISOString()
     )
       fail(409, "任务执行权已失效");
+    await browserAssistantBoundary(db, job.session_id, job.id);
   }
 }
 function tableRefError(op: { type?: string }, message: string) {

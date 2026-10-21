@@ -1,0 +1,59 @@
+{
+  "passed": true,
+  "results": [
+    {
+      "engine": "sqlite",
+      "seed": {
+        "mode": "seed",
+        "releasedVersion": "0.2.6",
+        "engine": "sqlite",
+        "retainedTables": 124,
+        "documentId": "c158eeb9-bfa4-4e7b-95dd-01d6e02d75aa"
+      },
+      "upgrade": {
+        "passed": true,
+        "releasedVersion": "0.2.6",
+        "engine": "sqlite",
+        "retainedTables": 124,
+        "newTablesEmpty": true
+      },
+      "concurrentStarts": 3
+    },
+    {
+      "engine": "pg17",
+      "seed": {
+        "mode": "seed",
+        "releasedVersion": "0.2.6",
+        "engine": "postgres",
+        "retainedTables": 124,
+        "documentId": "5ca47cea-77e9-4c21-903a-0c69d47a2d2e"
+      },
+      "upgrade": {
+        "passed": true,
+        "releasedVersion": "0.2.6",
+        "engine": "postgres",
+        "retainedTables": 124,
+        "newTablesEmpty": true
+      },
+      "concurrentStarts": 3
+    },
+    {
+      "engine": "pg18",
+      "seed": {
+        "mode": "seed",
+        "releasedVersion": "0.2.6",
+        "engine": "postgres",
+        "retainedTables": 124,
+        "documentId": "45a5d5d1-1f4e-4816-9922-e900ff7b18e8"
+      },
+      "upgrade": {
+        "passed": true,
+        "releasedVersion": "0.2.6",
+        "engine": "postgres",
+        "retainedTables": 124,
+        "newTablesEmpty": true
+      },
+      "concurrentStarts": 3
+    }
+  ]
+}

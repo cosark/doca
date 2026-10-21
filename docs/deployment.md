@@ -2,7 +2,7 @@
 
 [中文](deployment.zh-CN.md)
 
-One server can run the published image `docker.io/smartdoca/doca:0.2.6`. A single container uses SQLite and does not need PostgreSQL or Redis. Use those only when you run more than one application replica. See [single instance and horizontal scaling](horizontal-scaling.md).
+One server can run the published image `docker.io/smartdoca/doca:0.2.7`. A single container uses SQLite and does not need PostgreSQL or Redis. Use those only when you run more than one application replica. See [single instance and horizontal scaling](horizontal-scaling.md).
 
 ## Requirements
 
@@ -61,7 +61,7 @@ docker compose pull
 docker compose up -d
 ```
 
-`docker compose up -d` pulls `docker.io/smartdoca/doca:0.2.6`. Add `--build` only when you want an image built from this checkout.
+`docker compose up -d` pulls `docker.io/smartdoca/doca:0.2.7`. Add `--build` only when you want an image built from this checkout.
 
 Check the container:
 
@@ -72,7 +72,7 @@ curl -fsS -H 'Host: docs.example.com' http://127.0.0.1:39120/health
 
 Replace `docs.example.com` with the host in your configured origin, including its port if nonstandard. The built-in container probe already supplies this Host; wait for `docker compose ps` to show `healthy`. A bare loopback curl is rejected with 421.
 
-A healthy process returns `{"status":"ok","version":"0.2.6"}`.
+A healthy process returns `{"status":"ok","version":"0.2.7"}`.
 
 Document rendering also needs its deployment checks: this checkout adds LibreOffice and sandboxed Chromium, while optional SAM requires a separate trusted Linux runtime. See [Docker document renderers](docker-rendering.md) for component availability, the included Chromium seccomp policy and the explicit SAM mount. A healthy server alone does not verify those tools.
 
@@ -155,8 +155,8 @@ Set the static hashed-file **Cache policy** separately: Minimum TTL 0, Default/M
 A static Nginx CDN can serve a release directory as follows, with standard `mime.types` loaded by the server:
 
 ```nginx
-location /doca/0.2.6/assets/ {
-    alias /srv/doca/0.2.6/assets/;
+location /doca/0.2.7/assets/ {
+    alias /srv/doca/0.2.7/assets/;
     add_header Cache-Control "public, max-age=31536000, immutable";
     add_header Access-Control-Allow-Origin "https://doca.example.com";
 }
@@ -165,7 +165,7 @@ location /doca/0.2.6/assets/ {
 When proxying Doca `/assets/`, hide the existing origin header with `proxy_hide_header Cache-Control;` before adding its replacement. The example omits `always` so missing files do not receive a year-long 404 cache. Check the final CDN response:
 
 ```sh
-curl -I https://cdn.example.com/doca/0.2.6/assets/<actual-hashed-JS-filename>.js
+curl -I https://cdn.example.com/doca/0.2.7/assets/<actual-hashed-JS-filename>.js
 ```
 
 Verify Cache-Control, Content-Type and CORS. HTML stays on Doca with revalidation. For document images and protected files, use [storage: browser image caching and the file CDN](storage.md#browser-image-caching-and-the-file-cdn).

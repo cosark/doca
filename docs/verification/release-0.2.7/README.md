@@ -1,0 +1,17 @@
+# Doca 0.2.7 verification
+
+Doca 0.2.7 combines the browser assistant with the workspace's editor, preview, move/copy and navigation changes. Browser authentication and database acceptance are recorded in [login acceptance](../browser-clipper-login-2026-10-21/README.md); editor checks are in [editor acceptance](../editor-packages-2026-10-21/README.md).
+
+The final [full regression](full-tests.txt) passes 3073 tests with 10 skipped. Production Web/renderer builds and TypeScript pass. [Documentation verification](docs-build.txt) covers 82 pages in both languages, including local targets and public heading anchors. The [deployment bundle](deployment-bundle.txt) pins image 0.2.7 and has a SHA-256 checksum. The release source passes [PostgreSQL 17/18 CI](https://github.com/smartdoca/doca/actions/runs/39538142874) and [documentation CI](https://github.com/smartdoca/doca/actions/runs/39538142855).
+
+The [native image workflow](https://github.com/smartdoca/doca/actions/runs/39538138862) independently builds and accepts Linux amd64 / arm64 on native GitHub runners using the repository Dockerfile and fresh dependency-policy checks. Both run as UID 1000 and pass health/Web serving, public extension packaging, single-use authorization, byte-exact original images, website logout, revocation and content preservation. See [image acceptance](docker-smoke.json). Test databases are isolated in memory with temporary file storage.
+
+The [amd64](runtime-amd64.json) and [arm64](runtime-arm64.json) audits each match 459 server/package/renderer/extension files and 476 uncompressed Web files to the runner checkout. Editor versions and native model/Yjs hashes match. [Native amd64](native-amd64.json), [native arm64](native-arm64.json) and their [amd64 build metadata](image-build-amd64-metadata.json) / [arm64 build metadata](image-build-arm64-metadata.json) bind those checks to the published manifests. Runtime source revision is `4db23cd645d9434271b92fd5d7261a3f61d0335f`; subsequent verification records do not change application sources.
+
+Docker Hub's `0.2.7` and `latest` tags match accepted index `sha256:4781c35454446e4531cbbacc597e8083c7d8289df055834daa90a4f78e124c70`. Both native manifests and configuration digests match the accepted images. See [accepted manifests](image-build.json), [version verification](registry-0.2.7.json), [latest verification](registry-latest.json) and [publication summary](ci-publication.json).
+
+The workflow uses `DOCA_RELEASE_DOCKERHUB_USER` and `DOCA_RELEASE_DOCKERHUB_TOKEN` repository secrets. Both were supplied encrypted for this publication, removed after the successful run, and verified absent. Runner registry credentials are cleared on completion. A future manual publication needs those secrets supplied again.
+
+The earlier local candidate used a read-only native pnpm policy cache after registry metadata requests failed. Its [build metadata](local-candidate/image-build-metadata.json), [acceptance](local-candidate/docker-smoke.json), [cache evidence](local-candidate/pnpm-cache.json), [offline verification](local-candidate/pnpm-host-offline-verification.txt) and [build-only Dockerfile](local-candidate/Dockerfile.cached-verification) are retained as local candidate history. The published image evidence is the native CI evidence above.
+
+No production database, volume or user document was used. Brand-browser native sidebars, deployment-specific authenticated image sites and actual model vendors remain deployment acceptance items as described in the [release notes](../../releases/0.2.7.md).
