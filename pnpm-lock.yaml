@@ -156,8 +156,8 @@ importers:
         specifier: ^0.34.52
         version: 0.34.52
       '@smartdoca/canvas':
-        specifier: 0.5.6
-        version: 0.5.6(react-dom@19.2.8(react@19.2.8))(react@19.2.8)
+        specifier: 0.5.8
+        version: 0.5.8(react-dom@19.2.8(react@19.2.8))(react@19.2.8)
       '@smartdoca/files-capability':
         specifier: workspace:*
         version: link:packages/files-capability
@@ -177,8 +177,8 @@ importers:
         specifier: workspace:*
         version: link:packages/search-host
       '@smartdoca/sheet':
-        specifier: 0.2.4
-        version: 0.2.4(@types/react-dom@19.2.7(@types/react@19.2.18))(@types/react@19.2.18)(react-dom@19.2.8(react@19.2.8))(react@19.2.8)
+        specifier: 0.2.5
+        version: 0.2.5(@types/react-dom@19.2.7(@types/react@19.2.18))(@types/react@19.2.18)(react-dom@19.2.8(react@19.2.8))(react@19.2.8)
       '@smartdoca/slate':
         specifier: 0.4.23
         version: 0.4.23(patch_hash=9524bc2f432ac385217164e95fc7021301fe7fc711240fed4809281ce3d55cd6)(katex@0.18.7)(react-dom@19.2.8(react@19.2.8))(react@19.2.8)(slate-dom@0.118.1(slate@0.118.1))(slate-history@0.113.1(slate@0.118.1))(slate-react@0.118.2(react-dom@19.2.8(react@19.2.8))(react@19.2.8)(slate-dom@0.118.1(slate@0.118.1))(slate@0.118.1))(slate@0.118.1)
@@ -324,6 +324,8 @@ importers:
       vitest:
         specifier: ^4.1.11
         version: 4.1.11(@types/node@26.5.0)(jsdom@26.1.0(supports-color@8.1.1))(vite@8.2.2(@types/node@26.5.0)(esbuild@0.28.2)(terser@5.51.2)(tsx@4.23.13)(yaml@2.9.0))
+
+  apps/browser-extension: {}
 
   apps/mobile:
     dependencies:
@@ -3788,8 +3790,8 @@ packages:
       slate: '>=0.70.0'
       yjs: 13.6.32
 
-  '@smartdoca/canvas@0.5.6':
-    resolution: {integrity: sha512-fXTkRI9p7TC9xhmIi7APTEVytxbfeXk6onZFDVctUIGjuDeIBePIQj4Ozau1BDV14qaLdp9y2nTI9ND6uNgoVg==}
+  '@smartdoca/canvas@0.5.8':
+    resolution: {integrity: sha512-VhF5sCc1PgVsViIP3NNZBRWu39Lr9rmHmeaZem32dbI7oFRA/wJfLbRK0M4fD6+pZ8lU4ozDVbnQgjG/esG33A==}
     engines: {node: '>=20', yarn: '>=1.22'}
     peerDependencies:
       react: '>=18.2.0'
@@ -3802,8 +3804,8 @@ packages:
       react-dom: '>=18.2.0'
       yjs: 13.6.32
 
-  '@smartdoca/sheet@0.2.4':
-    resolution: {integrity: sha512-CopSi/ja9MyQ+CTvcSgCmHfWrxSQOW+xQIrfMxCtro8jUrRoUTCCkqtlJ4T3stjge07AE2Sg8l+0KLyQB6CIng==}
+  '@smartdoca/sheet@0.2.5':
+    resolution: {integrity: sha512-vQtUSW55o+807DjtdppA0xR8oubidW4vqbcoJuigM1S0RE5VzT9ZDttMvvUsDGqmiKSLsw2BFe9zQ124tC6vVg==}
     peerDependencies:
       react: '>=18'
       react-dom: '>=18'
@@ -13611,7 +13613,7 @@ snapshots:
       y-protocols: 1.0.7(yjs@13.6.32)
       yjs: 13.6.32
 
-  '@smartdoca/canvas@0.5.6(react-dom@19.2.8(react@19.2.8))(react@19.2.8)':
+  '@smartdoca/canvas@0.5.8(react-dom@19.2.8(react@19.2.8))(react@19.2.8)':
     dependencies:
       '@icon-park/react': 1.4.2(react-dom@19.2.8(react@19.2.8))(react@19.2.8)
       '@leafer-in/arrow': 2.1.0(@leafer-in/interface@2.1.0(@leafer-ui/interface@2.1.0)(@leafer/interface@2.1.0))(@leafer-ui/draw@2.1.0)(@leafer-ui/interface@2.1.0)
@@ -13681,7 +13683,7 @@ snapshots:
       - supports-color
       - utf-8-validate
 
-  '@smartdoca/sheet@0.2.4(@types/react-dom@19.2.7(@types/react@19.2.18))(@types/react@19.2.18)(react-dom@19.2.8(react@19.2.8))(react@19.2.8)':
+  '@smartdoca/sheet@0.2.5(@types/react-dom@19.2.7(@types/react@19.2.18))(@types/react@19.2.18)(react-dom@19.2.8(react@19.2.8))(react@19.2.8)':
     dependencies:
       '@antv/g2': 5.4.8
       '@univerjs/core': 0.25.1(react@19.2.8)(rxjs@7.8.2)
