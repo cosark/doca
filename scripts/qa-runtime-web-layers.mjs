@@ -1,4 +1,4 @@
-// Compare the actual Web build and OCI layers after a Vite-style chunk update.
+// Compare actual Web bytes and OCI layers after isolated entry and Vite CSS updates.
 import assert from "node:assert/strict";
 import { execFileSync, spawnSync } from "node:child_process";
 import { createHash } from "node:crypto";
@@ -11,6 +11,7 @@ import {
   writeFileSync,
   lstatSync,
   unlinkSync,
+  symlinkSync,
 } from "node:fs";
 import path from "node:path";
 
@@ -73,12 +74,76 @@ function compareStaged(source, staged) {
   };
 }
 const variants = {};
+const originalInventory = inventory(path.join(root, "apps/web/dist"));
 let changedEntry, renamedEntry;
-for (const variant of ["baseline", "changed"]) {
+for (const variant of ["baseline", "changed", "stylesheet"]) {
   const app = path.join(output, variant),
     web = path.join(app, "apps/web/dist");
   mkdirSync(path.dirname(web), { recursive: true });
-  cpSync(path.join(root, "apps/web/dist"), web, { recursive: true });
+  if (variant === "stylesheet") {
+    const filter = (source) =>
+      !path
+        .relative(root, source)
+        .split(path.sep)
+        .some(
+          (part) =>
+            ["node_modules", "dist"].includes(part) || part.startsWith(".env"),
+        );
+    for (const directory of ["apps/web", "packages"])
+      cpSync(path.join(root, directory), path.join(app, directory), {
+        recursive: true,
+        filter,
+      });
+    for (const file of ["package.json", "tsconfig.json"])
+      cpSync(path.join(root, file), path.join(app, file));
+    for (const directory of ["node_modules", "apps/web/node_modules"])
+      symlinkSync(path.join(root, directory), path.join(app, directory), "dir");
+    function build(label) {
+      const result = spawnSync(
+        process.execPath,
+        [
+          path.join(root, "node_modules/vite/bin/vite.js"),
+          "build",
+          "--config",
+          path.join(app, "apps/web/vite.config.ts"),
+        ],
+        {
+          cwd: app,
+          env: { ...process.env, NODE_ENV: "production" },
+          encoding: "utf8",
+          maxBuffer: 8_000_000,
+        },
+      );
+      writeFileSync(
+        path.join(output, `stylesheet-${label}-vite.log`),
+        String(result.stdout ?? "") + String(result.stderr ?? ""),
+      );
+      assert.equal(result.status, 0, String(result.error ?? result.stderr));
+    }
+    build("baseline");
+    assert.deepEqual(
+      inventory(web),
+      originalInventory,
+      "Copied-source Vite baseline must match production bytes and modes",
+    );
+    const stylesheet = path.join(
+      app,
+      "apps/web/src/styles/platform-polish.css",
+    );
+    writeFileSync(
+      stylesheet,
+      readFileSync(stylesheet, "utf8") +
+        "\n:root { --doca-layer-reuse-probe: 1; }\n",
+    );
+    build("changed");
+    assert.notDeepEqual(
+      inventory(web),
+      originalInventory,
+      "CSS probe must change the Vite build",
+    );
+  } else {
+    cpSync(path.join(root, "apps/web/dist"), web, { recursive: true });
+  }
   if (variant === "changed") {
     const indexPath = path.join(web, "index.html"),
       html = readFileSync(indexPath, "utf8");
@@ -140,7 +205,7 @@ writeFileSync(
   "FROM scratch\n" +
     names.map((name) => `COPY --link ${name}/ /app/apps/web/dist/\n`).join(""),
 );
-for (const variant of ["baseline", "changed"]) {
+for (const variant of Object.keys(variants)) {
   const archive = path.join(output, `${variant}.oci.tar`),
     log = path.join(output, `${variant}-build.log`);
   const result = spawnSync(
@@ -227,6 +292,45 @@ const report = {
   reused,
   downloaded,
 };
+const stylesheet = variants.stylesheet.manifest;
+const stylesheetDownloaded = names.flatMap((bucket, i) =>
+  baseline.layers[i].digest === stylesheet.layers[i].digest
+    ? []
+    : [{ bucket, compressedBytes: stylesheet.layers[i].size }],
+);
+const stylesheetInventory = inventory(
+  path.join(variants.stylesheet.app, "apps/web/dist"),
+);
+report.realStylesheetUpdate = {
+  scope:
+    "Real Vite rebuild from isolated copied source; CSS custom-property addition",
+  baselineFilesIdentical: true,
+  unchangedFileCount: Object.keys(originalInventory).filter(
+    (file) =>
+      !file.endsWith("/") &&
+      originalInventory[file].sha256 === stylesheetInventory[file]?.sha256,
+  ).length,
+  layers: names.length,
+  reusedLayers: names.length - stylesheetDownloaded.length,
+  changedCompressedBytes: stylesheet.layers.reduce(
+    (sum, layer) => sum + layer.size,
+    0,
+  ),
+  newlyDownloadedLayerBytes: stylesheetDownloaded.reduce(
+    (sum, layer) => sum + layer.compressedBytes,
+    0,
+  ),
+  downloaded: stylesheetDownloaded,
+};
+assert(
+  report.realStylesheetUpdate.reusedLayers > 0,
+  "Real CSS update must reuse Web layers",
+);
+assert.deepEqual(
+  inventory(path.join(root, "apps/web/dist")),
+  originalInventory,
+  "Verification mutated production output",
+);
 writeFileSync(
   path.join(output, "results.json"),
   JSON.stringify(report, null, 2) + "\n",
