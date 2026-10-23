@@ -92,3 +92,6 @@ A runtime/hash check proves installation identity, not mask or final-image quali
 ## Build privacy
 
 `.dockerignore` excludes `.cache`, `.local`, databases, environment files, tests and scripts from the application build context. Keep deployment runtime bundles, checkpoints, private acceptance artifacts and credentials outside that context. Exclusion does not delete local files. A SAM custom-image build should use a separate minimal context containing only its approved deployment files.
+
+
+The Web output also has independent CAD, font and entry layers, plus 16 code groups assigned from stable file names. A chunk's Vite content-hash rename stays in its existing group; all deployed paths, bytes and permissions remain unchanged. An actual compiled-Web OCI experiment reuses 17 of 19 layers after one entry-chunk update/rename, adding 334,554 compressed bytes. This is a measured case, not a fixed size for every update; the full Web layers have a small additional header cost. See the [reviewed layer evidence](verification/image-web-layers-2026-10-23.md).

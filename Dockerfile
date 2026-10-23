@@ -40,11 +40,12 @@ RUN --mount=type=cache,id=pnpm-${TARGETARCH},target=/pnpm/store,sharing=locked \
 COPY tsconfig.json ./
 COPY apps ./apps
 COPY packages ./packages
-COPY docker/prune-runtime-modules.mjs docker/prune-runtime-build-inputs.mjs docker/split-runtime-modules.mjs ./docker/
+COPY docker/prune-runtime-modules.mjs docker/prune-runtime-build-inputs.mjs docker/split-runtime-modules.mjs docker/split-runtime-web.mjs ./docker/
 RUN pnpm build \
     && node docker/prune-runtime-modules.mjs --apply /app \
     && node docker/prune-runtime-build-inputs.mjs --apply /app \
-    && node docker/split-runtime-modules.mjs /app
+    && node docker/split-runtime-modules.mjs /app \
+    && node docker/split-runtime-web.mjs /app
 
 FROM ${NODE_IMAGE} AS render-runtime
 
@@ -89,7 +90,25 @@ COPY --link --from=build /app/artifacts/runtime-layers/metadata/node_modules ./n
 COPY --link --from=build /app/packages ./packages
 COPY --link --from=build /app/apps/server ./apps/server
 COPY --link --from=build /app/apps/browser-extension ./apps/browser-extension
-COPY --link --from=build /app/apps/web/dist ./apps/web/dist
+COPY --link --from=build /app/artifacts/runtime-web-layers/cad ./apps/web/dist
+COPY --link --from=build /app/artifacts/runtime-web-layers/fonts ./apps/web/dist
+COPY --link --from=build /app/artifacts/runtime-web-layers/code-00 ./apps/web/dist
+COPY --link --from=build /app/artifacts/runtime-web-layers/code-01 ./apps/web/dist
+COPY --link --from=build /app/artifacts/runtime-web-layers/code-02 ./apps/web/dist
+COPY --link --from=build /app/artifacts/runtime-web-layers/code-03 ./apps/web/dist
+COPY --link --from=build /app/artifacts/runtime-web-layers/code-04 ./apps/web/dist
+COPY --link --from=build /app/artifacts/runtime-web-layers/code-05 ./apps/web/dist
+COPY --link --from=build /app/artifacts/runtime-web-layers/code-06 ./apps/web/dist
+COPY --link --from=build /app/artifacts/runtime-web-layers/code-07 ./apps/web/dist
+COPY --link --from=build /app/artifacts/runtime-web-layers/code-08 ./apps/web/dist
+COPY --link --from=build /app/artifacts/runtime-web-layers/code-09 ./apps/web/dist
+COPY --link --from=build /app/artifacts/runtime-web-layers/code-0a ./apps/web/dist
+COPY --link --from=build /app/artifacts/runtime-web-layers/code-0b ./apps/web/dist
+COPY --link --from=build /app/artifacts/runtime-web-layers/code-0c ./apps/web/dist
+COPY --link --from=build /app/artifacts/runtime-web-layers/code-0d ./apps/web/dist
+COPY --link --from=build /app/artifacts/runtime-web-layers/code-0e ./apps/web/dist
+COPY --link --from=build /app/artifacts/runtime-web-layers/code-0f ./apps/web/dist
+COPY --link --from=build /app/artifacts/runtime-web-layers/entry ./apps/web/dist
 
 
 # Mount a persistent volume here for SQLite, AI memory and local file storage.
