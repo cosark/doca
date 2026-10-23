@@ -42,6 +42,9 @@ if (process.argv[2] === "native") {
   assert.equal(smoke.results[0].arch, arch === "amd64" ? "x64" : "arm64");
   const runtime = read(resolve(output, `runtime-${arch}.json`));
   assert(runtime.passed && runtime.arch === arch);
+  const render = read(resolve(output, `render-${arch}.json`));
+  assert(render.passed && render.uid === 1000 && render.providerCalls === 0);
+  assert.equal(render.arch, arch === "amd64" ? "x64" : "arm64");
   const evidence = resolve("artifacts/verification/release-image/build/acceptance");
   mkdirSync(evidence, { recursive: true });
   write(resolve(evidence, "native.json"), {
@@ -52,6 +55,7 @@ if (process.argv[2] === "native") {
   });
   copyFileSync(resolve(output, "docker-smoke.json"), resolve(evidence, "docker-smoke.json"));
   copyFileSync(resolve(output, `runtime-${arch}.json`), resolve(evidence, `runtime-${arch}.json`));
+  copyFileSync(resolve(output, `render-${arch}.json`), resolve(evidence, `render-${arch}.json`));
   copyFileSync("artifacts/verification/release-image/build/image-build-metadata.json", resolve(evidence, "image-build-metadata.json"));
 } else if (process.argv[2] === "publish") {
   const native = {};
@@ -80,6 +84,7 @@ if (process.argv[2] === "native") {
     assert(smoke.passed && smoke.results.length === 1);
     results.push(...smoke.results);
     copyFileSync(resolve(input, `runtime-${arch}.json`), resolve(output, `runtime-${arch}.json`));
+    copyFileSync(resolve(input, `render-${arch}.json`), resolve(output, `render-${arch}.json`));
     copyFileSync(resolve(input, "native.json"), resolve(output, `native-${arch}.json`));
     copyFileSync(resolve(input, "image-build-metadata.json"), resolve(output, `image-build-${arch}-metadata.json`));
   }
@@ -95,6 +100,7 @@ if (process.argv[2] === "native") {
   const evidence = resolve("artifacts/verification/release-image/published");
   mkdirSync(evidence, { recursive: true });
   for (const name of ["image-build.json", "docker-smoke.json", "runtime-amd64.json", "runtime-arm64.json",
+    "render-amd64.json", "render-arm64.json",
     "native-amd64.json", "native-arm64.json", "image-build-amd64-metadata.json", "image-build-arm64-metadata.json",
     `registry-${version}.json`, "registry-latest.json", "ci-publication.json"])
     copyFileSync(resolve(output, name), resolve(evidence, name));

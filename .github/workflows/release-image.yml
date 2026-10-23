@@ -69,6 +69,10 @@ jobs:
         env:
           DOCA_RELEASE_QA_ARCH: ${{ matrix.arch }}
         run: node scripts/qa-release-browser-image.mjs
+      - name: Verify sandboxed PDF, Canvas pixels and Office conversion
+        env:
+          ARCH: ${{ matrix.arch }}
+        run: node scripts/qa-release-render-image.mjs "$ARCH"
       - name: Compare every runtime and Web file
         env:
           ARCH: ${{ matrix.arch }}
