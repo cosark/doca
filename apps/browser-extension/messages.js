@@ -1,50 +1,5 @@
 export const messages = {
   zh: {
-    "quicknote.title": "快速记录",
-    "quicknote.help":
-      "直接追加到已授权的富文本或 Markdown 文档，不使用 AI。文字与目标仅保留在本次打开的插件中。",
-    "quicknote.target": "选择追加文档",
-    "quicknote.choose": "请选择文档",
-    "quicknote.refresh": "刷新文档",
-    "quicknote.empty":
-      "暂无可用目标。请在 Doca 启用追加规则并选择可编辑的富文本或 Markdown 文档。",
-    "quicknote.text": "记录内容",
-    "quicknote.placeholder": "写下要追加的文字…",
-    "quicknote.open": "打开目标文档",
-    "quicknote.save": "追加记录",
-    "quicknote.retry": "重试同一记录",
-    "quicknote.reset": "结束本次尝试",
-    "quicknote.reset.help":
-      "结束不会撤回可能已保存的内容。请先检查目标文档，再决定是否开始新的记录；此操作不会自动发送。",
-    "quicknote.confirm.reset": "已检查文档，结束本次尝试",
-    "quicknote.cancel.reset": "返回",
-    "quicknote.reset.done":
-      "本次尝试已结束，文字已保留。开始新的记录前，请确认目标文档中没有重复内容。",
-    "quicknote.loading": "正在读取可追加文档…",
-    "quicknote.saving": "正在追加记录，请保留此窗口…",
-    "quicknote.saved": "记录已追加到文档。",
-    "quicknote.failed": "尚未完成，请检查后重试。文字已保留。",
-    "quicknote.uncertain":
-      "无法确认此次记录的结果，文字已保留。请先检查目标文档；重试仅继续原来的记录。",
-    "quicknote.blocked":
-      "此次记录已停止，文字已保留。请先检查目标文档；系统不会自动重发。",
-    "quicknote.scope.changed":
-      "站点、账户或连接已变化，目标与本次发送状态已清除，文字已保留。若刚发送过，请先检查原目标文档。",
-    "quicknote.target.changed":
-      "原目标规则已变化或不可用，请重新选择文档。文字已保留。",
-    "quicknote.target.blocked":
-      "目标权限或规则已变化，此次记录已停止，文字已保留。请先检查原目标文档，结束本次尝试后重新选择文档。",
-    "quicknote.error.generic": "无法完成此次请求，请检查连接或文档权限。",
-    quick_note_text_invalid: "请输入非空文字；内容过长时请分成较短的记录。",
-    quick_note_invalid_response:
-      "返回结果与此次记录不一致，无法确认结果，文字未清除。",
-    quick_note_ticket_missing:
-      "此次发送已过期或服务已重新连接，无法继续确认结果。",
-    quick_note_request_conflict: "同一记录的内容或目标发生冲突，已停止发送。",
-    quick_note_request_already_used: "此前已处理过这次记录，请先检查目标文档。",
-    quick_note_signin_changed:
-      "登录状态已变化，此次发送已停止。请先检查目标文档。",
-    quick_note_busy: "服务正在处理另一条记录，请稍后重试原记录。",
     selectProfile: "选择收录规则",
     extensionSettings: "插件设置",
     back: "返回",
@@ -149,57 +104,6 @@ export const messages = {
       "目标文档尚未就绪，请在 Doca 打开一次后重试。",
   },
   en: {
-    "quicknote.title": "Quick note",
-    "quicknote.help":
-      "Append directly to an authorized rich-text or Markdown document without AI. Text and target remain only while this view is open.",
-    "quicknote.target": "Choose a document to append to",
-    "quicknote.choose": "Select a document",
-    "quicknote.refresh": "Refresh documents",
-    "quicknote.empty":
-      "No targets are available. Enable an append rule in Doca with an editable rich-text or Markdown document.",
-    "quicknote.text": "Note text",
-    "quicknote.placeholder": "Write the text to append…",
-    "quicknote.open": "Open target document",
-    "quicknote.save": "Append note",
-    "quicknote.retry": "Retry the same note",
-    "quicknote.reset": "End this attempt",
-    "quicknote.reset.help":
-      "Ending does not undo content that may already be saved. Check the target document before starting another note. This action sends nothing.",
-    "quicknote.confirm.reset": "Checked the document; end this attempt",
-    "quicknote.cancel.reset": "Back",
-    "quicknote.reset.done":
-      "This attempt has ended and the text is retained. Check the document for duplicate content before starting another note.",
-    "quicknote.loading": "Loading available documents…",
-    "quicknote.saving": "Appending the note. Keep this view open…",
-    "quicknote.saved": "The note was appended to the document.",
-    "quicknote.failed":
-      "The operation did not finish. Check and retry; your text is retained.",
-    "quicknote.uncertain":
-      "The result is uncertain and your text is retained. Check the target document first. Retrying continues only the original note.",
-    "quicknote.blocked":
-      "This note has stopped and your text is retained. Check the target document first. It will not be resent automatically.",
-    "quicknote.scope.changed":
-      "The site, account or connection changed. The target and send state were cleared; your text is retained. If you just sent it, check the original document first.",
-    "quicknote.target.changed":
-      "The target rule changed or is unavailable. Choose a document again; your text is retained.",
-    "quicknote.target.blocked":
-      "Target permissions or its rule changed. This attempt stopped and your text is retained. Check the original document, end this attempt, then select a document again.",
-    "quicknote.error.generic":
-      "The request could not be completed. Check your connection or document permissions.",
-    quick_note_text_invalid:
-      "Enter some text. If it is too long, split it into shorter notes.",
-    quick_note_invalid_response:
-      "The response does not match this note. The result is unconfirmed and your text is retained.",
-    quick_note_ticket_missing:
-      "This send expired or the service reconnected. The result can no longer be confirmed.",
-    quick_note_request_conflict:
-      "This note conflicts with the original content or target. Sending has stopped.",
-    quick_note_request_already_used:
-      "This note was already processed. Check the target document first.",
-    quick_note_signin_changed:
-      "Your sign-in status changed and this send stopped. Check the target document first.",
-    quick_note_busy:
-      "Another note is being processed. Retry this same note later.",
     selectProfile: "Choose a capture rule",
     extensionSettings: "Extension settings",
     back: "Back",

@@ -4,7 +4,7 @@ import { useAI } from "@web/features/ai/ai-context.js";
 import { useDocumentReadOnly } from "@web/features/documents/document-mode.js";
 import { useCallback, useEffect, useMemo, useRef, useState } from "react";
 import { createPortal } from "react-dom";
-import { MessageSquare, Eye, EyeOff, Sparkles } from "lucide-react";
+import { MessageSquare, Sparkles } from "lucide-react";
 import {
   DocumentDownload,
   downloadResult,
@@ -283,7 +283,7 @@ export default function CanvasDocument({
         : null,
     [handle, model],
   );
-  const [showCommentMarks, setShowCommentMarks] = useState(true);
+  const [showCommentMarks, setShowCommentMarks] = useState(false);
   const anchors = useMemo<CanvasAnchorDecoration[]>(
     () =>
       detail.comments.flatMap((c) => {
@@ -411,10 +411,10 @@ export default function CanvasDocument({
               anchors={[
                 ...(showCommentMarks
                   ? anchors
-                  : anchors.filter((a) => a.anchorId === active)),
+                  : []),
                 ...(referenceHighlight ? [referenceHighlight] : []),
               ]}
-              activeAnchorId={referenceHighlight?.anchorId ?? active}
+              activeAnchorId={referenceHighlight?.anchorId ?? (showCommentMarks ? active : null)}
               onAnchorClick={({ anchorId }) => {
                 if (anchorId !== "ai-reference-highlight") setActive(anchorId);
               }}
@@ -442,22 +442,7 @@ export default function CanvasDocument({
         />
       )}
       <RegionComments
-        visibilityControl={
-          <button
-            className="icon comment-control canvas-comment-visibility"
-            aria-label={
-              showCommentMarks ? "隐藏画板评论标记" : "显示画板评论标记"
-            }
-            title={showCommentMarks ? "隐藏画板评论标记" : "显示画板评论标记"}
-            aria-pressed={showCommentMarks}
-            onClick={() => {
-              setShowCommentMarks((v) => !v);
-              setActive(null);
-            }}
-          >
-            {showCommentMarks ? <Eye size={16} /> : <EyeOff size={16} />}
-          </button>
-        }
+        onOpenChange={setShowCommentMarks}
         createAction={createComment}
         detail={detail}
         user={user}

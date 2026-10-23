@@ -44,6 +44,8 @@ import {
   CommentComposer,
   CommentMessage,
   parsedComment,
+  CommentPublicationStatus,
+  type CommentPublication,
 } from "@web/features/comments/rich-comments.js";
 import { Select } from "@web/shared/components/select.js";
 import { useCommentPages } from "@web/features/comments/use-comment-pages.js";
@@ -1283,7 +1285,8 @@ function WorkspaceApp() {
                 >
                   {detail &&
                   detail.resource.id === resourceId &&
-                  ["spreadsheet", "canvas", "presentation"].includes(
+                  detail.resource.kind === "document" &&
+                  ["rich_text", "markdown", "spreadsheet", "canvas", "presentation"].includes(
                     detail.resource.format,
                   ) &&
                   roleRank(detail.resource.role) >= 3 && !documentMode.readOnly ? (
@@ -1723,6 +1726,7 @@ function Comments({
   const { t } = useI18n();
   const [reply, setReply] = useState<string | null>(null);
   const [editing, setEditing] = useState<string | null>(null);
+  const [publication, setPublication] = useState<CommentPublication | null>(null);
   useCommentPages(detail.resource.id, true, detail.commentsNextCursor, loadMoreComments);
   useEffect(() => {
     const index = detail.comments.findIndex((c) => c.id === targetComment);
@@ -1768,6 +1772,7 @@ function Comments({
         {t("shell.pageComments")}{" "}
         <small>{detail.comments.filter((c) => !c.deleted_at).length}</small>
       </h2>
+      <CommentPublicationStatus publication={publication} comments={detail.comments} />
       {detail.comments.map((c) => (
         <article
           id={`comment-${c.id}`}
@@ -1812,6 +1817,7 @@ function Comments({
                   version: c.version,
                   richBody,
                 });
+                setPublication({ id: c.id, previousVersion: c.version });
                 setEditing(null);
                 await act(async () => {});
               }}
@@ -1826,10 +1832,11 @@ function Comments({
               close={() => setReply(null)}
               disabled={busy}
               submit={async (richBody) => {
-                await api(`/resources/${r.id}/comments`, "POST", {
+                const created = await api<{ id: string }>(`/resources/${r.id}/comments`, "POST", {
                   richBody,
                   parentId: c.id,
                 });
+                setPublication({ id: created.id });
                 setReply(null);
                 await act(async () => {});
               }}
@@ -1842,10 +1849,11 @@ function Comments({
           resourceId={r.id}
           disabled={busy}
           submit={async (richBody) => {
-            await api(`/resources/${r.id}/comments`, "POST", {
+            const created = await api<{ id: string }>(`/resources/${r.id}/comments`, "POST", {
               richBody,
               parentId: null,
             });
+            setPublication({ id: created.id });
             await act(async () => {});
           }}
         />

@@ -36,6 +36,7 @@ import {
 import { distributionPolicy } from "../deployment/policies.js";
 import {
   markdownTitle,
+  markdownTitleReplacement,
   restoreMarkdown,
   storeNewMarkdown,
 } from "../documents/codecs/markdown.js";
@@ -349,9 +350,10 @@ export function createResourceCommands(
             if (loaded.state) {
               const text = loaded.doc.getText("markdown"),
                 first = text.toString().split("\n", 1)[0]!;
+              const edit = markdownTitleReplacement(first, clean(title));
               loaded.doc.transact(() => {
-                text.delete(0, first.length);
-                text.insert(0, `# ${clean(title)}`);
+                text.delete(edit.index, edit.length);
+                text.insert(edit.index, edit.text);
               });
               const seq = loaded.state.seq + 1;
               await checkDocumentSize(

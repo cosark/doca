@@ -5,14 +5,15 @@ import {
   useRef,
   useState,
   type MutableRefObject,
-  type ReactNode,
 } from "react";
-import { Eye, EyeOff, MessageSquare, PanelRightClose } from "lucide-react";
+import { MessageSquare, PanelRightClose } from "lucide-react";
 import { api, type Detail, type User } from "@web/shared/api.js";
 import {
   CommentComposer,
   CommentMessage,
   parsedComment,
+  CommentPublicationStatus,
+  type CommentPublication,
 } from "@web/features/comments/rich-comments.js";
 import type { CommentBody } from "@core/modules/interactions/community.js";
 import { Feedback } from "@web/shared/components/feedback.js";
@@ -55,8 +56,7 @@ export function RegionComments({
   loadMoreComments,
   createAction,
   candidateIds,
-  annotationVisibility,
-  visibilityControl,
+  onOpenChange,
 }: {
   detail: Detail;
   user: User | null;
@@ -72,8 +72,7 @@ export function RegionComments({
   loadMoreComments?: () => Promise<void>;
   createAction: MutableRefObject<() => void>;
   candidateIds?: string[];
-  annotationVisibility?: { visible: boolean; change(visible: boolean): void };
-  visibilityControl?: ReactNode;
+  onOpenChange?(open: boolean): void;
 }) {
   const { t } = useI18n();
   useAIBridge(detail.resource.id, { capture: () => controller?.capture(), describe: a => controller?.label(a) ?? t("comment.quote"), reveal: a => { if (!controller?.valid(a)) throw Error(t("comment.quoteStale")); controller.reveal(a); }, ready: () => !!controller && connected && !dirty, flush: () => controller?.flush?.() });
@@ -85,7 +84,9 @@ export function RegionComments({
     [editing, setEditing] = useState<Detail["comments"][number] | null>(null),
     [busy, setBusy] = useState(false),
     [error, setError] = useState("");
+  const [publication, setPublication] = useState<CommentPublication | null>(null);
   const panel = useRef<HTMLElement>(null);
+  useEffect(() => { onOpenChange?.(open); }, [open, onOpenChange]);
   // Native markers must include every page even while the drawer is closed.
   useCommentPages(detail.resource.id, true, detail.commentsNextCursor, loadMoreComments, open);
   const rail = useRef<HTMLDivElement>(null);
@@ -267,7 +268,6 @@ export function RegionComments({
       return;
     }
     setError("");
-    annotationVisibility?.change(true);
     setDraft(anchor);
     setReply(null);
     setEditing(null);
@@ -282,19 +282,21 @@ export function RegionComments({
   const save = async (richBody: CommentBody) => {
     setBusy(true);
     try {
-      if (editing)
+      if (editing) {
         await api(
           `/resources/${detail.resource.id}/comments/${editing.id}`,
           "PATCH",
           { version: editing.version, richBody },
         );
-      else {
+        setPublication({ id: editing.id, previousVersion: editing.version });
+      } else {
         const created = await api<{ id: string }>(`/resources/${detail.resource.id}/comments`, "POST", {
           richBody,
           parentId: reply ? (reply.parent_id ?? reply.id) : null,
           ...(!reply && draft ? { anchor: JSON.stringify(draft) } : {}),
         });
         setRevealComment(created.id);
+        setPublication({ id: created.id });
       }
       setDraft(null);
       setReply(null);
@@ -320,35 +322,17 @@ export function RegionComments({
       }}
     />
   );
-  const visibilityAction = annotationVisibility && (
-    <button
-      className="icon comment-control"
-      title={annotationVisibility.visible ? t("comment.hideMarks") : t("comment.showMarks")}
-      aria-label={
-        annotationVisibility.visible ? t("comment.hideMarks") : t("comment.showMarks")
-      }
-      aria-pressed={annotationVisibility.visible}
-      onClick={() => {
-        annotationVisibility.change(!annotationVisibility.visible);
-        setOpen(false);
-        setActive(null);
-      }}
-    >
-      {annotationVisibility.visible ? <Eye size={18} /> : <EyeOff size={18} />}
-    </button>
-  ) || visibilityControl;
   return (
     <>
       <div className="region-comment-controls">
-        {visibilityAction}
         <button
           className="icon comment-control region-comment-toggle"
           title={t("comment.region")}
           aria-label={t("comment.openRegion")}
           aria-expanded={open}
           onClick={() => {
-            if (!open) annotationVisibility?.change(true);
             setOpen(!open);
+            if (open) setActive(null);
           }}
         >
           <MessageSquare size={18} />
@@ -395,7 +379,6 @@ export function RegionComments({
                   );
                 }}
               />
-              {visibilityAction}
               <button
                 className="icon comment-control"
                 title={t("comment.closeRegion")}
@@ -408,6 +391,7 @@ export function RegionComments({
                 <PanelRightClose size={18} />
               </button>
             </div>
+            <CommentPublicationStatus publication={publication} comments={detail.comments} />
           </header>
           {candidateIds && candidateIds.length > 1 && (
             <div className="comment-candidates" aria-label={t("comment.regionList")}>

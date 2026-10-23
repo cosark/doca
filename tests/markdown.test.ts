@@ -226,6 +226,61 @@ it("imports Markdown through the authenticated API, indexes body text and rename
     await app.close();
   }
 });
+it.each([
+  ["## Original\n\nBody **unchanged**", "## 🚀 Renamed\n\nBody **unchanged**"],
+  ["  ######\tOriginal ###  \r\nBody", "  ######\t🚀 Renamed ###  \r\nBody"],
+  ["Original\n===\n\nBody", "🚀 Renamed\n===\n\nBody"],
+  ["Original\nBody", "🚀 Renamed\nBody"],
+  ["## \nBody", "## 🚀 Renamed\nBody"],
+  ["##\r\nBody", "## 🚀 Renamed\r\nBody"],
+  ["## **_Original_**\nBody", "## **_🚀 Renamed_**\nBody"],
+  [
+    "## [Original](https://example.com)\nBody",
+    "## [🚀 Renamed](https://example.com)\nBody",
+  ],
+])(
+  "renames Markdown without restyling the first line: %s",
+  async (markdown, expected) => {
+    const content = createContent(db);
+    const resource = await content.create(owner, {
+      kind: "document",
+      format: "markdown",
+      title: "Original",
+      markdown,
+    });
+    await content.rename(owner, resource.id, "🚀 Renamed", resource.version);
+    const restored = await restoreMarkdown(db, resource.id);
+    try {
+      expect(restored.doc.getText("markdown").toString()).toBe(expected);
+      expect((await content.detail(owner, resource.id)).resource.title).toBe(
+        "🚀 Renamed",
+      );
+    } finally {
+      restored.destroy();
+    }
+  },
+);
+it.each(["🚀 **Original**", "🚀 [Original](https://example.com)"])(
+  "keeps explicit title Markdown without nesting old wrappers: %s",
+  async (title) => {
+    const content = createContent(db);
+    const resource = await content.create(owner, {
+      kind: "document",
+      format: "markdown",
+      title: "Original",
+      markdown: "## **Original**\nBody",
+    });
+    await content.rename(owner, resource.id, title, resource.version);
+    const restored = await restoreMarkdown(db, resource.id);
+    try {
+      expect(restored.doc.getText("markdown").toString()).toBe(
+        `## ${title}\nBody`,
+      );
+    } finally {
+      restored.destroy();
+    }
+  },
+);
 async function setup() {
   const content = createContent(db),
     docs = createDocuments(db);

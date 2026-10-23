@@ -68,6 +68,8 @@ import {
   CommentMessage,
   parsedComment,
   lookupUsers,
+  CommentPublicationStatus,
+  type CommentPublication,
 } from "@web/features/comments/rich-comments.js";
 import {
   SelectionCommentAction,
@@ -677,21 +679,24 @@ function RichDocument({
       );
     });
   }
+  const [publication, setPublication] = useState<CommentPublication | null>(null);
   async function saveComment(richBody: CommentBody) {
     setBusy(true);
     try {
-      if (editingComment)
+      if (editingComment) {
         await api(`/resources/${id}/comments/${editingComment.id}`, "PATCH", {
           version: editingComment.version,
           richBody,
         });
-      else {
+        setPublication({ id: editingComment.id, previousVersion: editingComment.version });
+      } else {
         const created = await api<{ id: string }>(`/resources/${id}/comments`, "POST", {
           richBody,
           parentId: reply,
           ...(!reply && anchor ? { anchor: JSON.stringify(anchor) } : {}),
         });
         setRevealComment(created.id);
+        setPublication({ id: created.id });
       }
       setEditingComment(null);
       setAnchor(null);
@@ -1174,6 +1179,7 @@ function RichDocument({
                 <PanelRightClose size={18} />
               </button>
               </div>
+              <CommentPublicationStatus publication={publication} comments={detail.comments} />
             </header>
             {!roots.length && !anchor && (
               <p className="subtle">{t("comment.selectionHint")}</p>

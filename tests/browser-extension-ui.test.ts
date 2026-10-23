@@ -12,45 +12,6 @@ const flush = async () => {
   for (let turn = 0; turn < 4; turn++)
     await new Promise<void>((resolve) => setImmediate(resolve));
 };
-type NoteTarget = {
-  profileId: string;
-  profileRevision: number;
-  profileName: string;
-  isDefault: boolean;
-  targetId: string;
-  title: string;
-  format: "rich_text" | "markdown";
-};
-type QuickNoteReply = (message: any) => Promise<any>;
-const noteTargets: [NoteTarget, NoteTarget] = [
-  {
-    profileId: "11111111-1111-4111-8111-111111111111",
-    profileRevision: 3,
-    profileName: "Quick notes",
-    isDefault: true,
-    targetId: "22222222-2222-4222-8222-222222222222",
-    title: "Existing rich text",
-    format: "rich_text",
-  },
-  {
-    profileId: "33333333-3333-4333-8333-333333333333",
-    profileRevision: 2,
-    profileName: "Markdown notes",
-    isDefault: false,
-    targetId: "44444444-4444-4444-8444-444444444444",
-    title: "Existing Markdown",
-    format: "markdown",
-  },
-];
-const noteAck = (message: any, changed = true) => ({
-  requestId: message.requestId,
-  targetId: noteTargets[0].targetId,
-  url: "https://doca.test/#/r/" + noteTargets[0].targetId,
-  seq: 7,
-  epochId: "55555555-5555-4555-8555-555555555555",
-  changed,
-});
-
 async function fixture(
   hash = "",
   options: {
@@ -72,17 +33,7 @@ async function fixture(
     stateReplies: (() => Promise<any>)[] = [],
     operationReplies: (() => Promise<any>)[] = [],
     unmounts: any[] = [],
-    quickNoteReplies: {
-      quickNoteTargets: QuickNoteReply[];
-      quickNotePrepare: QuickNoteReply[];
-      quickNoteCommit: QuickNoteReply[];
-    } = {
-      quickNoteTargets: [],
-      quickNotePrepare: [],
-      quickNoteCommit: [],
-    },
     storageWrites: any[] = [];
-  const notePrepared = new Map<string, any>();
   const state = {
     locale: "zh",
     connected: true,
@@ -95,7 +46,16 @@ async function fixture(
       { id: "default", name: "Default", isDefault: true, revision: 1 },
     ],
   };
-  const noop = { addListener() {} };
+  const currentTab = {
+    id: 9,
+    windowId: 11,
+    title: "Current article",
+    url: "https://article.test/page",
+  };
+  const tabListeners: {
+    activated?: () => void;
+    updated?: (id: number, change: any) => void;
+  } = {};
   Object.assign(dom.window, {
     TextEncoder,
     setInterval() {},
@@ -105,49 +65,6 @@ async function fixture(
       runtime: {
         sendMessage: async (message: any) => {
           calls.push(message);
-          const messageType: string = message.type;
-          const quickReply =
-            messageType === "quickNoteTargets" ||
-            messageType === "quickNotePrepare" ||
-            messageType === "quickNoteCommit"
-              ? quickNoteReplies[messageType].shift()
-              : undefined;
-          if (quickReply) {
-            const result = await quickReply(message);
-            if (message.type === "quickNotePrepare" && result.ok)
-              notePrepared.set(message.requestId, result.value);
-            return result;
-          }
-          if (message.type === "quickNoteTargets")
-            return { ok: true, value: { items: structuredClone(noteTargets) } };
-          if (message.type === "quickNotePrepare") {
-            const target = noteTargets.find(
-              (item) => item.profileId === message.profileId,
-            )!;
-            const prepared = {
-              requestId: message.requestId,
-              ticket: "a".repeat(64),
-              targetId: target.targetId,
-              format: target.format,
-              expiresAt: "2099-01-01T00:00:00Z",
-            };
-            notePrepared.set(message.requestId, prepared);
-            return { ok: true, value: prepared };
-          }
-          if (message.type === "quickNoteCommit") {
-            const prepared = notePrepared.get(message.requestId);
-            return {
-              ok: true,
-              value: {
-                requestId: message.requestId,
-                targetId: prepared.targetId,
-                url: "https://doca.test/#/r/" + prepared.targetId,
-                seq: 7,
-                epochId: "55555555-5555-4555-8555-555555555555",
-                changed: true,
-              },
-            };
-          }
           if (message.type === "locale") state.locale = message.locale;
           if (message.type === "configure")
             Object.assign(
@@ -178,16 +95,17 @@ async function fixture(
         },
       },
       tabs: {
-        query: async () => [
-          {
-            id: 9,
-            windowId: 11,
-            title: "Current article",
-            url: "https://article.test/page",
+        query: async () => [{ ...currentTab }],
+        onActivated: {
+          addListener: (listener: () => void) => {
+            tabListeners.activated = listener;
           },
-        ],
-        onActivated: noop,
-        onUpdated: noop,
+        },
+        onUpdated: {
+          addListener: (listener: (id: number, change: any) => void) => {
+            tabListeners.updated = listener;
+          },
+        },
       },
       sidePanel: {
         setOptions: async (options: unknown) =>
@@ -250,30 +168,10 @@ async function fixture(
     stateReplies,
     operationReplies,
     unmounts,
-    quickNoteReplies,
     storageWrites,
+    currentTab,
+    tabListeners,
   };
-}
-
-async function openQuickNote(
-  f: Awaited<ReturnType<typeof fixture>>,
-  target: (typeof noteTargets)[number] | null = noteTargets[0],
-) {
-  f.element<HTMLDetailsElement>("quick-note").open = true;
-  f.element("quick-note").dispatchEvent(new f.dom.window.Event("toggle"));
-  await flush();
-  if (target) {
-    f.element<HTMLSelectElement>("quick-note-target").value = target.profileId;
-    f.element("quick-note-target").dispatchEvent(
-      new f.dom.window.Event("change", { bubbles: true }),
-    );
-  }
-}
-function fillQuickNote(f: Awaited<ReturnType<typeof fixture>>, text: string) {
-  f.element<HTMLTextAreaElement>("quick-note-text").value = text;
-  f.element("quick-note-text").dispatchEvent(
-    new f.dom.window.Event("input", { bubbles: true }),
-  );
 }
 
 it("opens the capture home and saves the page or selection using the chosen rule without mounting AI", async () => {
@@ -281,6 +179,10 @@ it("opens the capture home and saves the page or selection using the chosen rule
   try {
     expect(element("capture-pane").hidden).toBe(false);
     expect(element("assistant-pane").hidden).toBe(true);
+    expect(doc.querySelector("#quick-note")).toBeNull();
+    expect(calls.some((message) => message.type.startsWith("quickNote"))).toBe(
+      false,
+    );
     expect(element("connection-pane").hidden).toBe(true);
     expect(element<HTMLSelectElement>("profile").value).toBe("default");
     expect(mounts).toEqual([]);
@@ -561,8 +463,8 @@ it("mounts with the latest page reference and locale when the local AI module fi
     finishModule();
     await flush();
     expect(mounts.at(-1).locale).toBe("en");
-    expect(mounts.at(-1).page.url).toBe("https://latest.test/page");
-    expect(mounts.at(-1).page.title).toContain("Latest article");
+    expect(mounts.at(-1).page.url).toBe("https://article.test/page");
+    expect(mounts.at(-1).page.title).toBe("Current article");
   } finally {
     finishModule();
     dispose();
@@ -905,801 +807,72 @@ it("defers refresh work while an action is busy and drains its queued probe afte
   }
 });
 
-it("keeps quick notes collapsed and explicitly selects an append target without AI or capture profiles", async () => {
-  const f = await fixture();
-  try {
-    expect(f.element<HTMLDetailsElement>("quick-note").open).toBe(false);
-    expect(
-      f.calls.some((message) => message.type.startsWith("quickNote")),
-    ).toBe(false);
-    f.serverState.assistantEnabled = false;
-    f.serverState.profiles = [];
-    f.dom.window.dispatchEvent(new f.dom.window.Event("focus"));
-    await flush();
-    f.element<HTMLDetailsElement>("quick-note").open = true;
-    f.element("quick-note").dispatchEvent(new f.dom.window.Event("toggle"));
-    await flush();
-    expect(f.element<HTMLSelectElement>("quick-note-target").value).toBe("");
-    const text = "  Plain <b>text</b> & [link]\nsecond line  ";
-    fillQuickNote(f, text);
-    expect(f.element<HTMLButtonElement>("quick-note-save").disabled).toBe(true);
-    f.element<HTMLSelectElement>("quick-note-target").value =
-      noteTargets[1].profileId;
-    f.element("quick-note-target").dispatchEvent(
-      new f.dom.window.Event("change"),
-    );
-    f.element("quick-note-save").click();
-    await flush();
-    const prepared = f.calls.find(
-      (message) => message.type === "quickNotePrepare",
-    );
-    expect(prepared).toEqual({
-      type: "quickNotePrepare",
+it("follows tab activation and in-page navigation instead of an older retained capture", async () => {
+  const f = await fixture("#assistant", {
+    pendingReference: {
       origin: "https://doca.test",
       connectionId: "connection",
-      requestId: expect.any(String),
-      profileId: noteTargets[1].profileId,
-      profileRevision: 2,
-      text,
-    });
-    expect(prepared.requestId).toMatch(/^[a-f0-9-]{36}$/);
-    expect(
-      f.calls.filter((message) => message.type === "quickNoteCommit"),
-    ).toEqual([
-      {
-        type: "quickNoteCommit",
-        origin: "https://doca.test",
-        connectionId: "connection",
-        requestId: prepared.requestId,
-        ticket: "a".repeat(64),
+      profileId: "default",
+      tabId: 9,
+      capture: {
+        mode: "selection",
+        title: "Selected article",
+        url: "https://article.test/page",
       },
-    ]);
-    expect(f.element<HTMLTextAreaElement>("quick-note-text").value).toBe("");
-    expect(f.element<HTMLSelectElement>("quick-note-target").value).toBe(
-      noteTargets[1].profileId,
-    );
-    expect(f.element<HTMLAnchorElement>("quick-note-target-link").href).toBe(
-      "https://doca.test/#/r/" + noteTargets[1].targetId,
-    );
-    expect(f.element("quick-note-status").textContent).toContain("记录已追加");
-    expect(
-      f.calls.some(
-        (message) =>
-          message.type === "capture" || message.type.startsWith("assistant"),
-      ),
-    ).toBe(false);
-    expect(f.mounts).toEqual([]);
-    expect(f.storageWrites).toEqual([]);
-    expect(f.dom.window.localStorage.length).toBe(0);
-  } finally {
-    f.dispose();
-  }
-});
-
-it("shows no-target guidance and does not mount quick notes in the AI sidebar", async () => {
-  const f = await fixture();
-  try {
-    f.quickNoteReplies.quickNoteTargets.push(async () => ({
-      ok: true,
-      value: { items: [] },
-    }));
-    await openQuickNote(f);
-    expect(f.element<HTMLSelectElement>("quick-note-target").value).toBe("");
-    expect(f.element("quick-note-empty").hidden).toBe(false);
-    fillQuickNote(f, "retained draft");
-    f.element("quick-note-save").click();
-    await flush();
-    expect(f.calls.some((message) => message.type === "quickNotePrepare")).toBe(
-      false,
-    );
-  } finally {
-    f.dispose();
-  }
-  const sidebar = await fixture("#assistant");
-  try {
-    expect(sidebar.element("quick-note").hidden).toBe(true);
-    await openQuickNote(sidebar);
-    expect(
-      sidebar.calls.some((message) => message.type.startsWith("quickNote")),
-    ).toBe(false);
-  } finally {
-    sidebar.dispose();
-  }
-});
-
-it("keeps the same target and draft through passive refresh and locale changes", async () => {
-  const f = await fixture();
-  try {
-    await openQuickNote(f);
-    fillQuickNote(f, "未发送的文字\nsecond line");
-    f.dom.window.dispatchEvent(new f.dom.window.Event("focus"));
-    await flush();
-    f.element<HTMLSelectElement>("locale").value = "en";
-    f.element("locale").dispatchEvent(new f.dom.window.Event("change"));
-    await flush();
-    expect(f.element<HTMLSelectElement>("quick-note-target").value).toBe(
-      noteTargets[0].profileId,
-    );
-    expect(f.element<HTMLTextAreaElement>("quick-note-text").value).toBe(
-      "未发送的文字\nsecond line",
-    );
-    expect(f.element("quick-note-save").textContent).toBe("Append note");
-    expect(
-      f.calls.filter((message) => message.type === "quickNoteTargets"),
-    ).toHaveLength(1);
-    expect(f.calls.some((message) => message.type === "quickNotePrepare")).toBe(
-      false,
-    );
-  } finally {
-    f.dispose();
-  }
-});
-
-it("rejects whitespace and UTF-8 text over 64 KiB without preparing or changing the draft", async () => {
-  const f = await fixture();
-  try {
-    await openQuickNote(f);
-    fillQuickNote(f, " \n\t ");
-    expect(f.element<HTMLButtonElement>("quick-note-save").disabled).toBe(true);
-    const text = "汉".repeat(22000);
-    fillQuickNote(f, text);
-    f.element("quick-note-save").click();
-    await flush();
-    expect(f.calls.some((message) => message.type === "quickNotePrepare")).toBe(
-      false,
-    );
-    expect(f.element<HTMLTextAreaElement>("quick-note-text").value).toBe(text);
-    expect(f.element("quick-note-status").textContent).toContain(
-      "分成较短的记录",
-    );
-  } finally {
-    f.dispose();
-  }
-});
-
-it("keeps input until commit acknowledgement and freezes the original snapshot while later text is typed", async () => {
-  const f = await fixture();
-  let finishPrepare!: (value: any) => void;
-  let finishCommit!: (value: any) => void;
-  f.quickNoteReplies.quickNotePrepare.push(
-    () =>
-      new Promise((resolve) => {
-        finishPrepare = resolve;
-      }),
-  );
-  f.quickNoteReplies.quickNoteCommit.push(
-    () =>
-      new Promise((resolve) => {
-        finishCommit = resolve;
-      }),
-  );
-  try {
-    await openQuickNote(f);
-    fillQuickNote(f, "original immutable text");
-    f.element("quick-note-save").click();
-    f.element("quick-note-save").click();
-    await flush();
-    expect(f.element<HTMLTextAreaElement>("quick-note-text").value).toBe(
-      "original immutable text",
-    );
-    expect(
-      f.calls.filter((message) => message.type === "quickNotePrepare"),
-    ).toHaveLength(1);
-    const request = f.calls.find(
-      (message) => message.type === "quickNotePrepare",
-    );
-    fillQuickNote(f, "later independent draft");
-    finishPrepare({
-      ok: true,
-      value: {
-        requestId: request.requestId,
-        ticket: "b".repeat(64),
-        targetId: noteTargets[0].targetId,
-        format: "rich_text",
-        expiresAt: "2099-01-01T00:00:00Z",
-      },
-    });
-    await flush();
-    expect(
-      f.calls.filter((message) => message.type === "quickNoteCommit"),
-    ).toHaveLength(1);
-    expect(f.element<HTMLTextAreaElement>("quick-note-text").value).toBe(
-      "later independent draft",
-    );
-    finishCommit({
-      ok: true,
-      value: noteAck(request),
-    });
-    await flush();
-    expect(f.element<HTMLTextAreaElement>("quick-note-text").value).toBe(
-      "later independent draft",
-    );
-    expect(request.text).toBe("original immutable text");
-    expect(f.element("quick-note-clear").hidden).toBe(true);
-  } finally {
-    f.dispose();
-  }
-});
-
-it("retries a lost commit acknowledgement only with its original ticket and keeps a later draft", async () => {
-  const f = await fixture();
-  f.quickNoteReplies.quickNoteCommit.push(async () => ({
-    ok: false,
-    error: "clipper_connection_failed",
-  }));
-  try {
-    await openQuickNote(f);
-    fillQuickNote(f, "original note");
-    f.element("quick-note-save").click();
-    await flush();
-    const first = f.calls.find((message) => message.type === "quickNoteCommit");
-    expect(f.element("quick-note-retry").hidden).toBe(false);
-    expect(f.element<HTMLButtonElement>("quick-note-save").disabled).toBe(true);
-    expect(f.element<HTMLSelectElement>("quick-note-target").disabled).toBe(
-      true,
-    );
-    expect(f.element<HTMLTextAreaElement>("quick-note-text").value).toBe(
-      "original note",
-    );
-    expect(f.element("quick-note-status").textContent).toContain("无法确认");
-    expect(f.element("quick-note-target-link").hidden).toBe(false);
-    f.dom.window.dispatchEvent(new f.dom.window.Event("focus"));
-    await flush();
-    expect(
-      f.calls.filter((message) => message.type === "quickNotePrepare"),
-    ).toHaveLength(1);
-    expect(
-      f.calls.filter((message) => message.type === "quickNoteCommit"),
-    ).toHaveLength(1);
-    fillQuickNote(f, "new draft after uncertain send");
-    f.quickNoteReplies.quickNoteCommit.push(async (message) => ({
-      ok: true,
-      value: noteAck(message, false),
-    }));
-    f.element("quick-note-retry").click();
-    await flush();
-    expect(
-      f.calls.filter((message) => message.type === "quickNoteCommit"),
-    ).toEqual([first, first]);
-    expect(
-      f.calls.filter((message) => message.type === "quickNotePrepare"),
-    ).toHaveLength(1);
-    expect(f.element<HTMLTextAreaElement>("quick-note-text").value).toBe(
-      "new draft after uncertain send",
-    );
-    expect(f.storageWrites).toEqual([]);
-  } finally {
-    f.dispose();
-  }
-});
-
-it("retries uncertain preparation using the exact original ID, profile and text before committing", async () => {
-  const f = await fixture();
-  f.quickNoteReplies.quickNotePrepare.push(async () => ({
-    ok: false,
-    error: "clipper_connection_failed",
-  }));
-  try {
-    await openQuickNote(f);
-    fillQuickNote(f, "original preparation");
-    f.element("quick-note-save").click();
-    await flush();
-    const original = f.calls.find(
-      (message) => message.type === "quickNotePrepare",
-    );
-    expect(f.calls.some((message) => message.type === "quickNoteCommit")).toBe(
-      false,
-    );
-    fillQuickNote(f, "later text");
-    f.element("quick-note-retry").click();
-    await flush();
-    expect(
-      f.calls.filter((message) => message.type === "quickNotePrepare"),
-    ).toEqual([original, original]);
-    expect(
-      f.calls.filter((message) => message.type === "quickNoteCommit"),
-    ).toHaveLength(1);
-    expect(f.element<HTMLTextAreaElement>("quick-note-text").value).toBe(
-      "later text",
-    );
-  } finally {
-    f.dispose();
-  }
-});
-
-for (const code of [
-  "quick_note_ticket_missing",
-  "quick_note_signin_changed",
-  "clipper_profile_changed",
-])
-  it(`stops ${code} without a new request ID and requires deliberate reset before another attempt`, async () => {
-    const f = await fixture();
-    f.quickNoteReplies.quickNoteCommit.push(async () => ({
-      ok: false,
-      error: code,
-      status: 409,
-    }));
-    try {
-      await openQuickNote(f);
-      fillQuickNote(f, "preserve this uncertain note");
-      f.element("quick-note-save").click();
-      await flush();
-      const original = f.calls.find(
-        (message) => message.type === "quickNotePrepare",
-      );
-      expect(f.element("quick-note-retry").hidden).toBe(true);
-      expect(f.element<HTMLButtonElement>("quick-note-save").disabled).toBe(
-        true,
-      );
-      expect(f.element<HTMLTextAreaElement>("quick-note-text").value).toBe(
-        "preserve this uncertain note",
-      );
-      expect(f.element("quick-note-status").textContent).toContain("已停止");
-      expect(
-        f.element<HTMLAnchorElement>("quick-note-target-link").href,
-      ).toContain(noteTargets[0].targetId);
-      f.dom.window.dispatchEvent(new f.dom.window.Event("focus"));
-      await flush();
-      expect(
-        f.calls.filter((message) => message.type === "quickNotePrepare"),
-      ).toHaveLength(1);
-      expect(
-        f.calls.filter((message) => message.type === "quickNoteCommit"),
-      ).toHaveLength(1);
-      f.element("quick-note-clear").click();
-      expect(f.element("quick-note-reset-confirmation").hidden).toBe(false);
-      f.element("quick-note-confirm-reset").click();
-      await flush();
-      expect(
-        f.calls.filter((message) => message.type === "quickNotePrepare"),
-      ).toHaveLength(1);
-      expect(f.element<HTMLTextAreaElement>("quick-note-text").value).toBe(
-        "preserve this uncertain note",
-      );
-      expect(f.element<HTMLButtonElement>("quick-note-save").disabled).toBe(
-        code === "clipper_profile_changed",
-      );
-      if (code === "clipper_profile_changed") {
-        expect(f.element<HTMLSelectElement>("quick-note-target").value).toBe(
-          "",
-        );
-        f.element<HTMLSelectElement>("quick-note-target").value =
-          noteTargets[0].profileId;
-        f.element("quick-note-target").dispatchEvent(
-          new f.dom.window.Event("change"),
-        );
-      }
-      f.element("quick-note-save").click();
-      await flush();
-      expect(
-        f.calls.filter((message) => message.type === "quickNotePrepare"),
-      ).toHaveLength(2);
-      expect(
-        f.calls.filter((message) => message.type === "quickNotePrepare")[1]
-          .requestId,
-      ).not.toBe(original.requestId);
-    } finally {
-      f.dispose();
-    }
-  });
-
-for (const changed of [
-  "requestId",
-  "targetId",
-  "ticket",
-  "expiresAt",
-  "format",
-])
-  it(`refuses preparation with mismatched ${changed} before any commit`, async () => {
-    const f = await fixture();
-    f.quickNoteReplies.quickNotePrepare.push(async (message) => ({
-      ok: true,
-      value: {
-        requestId: message.requestId,
-        targetId: noteTargets[0].targetId,
-        format: "rich_text",
-        ticket: "a".repeat(64),
-        expiresAt: "2099-01-01T00:00:00Z",
-        [changed]: (
-          {
-            requestId: "foreign",
-            targetId: noteTargets[1].targetId,
-            ticket: "A".repeat(64),
-            expiresAt: "2000-01-01T00:00:00Z",
-            format: "markdown",
-          } as any
-        )[changed],
-      },
-    }));
-    try {
-      await openQuickNote(f);
-      fillQuickNote(f, "must stay intact");
-      f.element("quick-note-save").click();
-      await flush();
-      expect(
-        f.calls.some((message) => message.type === "quickNoteCommit"),
-      ).toBe(false);
-      expect(f.element<HTMLTextAreaElement>("quick-note-text").value).toBe(
-        "must stay intact",
-      );
-      expect(f.element("quick-note-retry").hidden).toBe(true);
-      expect(f.element("quick-note-status").className).toBe("error");
-    } finally {
-      f.dispose();
-    }
-  });
-
-it("rejects an array preparation ticket without committing or clearing the draft", async () => {
-  const f = await fixture();
-  f.quickNoteReplies.quickNotePrepare.push(async (message) => ({
-    ok: true,
-    value: {
-      requestId: message.requestId,
-      targetId: noteTargets[0].targetId,
-      format: "rich_text",
-      ticket: ["a".repeat(64)],
-      expiresAt: "2099-01-01T00:00:00Z",
     },
-  }));
+  });
   try {
-    await openQuickNote(f);
-    fillQuickNote(f, "retain text for malformed preparation");
-    f.element("quick-note-save").click();
+    expect(f.mounts.at(-1).page.title).toContain("Selected article");
+    Object.assign(f.currentTab, {
+      id: 10,
+      title: "Next article",
+      url: "https://next.test/page",
+    });
+    f.tabListeners.activated!();
     await flush();
-    expect(f.calls.some((message) => message.type === "quickNoteCommit")).toBe(
-      false,
-    );
-    expect(f.element<HTMLTextAreaElement>("quick-note-text").value).toBe(
-      "retain text for malformed preparation",
-    );
-    expect(f.element("quick-note-retry").hidden).toBe(true);
-    expect(f.element("quick-note-status").textContent).toContain("返回结果");
+    expect(f.mounts.at(-1).page).toEqual({
+      title: "Next article",
+      url: "https://next.test/page",
+    });
+    Object.assign(f.currentTab, {
+      title: "Next route",
+      url: "https://next.test/route-two",
+    });
+    f.tabListeners.updated!(10, { url: f.currentTab.url });
+    await flush();
+    expect(f.mounts.at(-1).page).toEqual({
+      title: "Next route",
+      url: "https://next.test/route-two",
+    });
+    // A click can arrive before Chrome delivers its onActivated event.
+    f.currentTab.id = 11;
+    await f.mounts.at(-1).captureCurrentPage();
+    expect(f.calls.at(-1)).toMatchObject({
+      type: "assistantPreparePage",
+      tabId: 11,
+    });
   } finally {
     f.dispose();
   }
 });
 
-it("keeps the original ticket retryable for a mismatched commit acknowledgement", async () => {
-  const f = await fixture();
-  f.quickNoteReplies.quickNoteCommit.push(async (message) => ({
-    ok: true,
-    value: { requestId: message.requestId, targetId: noteTargets[1].targetId },
-  }));
-  try {
-    await openQuickNote(f);
-    fillQuickNote(f, "not acknowledged");
-    f.element("quick-note-save").click();
-    await flush();
-    expect(f.element<HTMLTextAreaElement>("quick-note-text").value).toBe(
-      "not acknowledged",
-    );
-    expect(f.element("quick-note-retry").hidden).toBe(false);
-    expect(f.element("quick-note-status").textContent).toContain("返回结果");
-    f.element("quick-note-retry").click();
-    await flush();
-    expect(
-      f.calls.filter((message) => message.type === "quickNotePrepare"),
-    ).toHaveLength(1);
-    const commits = f.calls.filter(
-      (message) => message.type === "quickNoteCommit",
-    );
-    expect(commits).toEqual([commits[0], commits[0]]);
-    expect(f.element<HTMLTextAreaElement>("quick-note-text").value).toBe("");
-  } finally {
-    f.dispose();
-  }
-});
-
-for (const [name, change] of [
-  ["missing request ID", { requestId: undefined }],
-  ["missing URL", { url: undefined }],
-  [
-    "foreign origin",
-    { url: "https://other.test/#/r/" + noteTargets[0].targetId },
-  ],
-  [
-    "another resource",
-    { url: "https://doca.test/#/r/" + noteTargets[1].targetId },
-  ],
-  ["unsafe protocol", { url: "javascript:alert(1)" }],
-  ["array URL", { url: ["https://doca.test/#/r/" + noteTargets[0].targetId] }],
-  ["negative sequence", { seq: -1 }],
-  ["fractional sequence", { seq: 0.5 }],
-  ["missing epoch", { epochId: undefined }],
-  ["array epoch", { epochId: ["55555555-5555-4555-8555-555555555555"] }],
-  ["nonboolean changed", { changed: "false" }],
-] as const)
-  it(`preserves the draft and exact commit for an acknowledgement with ${name}`, async () => {
-    const f = await fixture();
-    f.quickNoteReplies.quickNoteCommit.push(async (message) => ({
-      ok: true,
-      value: { ...noteAck(message), ...change },
-    }));
-    try {
-      await openQuickNote(f);
-      fillQuickNote(f, "must retain until a complete acknowledgement");
-      f.element("quick-note-save").click();
-      await flush();
-      expect(f.element<HTMLTextAreaElement>("quick-note-text").value).toBe(
-        "must retain until a complete acknowledgement",
-      );
-      expect(f.element("quick-note-retry").hidden).toBe(false);
-      expect(f.element("quick-note-target-link").hidden).toBe(false);
-      f.element("quick-note-retry").click();
-      await flush();
-      const commits = f.calls.filter(
-        (message) => message.type === "quickNoteCommit",
-      );
-      expect(commits).toEqual([commits[0], commits[0]]);
-      expect(
-        f.calls.filter((message) => message.type === "quickNotePrepare"),
-      ).toHaveLength(1);
-      expect(f.element<HTMLTextAreaElement>("quick-note-text").value).toBe("");
-    } finally {
-      f.dispose();
-    }
-  });
-
-for (const status of [403, 404])
-  it(`requires target reselection after an ordinary ${status} without exposing internal error codes`, async () => {
-    const f = await fixture();
-    f.quickNoteReplies.quickNoteCommit.push(async () => ({
-      ok: false,
-      error: "internal_document_authorization_failure",
-      status,
-    }));
-    try {
-      await openQuickNote(f);
-      fillQuickNote(f, "permission failure keeps this note");
-      f.element("quick-note-save").click();
-      await flush();
-      expect(f.element<HTMLTextAreaElement>("quick-note-text").value).toBe(
-        "permission failure keeps this note",
-      );
-      expect(f.element<HTMLSelectElement>("quick-note-target").value).toBe("");
-      expect(f.element("quick-note-retry").hidden).toBe(true);
-      expect(f.element("quick-note-status").textContent).toContain(
-        "重新选择文档",
-      );
-      expect(f.element("quick-note-status").textContent).not.toContain(
-        "internal_document",
-      );
-      expect(
-        f.element<HTMLAnchorElement>("quick-note-target-link").href,
-      ).toContain(noteTargets[0].targetId);
-      f.element("quick-note-clear").click();
-      f.element("quick-note-confirm-reset").click();
-      await flush();
-      expect(f.element<HTMLSelectElement>("quick-note-target").value).toBe("");
-      expect(f.element<HTMLButtonElement>("quick-note-save").disabled).toBe(
-        true,
-      );
-      expect(
-        f.calls.filter((message) => message.type === "quickNotePrepare"),
-      ).toHaveLength(1);
-      expect(
-        f.calls.filter((message) => message.type === "quickNoteCommit"),
-      ).toHaveLength(1);
-    } finally {
-      f.dispose();
-    }
-  });
-
-for (const field of ["profileId", "targetId"] as const)
-  it(`rejects an array target-list ${field} without selecting a target or preparing`, async () => {
-    const f = await fixture();
-    f.quickNoteReplies.quickNoteTargets.push(async () => ({
-      ok: true,
-      value: {
-        items: [{ ...noteTargets[0], [field]: [noteTargets[0][field]] }],
+it("does not attach another tab's selection even when both tabs have the same URL", async () => {
+  const f = await fixture("#assistant", {
+    pendingReference: {
+      origin: "https://doca.test",
+      connectionId: "connection",
+      profileId: "default",
+      tabId: 99,
+      capture: {
+        mode: "selection",
+        title: "Another tab",
+        url: "https://article.test/page",
       },
-    }));
-    try {
-      await openQuickNote(f, null);
-      fillQuickNote(f, "retain text when targets are malformed");
-      const target = f.element<HTMLSelectElement>("quick-note-target");
-      expect(target.options).toHaveLength(1);
-      expect(target.value).toBe("");
-      expect(f.element<HTMLButtonElement>("quick-note-save").disabled).toBe(
-        true,
-      );
-      f.element("quick-note-save").click();
-      await flush();
-      expect(
-        f.calls.some((message) => message.type === "quickNotePrepare"),
-      ).toBe(false);
-      expect(f.element<HTMLTextAreaElement>("quick-note-text").value).toBe(
-        "retain text when targets are malformed",
-      );
-      expect(f.element("quick-note-status").textContent).toContain("返回结果");
-    } finally {
-      f.dispose();
-    }
+    },
   });
-
-it("rejects incomplete target entries instead of filling missing current-contract fields", async () => {
-  const f = await fixture();
-  f.quickNoteReplies.quickNoteTargets.push(async () => ({
-    ok: true,
-    value: { items: [{ ...noteTargets[0], isDefault: undefined }] },
-  }));
   try {
-    await openQuickNote(f, null);
-    expect(
-      f.element<HTMLSelectElement>("quick-note-target").options,
-    ).toHaveLength(1);
-    expect(f.element<HTMLButtonElement>("quick-note-save").disabled).toBe(true);
-    expect(f.element("quick-note-status").textContent).toContain("返回结果");
-    expect(f.calls.some((message) => message.type === "quickNotePrepare")).toBe(
-      false,
-    );
+    expect(f.mounts.at(-1).page.title).toBe("Current article");
   } finally {
     f.dispose();
-  }
-});
-
-it("presents unknown network errors generically while preserving same-ticket retry", async () => {
-  const f = await fixture();
-  f.quickNoteReplies.quickNoteCommit.push(async () => ({
-    ok: false,
-    error: "socket_diagnostic_internal",
-  }));
-  try {
-    await openQuickNote(f);
-    fillQuickNote(f, "network uncertain");
-    f.element("quick-note-save").click();
-    await flush();
-    expect(f.element("quick-note-status").textContent).not.toContain(
-      "socket_diagnostic",
-    );
-    expect(f.element("quick-note-status").textContent).toContain(
-      "无法完成此次请求",
-    );
-    expect(f.element("quick-note-retry").hidden).toBe(false);
-    expect(f.element<HTMLTextAreaElement>("quick-note-text").value).toBe(
-      "network uncertain",
-    );
-  } finally {
-    f.dispose();
-  }
-});
-
-for (const stage of ["prepare", "commit"])
-  it(`drops a late ${stage} result after the account scope changes and retains unsent text`, async () => {
-    const f = await fixture();
-    let finish!: (value: any) => void;
-    f.quickNoteReplies[
-      stage === "prepare" ? "quickNotePrepare" : "quickNoteCommit"
-    ].push(
-      () =>
-        new Promise((resolve) => {
-          finish = resolve;
-        }),
-    );
-    try {
-      await openQuickNote(f);
-      fillQuickNote(f, "keep across scope change");
-      f.element("quick-note-save").click();
-      await flush();
-      const original = f.calls.find(
-        (message) => message.type === "quickNotePrepare",
-      );
-      Object.assign(f.serverState, {
-        origin: "https://other.test",
-        connectionId: "other-connection",
-        user: { id: "other-user", name: "Other account" },
-      });
-      f.dom.window.dispatchEvent(new f.dom.window.Event("focus"));
-      await flush();
-      expect(f.element<HTMLSelectElement>("quick-note-target").value).toBe("");
-      expect(f.element("quick-note-target-link").hidden).toBe(true);
-      expect(f.element("quick-note-status").textContent).toContain("已变化");
-      finish({
-        ok: true,
-        value:
-          stage === "prepare"
-            ? {
-                requestId: original.requestId,
-                targetId: noteTargets[0].targetId,
-                format: "rich_text",
-                ticket: "a".repeat(64),
-                expiresAt: "2099-01-01T00:00:00Z",
-              }
-            : {
-                requestId: original.requestId,
-                targetId: noteTargets[0].targetId,
-                changed: true,
-              },
-      });
-      await flush();
-      expect(
-        f.calls.filter((message) => message.type === "quickNoteCommit"),
-      ).toHaveLength(stage === "prepare" ? 0 : 1);
-      expect(f.element<HTMLTextAreaElement>("quick-note-text").value).toBe(
-        "keep across scope change",
-      );
-      expect(f.element<HTMLSelectElement>("quick-note-target").value).toBe("");
-      expect(f.element("quick-note-status").textContent).not.toContain(
-        "记录已追加",
-      );
-      expect(f.element("quick-note-clear").hidden).toBe(true);
-    } finally {
-      f.dispose();
-    }
-  });
-
-it("drops old target-list responses on a site change without replacing the new list", async () => {
-  const f = await fixture();
-  let finishOld!: (value: any) => void;
-  f.quickNoteReplies.quickNoteTargets.push(
-    () =>
-      new Promise((resolve) => {
-        finishOld = resolve;
-      }),
-  );
-  f.quickNoteReplies.quickNoteTargets.push(async () => ({
-    ok: true,
-    value: { items: [{ ...noteTargets[1], title: "New site document" }] },
-  }));
-  try {
-    f.element<HTMLDetailsElement>("quick-note").open = true;
-    f.element("quick-note").dispatchEvent(new f.dom.window.Event("toggle"));
-    await flush();
-    fillQuickNote(f, "unsent draft");
-    f.serverState.origin = "https://next.test";
-    f.dom.window.dispatchEvent(new f.dom.window.Event("focus"));
-    await flush();
-    finishOld({ ok: true, value: { items: [noteTargets[0]] } });
-    await flush();
-    expect(f.element("quick-note-target").textContent).toContain(
-      "New site document",
-    );
-    expect(f.element("quick-note-target").textContent).not.toContain(
-      "Existing rich text",
-    );
-    expect(f.element<HTMLSelectElement>("quick-note-target").value).toBe("");
-    expect(f.element<HTMLTextAreaElement>("quick-note-text").value).toBe(
-      "unsent draft",
-    );
-  } finally {
-    f.dispose();
-  }
-});
-
-it("starts a fresh popup without a previous target, draft or uncertain ticket", async () => {
-  const first = await fixture();
-  try {
-    first.quickNoteReplies.quickNoteCommit.push(async () => ({
-      ok: false,
-      error: "clipper_connection_failed",
-    }));
-    await openQuickNote(first);
-    fillQuickNote(first, "only this open instance");
-    first.element("quick-note-save").click();
-    await flush();
-    expect(first.element("quick-note-retry").hidden).toBe(false);
-    expect(first.storageWrites).toEqual([]);
-  } finally {
-    first.dispose();
-  }
-  const next = await fixture();
-  try {
-    next.element<HTMLDetailsElement>("quick-note").open = true;
-    next
-      .element("quick-note")
-      .dispatchEvent(new next.dom.window.Event("toggle"));
-    await flush();
-    expect(next.element<HTMLSelectElement>("quick-note-target").value).toBe("");
-    expect(next.element<HTMLTextAreaElement>("quick-note-text").value).toBe("");
-    expect(next.element("quick-note-retry").hidden).toBe(true);
-    expect(next.element("quick-note-clear").hidden).toBe(true);
-    expect(
-      next.calls.some((message) =>
-        ["quickNotePrepare", "quickNoteCommit"].includes(message.type),
-      ),
-    ).toBe(false);
-    expect(next.dom.window.localStorage.length).toBe(0);
-  } finally {
-    next.dispose();
   }
 });

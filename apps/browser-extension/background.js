@@ -466,12 +466,15 @@ async function quickNoteRequest(message) {
 }
 async function state(interactive = false) {
   const locale = (await local.get("locale")).locale || "zh";
+  let config;
   try {
-    const config = await ensureLogin(interactive),
-      [me, profiles] = await Promise.all([
-        request("/me"),
-        request("/profiles"),
-      ]);
+    config = await ensureLogin(interactive);
+    const [me, profiles] = await Promise.all([
+      request("/me", "GET", undefined, false, config),
+      request("/profiles", "GET", undefined, false, config),
+    ]);
+    if (!(await authorizationIsCurrent(config, config)))
+      return state(interactive);
     return {
       connected: true,
       locale,
@@ -484,6 +487,8 @@ async function state(interactive = false) {
       error: (await session.get("lastError")).lastError || "",
     };
   } catch (error) {
+    if (config && !(await authorizationIsCurrent(config, config)))
+      return state(interactive);
     return {
       connected: false,
       locale,
@@ -574,7 +579,7 @@ async function bytes(image, tabId) {
     return data;
   }
 }
-async function prepare(pending) {
+async function prepare(pending, requireImages = true) {
   const config = await connection();
   if (
     pending.connectionId !== config.connectionId ||
@@ -611,13 +616,25 @@ async function prepare(pending) {
         name: image.name,
       },
     });
-    await request(
-      `/clips/${pending.requestId}/images/${image.id}`,
-      "PUT",
-      await bytes(image, pending.tabId),
-      true,
-      pending,
-    );
+    try {
+      await request(
+        `/clips/${pending.requestId}/images/${image.id}`,
+        "PUT",
+        await bytes(image, pending.tabId),
+        true,
+        pending,
+      );
+    } catch (error) {
+      // AI can read the staged Markdown even if a page image is unavailable.
+      // Keep its manifest intact: a later archive still requires every image.
+      if (
+        requireImages ||
+        !["clipper_image_invalid", "clipper_image_failed"].includes(
+          error.message,
+        )
+      )
+        throw error;
+    }
   }
   await session.remove("transfer");
   return progress;
@@ -713,8 +730,12 @@ async function handle(message, sender) {
     if (
       message.method === "POST" &&
       /\/sessions\/[a-f0-9-]{36}\/messages$/.test(message.path)
-    )
-      await session.remove("assistantPending");
+    ) {
+      const pending = (await session.get("assistantPending")).assistantPending;
+      if (pending?.requestId === message.body?.captureRequestId)
+        await session.remove("assistantPending");
+      await session.remove("lastError");
+    }
     return result;
   }
   if (message.type === "assistantSession") {
@@ -757,11 +778,21 @@ async function handle(message, sender) {
     )
       throw Error("clipper_scope_denied");
     let pending = (await session.get("assistantPending")).assistantPending;
+    const sameProfile =
+      pending &&
+      pending.origin === config.origin &&
+      pending.connectionId === config.connectionId &&
+      pending.profileId === message.profileId;
+    if (sameProfile && pending.profileRevision !== message.profileRevision)
+      throw Error("clipper_profile_changed");
+    const currentTab = message.tabId
+      ? await chrome.tabs.get(message.tabId)
+      : null;
     if (
-      !pending ||
-      pending.origin !== config.origin ||
-      pending.connectionId !== config.connectionId ||
-      pending.profileId !== message.profileId
+      !sameProfile ||
+      pending.capture.mode !== "selection" ||
+      pending.tabId !== currentTab?.id ||
+      pending.capture.url !== currentTab?.url
     ) {
       const source = await snapshot("page", message.tabId);
       pending = await begin(
@@ -771,9 +802,8 @@ async function handle(message, sender) {
         message.profileRevision,
       );
       await session.set({ assistantPending: pending });
-    } else if (pending.profileRevision !== message.profileRevision)
-      throw Error("clipper_profile_changed");
-    await prepare(pending);
+    }
+    await prepare(pending, false);
     return {
       captureRequestId: pending.requestId,
       title: pending.capture.title,

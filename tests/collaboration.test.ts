@@ -16,6 +16,7 @@ import {
   b64,
   unb64,
   restoreDocument,
+  setDocumentTitle,
 } from "./editor-client.js";
 import { createApp } from "../apps/server/src/app/create-app.js";
 import type { WebSocket } from "ws";
@@ -250,6 +251,104 @@ it("preserves new font marks through host ACK, peer projection, reload and indep
   } finally {
     a.destroy();
     b.destroy();
+  }
+});
+it("renames a styled title with its icon while preserving block identity, text formatting and peer content", async () => {
+  const r = await resource(),
+    a = await replica(r.id),
+    b = await replica(r.id);
+  try {
+    const before = a.runtime.getValue(),
+      styled = structuredClone(before);
+    const title = styled[0] as any;
+    Object.assign(title, { title: "h2", align: "center", lineHeight: 1.8 });
+    Object.assign(title.children[0], {
+      bold: true,
+      italic: true,
+      fontSize: 28,
+      fontFamily: "serif",
+      color: "#c2410c",
+    });
+    const updates: Uint8Array[] = [];
+    const stop = a.runtime.onLocalUpdate((update) => updates.push(update));
+    a.runtime.acceptEditorValue(before, styled);
+    stop();
+    await documents.exchange(owner, r.id, { update: b64(updates[0]!) });
+    const detail = await content.detail(owner, r.id);
+    await content.rename(owner, r.id, "🚀 新标题", detail.resource.version);
+    const renamed = await documents.exchange(owner, r.id, {
+      vector: b64(encodeStateVector(b.doc)),
+    });
+    let echoes = 0;
+    const stopPeer = b.runtime.onLocalUpdate(() => echoes++);
+    b.runtime.applyRemoteUpdate(unb64(renamed.update));
+    stopPeer();
+    expect(echoes).toBe(0);
+    expect(b.runtime.getValue()[0]).toEqual({
+      ...title,
+      children: [{ ...title.children[0], text: "🚀 新标题" }],
+    });
+    expect(b.runtime.getValue().slice(1)).toEqual(styled.slice(1));
+    expect((await content.detail(owner, r.id)).resource.title).toBe(
+      "🚀 新标题",
+    );
+    const restored = await restoreDocument(db, r.id);
+    try {
+      expect(restored.runtime.getValue()).toEqual(b.runtime.getValue());
+    } finally {
+      restored.destroy();
+    }
+    expect(
+      (
+        await documents.exchange(owner, r.id, {
+          vector: b64(encodeStateVector(b.doc)),
+        })
+      ).seq,
+    ).toBe(renamed.seq);
+  } finally {
+    a.destroy();
+    b.destroy();
+  }
+});
+it("keeps mixed title marks and link identity when changing only the icon", () => {
+  const doc = new Doc(),
+    runtime = new YjsDocument(doc);
+  try {
+    const first = {
+      id: crypto.randomUUID(),
+      type: "paragraph" as const,
+      title: "h1" as const,
+      children: [
+        { text: "项目", bold: true, fontSize: 30 },
+        {
+          id: crypto.randomUUID(),
+          type: "link" as const,
+          url: "https://example.com",
+          children: [{ text: "基线", italic: true, color: "#c2410c" }],
+        },
+        { text: "" },
+      ],
+    };
+    runtime.initialize([first]);
+    const baseline = runtime.getValue()[0] as typeof first;
+    setDocumentTitle(runtime, "🚀 项目基线");
+    expect(runtime.getValue()[0]).toEqual({
+      ...baseline,
+      children: [
+        { ...baseline.children[0], text: "🚀 项目" },
+        ...baseline.children.slice(1),
+      ],
+    });
+    setDocumentTitle(runtime, "项目基线");
+    expect(runtime.getValue()[0]).toEqual(baseline);
+    let updates = 0;
+    const stop = runtime.onLocalUpdate(() => updates++);
+    setDocumentTitle(runtime, "项目基线");
+    stop();
+    expect(updates).toBe(0);
+  } finally {
+    runtime.destroy();
+    doc.destroy();
   }
 });
 it("anchors comments to Yjs text and copies document content as an independent identity", async () => {

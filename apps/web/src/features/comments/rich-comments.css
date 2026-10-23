@@ -166,6 +166,20 @@
   font-size: 12px;
 }
 .comment-pending-spinner { animation: comment-pending-spin 1s linear infinite; }
+.comment-publication-status {
+  display: flex;
+  align-items: center;
+  gap: 6px;
+  position: sticky;
+  top: 0;
+  z-index: 2;
+  padding: 8px 12px;
+  background: var(--panel-bg, #fff);
+}
+.content-comments > header > .comment-publication-status {
+  position: static;
+  flex-basis: 100%;
+}
 @keyframes comment-pending-spin { to { transform: rotate(360deg); } }
 @media (prefers-reduced-motion: reduce) { .comment-pending-spinner { animation: none; } }
 .comment-candidates {

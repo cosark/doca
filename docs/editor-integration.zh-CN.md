@@ -10,8 +10,8 @@
 | --- | --- | --- |
 | 富文本 | @smartdoca/slate 0.4.25 | document-editor.tsx |
 | Markdown | @smartdoca/markdown 0.4.4 | markdown-editor.tsx |
-| 表格 | @smartdoca/sheet 0.2.11 | spreadsheet-editor.tsx |
-| 画布 | @smartdoca/canvas 0.5.14 | canvas-editor.tsx |
+| 表格 | @smartdoca/sheet 0.2.12 | spreadsheet-editor.tsx |
+| 画布 | @smartdoca/canvas 0.5.15 | canvas-editor.tsx |
 | 幻灯片 | @smartdoca/slides 0.3.0-alpha.4 | presentation-editor.tsx |
 
 入口位于 [文档 feature](../apps/web/src/features/documents)。包负责模型、编辑命令、撤销、格式渲染、选择与转换；宿主负责身份、ACL、上传下载、引用、用户卡片、导航、评论和协同连接。语言只影响界面，不翻译用户正文，不重建编辑器。
@@ -184,3 +184,15 @@ Doca 锁定 npm 正式发布的 `@smartdoca/canvas` 0.5.8 和 `@smartdoca/sheet`
 Canvas 包含 0.5.7 的样式、平移、提及、重做及嵌入式视图菜单修复，以及 0.5.8 的无绑定连接线整体拖动。网格和背景色仅为视图状态；显式编辑仍经现有模型、撤销栈、宿主 outbox 和持久 ACK。Canvas 保持 `aidcanvas-yjs` schema 1，Sheet 保持 `exlsx-cell-registers` schema 6。本次没有新增宿主适配器、兼容行为、数据转换、历史字段默认值、DDL 或 epoch/checkpoint/待确认消息改写。已有历史读取、虚拟工作表恢复、规范化函数及此前获批的显示规则保留原有路径，未重新设计。
 
 使用隔离的合成文档和数据库验证。发布包身份、运行时代码比对、通过项目和限制见[对接验证](verification/editor-packages-2026-10-21/README.md)。回退保留源提交 `31fca12f48a54f1c2ce3caeec6a0d976e164ac4e` 的依赖、锁文件、工作区配置和制品；服务端和 Web 一起重建，保留后续写入。未使用用户文档/数据库，未部署。
+
+## 画布表格框选与宿主评论 — 2026-10-23
+
+Doca 锁定正式 npm `@smartdoca/canvas` 0.5.15。新建原生表格无需重新加载即可通过完整包围框选整体选中，单元格指针处理和部分包围规则保持独立。相较 0.5.14，公开入口、依赖、类型声明、model/preferences 运行文件及 CSS 不变。正式仓库的 155 文件归档与审核后的发布归档逐字节一致，全部 dist 文件与已验收候选包一致。
+
+Canvas、Sheet、Slides 的评论标注默认隐藏，随宿主评论侧栏打开和关闭显示或隐藏，移除独立眼睛按钮。Doca 为 SDK 独立富文本 React 根中的用户卡片转发当前语言上下文，并在评论写入成功至列表刷新之间继续显示发送反馈。这些宿主视图变更不修改永久锚点格式、行内 JSON、协作传输、schema、epoch、checkpoint 或待确认更新。已有历史读取和显示归一化代码保留原路径，不引入数据转换、字段回填或 DDL。
+
+验证使用隔离合成文档及数据库，覆盖原生表格框选、便签 @ 再次编辑/用户卡片/撤销/双端同步，以及五格式编译 Web 评论检查，具体收据与限制见[验证记录](verification/editor-comments-2026-10-23.md)。回退保留上一正式包、依赖及锁文件，并保留后续内容写入。未部署生产环境。
+
+## 正式筛选范围修复 — 2026-10-23
+
+Doca 0.2.11 锁定正式 Sheet 0.2.12，实现协同契约中用户明确批准的筛选范围规则。公开 exports、依赖和声明与 0.2.11 相同；改变的 Yjs 运行时通过现有 schema 6 一起提交正文和范围。原 baseline、epoch、checkpoint 与待确认更新保留。打开不修复旧短范围，显式确认有效条件才扩展。既有历史读取和默认值保持原状，无新增兼容适配或数据转换。回退保留前一 Sheet 0.2.11、宿主依赖/锁文件和后续内容及原生范围；详见[筛选验证](verification/sheet-filter-range-2026-10-23.md)。

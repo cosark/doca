@@ -573,7 +573,7 @@ it("rejects cross-origin selected material before opening a native panel", async
   expect(opened).toBe(false);
 });
 
-it("preserves retained selected material when its rule revision differs and reuses it only for the same revision", async () => {
+it("preserves retained selected material when its rule revision differs and reuses it only on the same page and revision", async () => {
   const r = runtime();
   const profileId = randomUUID();
   const pending = {
@@ -594,6 +594,7 @@ it("preserves retained selected material when its rule revision differs and reus
   };
   r.session.assistantPending = pending;
   r.session.pending = pending;
+  r.context.chrome.tabs.get = async () => ({ id: 7, url: pending.capture.url });
   const before = structuredClone(pending);
   const posted: { url: string; body: any }[] = [];
   let snapshots = 0;
@@ -615,7 +616,7 @@ it("preserves retained selected material when its rule revision differs and reus
     connectionId,
     profileId,
     profileRevision: 2,
-    tabId: 99,
+    tabId: 7,
   };
   const ui = {
     id: "fixture",
@@ -1353,3 +1354,222 @@ it("retries an uncertain commit only with the same request and ticket bytes", as
   expect(bodies).toEqual([bodies[0], bodies[0]]);
   expect(JSON.stringify([r.local, r.session])).toBe(before);
 });
+
+for (const mode of ["page", "selection"]) {
+  for (const change of ["tab", "url", "content"]) {
+    if (mode === "selection" && change === "content") continue;
+    it(`captures the current page after ${change} changes instead of reusing an older ${mode}`, async () => {
+      const r = runtime(),
+        profileId = randomUUID();
+      const old = {
+        origin,
+        connectionId,
+        requestId: randomUUID(),
+        profileId,
+        profileRevision: 1,
+        tabId: 7,
+        capture: {
+          mode,
+          title: "First page",
+          url: "https://source.test/one",
+          markdown: "old content",
+          images: [],
+        },
+      };
+      r.session.assistantPending = old;
+      const currentTab = {
+        id: change === "tab" ? 8 : 7,
+        url: change === "url" ? "https://source.test/two" : old.capture.url,
+      };
+      const capture = {
+        ...old.capture,
+        mode: "page",
+        title: "Current page",
+        url: currentTab.url,
+        markdown: "new content",
+      };
+      r.context.ensureLogin = async () => config;
+      r.context.chrome.tabs.get = async () => currentTab;
+      let snapshots = 0;
+      r.context.snapshot = async (mode: string, tabId: number) => {
+        snapshots++;
+        expect([mode, tabId]).toEqual(["page", currentTab.id]);
+        return { capture, tabId };
+      };
+      r.context.request = async (path: string) =>
+        path === "/profiles"
+          ? { items: [{ id: profileId, revision: 1 }] }
+          : { status: "pending", uploadedImageIds: [] };
+      const result = await r.handle(
+        {
+          type: "assistantPreparePage",
+          origin,
+          connectionId,
+          profileId,
+          profileRevision: 1,
+          tabId: currentTab.id,
+        },
+        quickNoteSender,
+      );
+      expect(snapshots).toBe(1);
+      expect(result).toMatchObject({
+        title: "Current page",
+        url: currentTab.url,
+      });
+      expect(result.captureRequestId).not.toBe(old.requestId);
+      expect(r.session.assistantPending.capture.markdown).toBe("new content");
+      expect(old.capture.markdown).toBe("old content");
+    });
+  }
+}
+
+for (const code of ["clipper_image_invalid", "clipper_image_failed"]) {
+  it(`allows AI material preparation after ${code} while keeping full capture strict`, async () => {
+    const r = runtime(),
+      profileId = randomUUID();
+    const capture = {
+      mode: "page",
+      title: "Page with an unavailable image",
+      url: "https://source.test/page",
+      capturedAt: new Date().toISOString(),
+      markdown: "Useful page text",
+      images: [
+        {
+          id: randomUUID(),
+          name: "logo.svg",
+          url: "https://source.test/logo.svg",
+        },
+        {
+          id: randomUUID(),
+          name: "photo.png",
+          url: "https://source.test/photo.png",
+        },
+      ],
+    };
+    r.context.ensureLogin = async () => config;
+    r.context.chrome.tabs.get = async () => ({ id: 7, url: capture.url });
+    r.context.snapshot = async () => ({ capture, tabId: 7 });
+    r.context.bytes = async () => new Uint8Array([1, 2, 3]);
+    const uploaded: string[] = [];
+    r.context.request = async (path: string) => {
+      if (path === "/profiles")
+        return { items: [{ id: profileId, revision: 1 }] };
+      if (path.endsWith("/" + capture.images[0]!.id))
+        throw Object.assign(Error(code), { status: 400 });
+      if (path.includes("/images/")) uploaded.push(path);
+      return { status: "pending", uploadedImageIds: [] };
+    };
+    const result = await r.handle(
+      {
+        type: "assistantPreparePage",
+        origin,
+        connectionId,
+        profileId,
+        profileRevision: 1,
+        tabId: 7,
+      },
+      quickNoteSender,
+    );
+    expect(result).toMatchObject({ title: capture.title, url: capture.url });
+    expect(uploaded).toEqual([
+      `/clips/${result.captureRequestId}/images/${capture.images[1]!.id}`,
+    ]);
+    expect(r.session.assistantPending.capture).toEqual(capture);
+    expect(r.session.transfer).toBeUndefined();
+    await expect(r.context.prepare(r.session.assistantPending)).rejects.toThrow(
+      code,
+    );
+  });
+}
+
+it("does not suppress authorization or quota failures while preparing AI page images", async () => {
+  const r = runtime();
+  const pending = {
+    origin,
+    connectionId,
+    requestId: randomUUID(),
+    capture: {
+      images: [
+        {
+          id: randomUUID(),
+          name: "photo.png",
+          url: "https://source.test/photo.png",
+        },
+      ],
+    },
+  };
+  r.context.bytes = async () => new Uint8Array([1]);
+  for (const code of [
+    "clipper_scope_denied",
+    "clipper_connection_revoked",
+    "storage_quota_exceeded",
+  ]) {
+    r.context.request = async (path: string) => {
+      if (path.includes("/images/"))
+        throw Object.assign(Error(code), { status: 403 });
+      return { status: "pending", uploadedImageIds: [] };
+    };
+    await expect(r.context.prepare(pending, false)).rejects.toThrow(code);
+  }
+});
+
+it("keeps newer page material when an older AI message acknowledgement arrives", async () => {
+  const r = runtime();
+  const pending = { requestId: randomUUID(), origin, connectionId };
+  r.session.assistantPending = pending;
+  r.session.lastError = "clipper_image_invalid";
+  r.context.ensureLogin = async () => config;
+  r.context.request = async () => ({ id: randomUUID(), status: "queued" });
+  const message = {
+    type: "assistantRequest",
+    origin,
+    connectionId,
+    method: "POST",
+    path: `/assistant/ui/sessions/${randomUUID()}/messages`,
+    body: { captureRequestId: randomUUID() },
+  };
+  await r.handle(message, quickNoteSender);
+  expect(r.session.assistantPending).toEqual(pending);
+  expect(r.session.lastError).toBeUndefined();
+  await r.handle(
+    { ...message, body: { captureRequestId: pending.requestId } },
+    quickNoteSender,
+  );
+  expect(r.session.assistantPending).toBeUndefined();
+});
+
+for (const staleResponse of ["success", "failure"]) {
+  it(`rechecks current sign-in when an old profile response arrives as ${staleResponse}`, async () => {
+    const r = runtime();
+    const next = {
+      ...config,
+      connectionId: randomUUID(),
+      token: "doca_browser_v2_" + "2".repeat(64),
+    };
+    let first = true;
+    r.context.ensureLogin = async () => r.session.authorization;
+    r.context.fetch = async (url: string, options: any) => {
+      const isOld = options.headers.Authorization === "Bearer " + config.token;
+      if (first) {
+        first = false;
+        r.session.authorization = next;
+      }
+      return {
+        ok: !isOld || staleResponse === "success",
+        status: isOld ? 401 : 200,
+        json: async () =>
+          url.endsWith("/me")
+            ? {
+                user: { id: isOld ? "old-account" : "current-account" },
+                connection: { assistant_enabled: 1 },
+              }
+            : { items: [{ id: isOld ? "old-profile" : "current-profile" }] },
+      };
+    };
+    const result = await r.context.state();
+    expect(result.connected).toBe(true);
+    expect(result.connectionId).toBe(next.connectionId);
+    expect(result.user.id).toBe("current-account");
+    expect(result.profiles).toEqual([{ id: "current-profile" }]);
+  });
+}

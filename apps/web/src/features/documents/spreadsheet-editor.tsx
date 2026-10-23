@@ -42,7 +42,7 @@ import { useSheetDocumentPicker } from "@web/features/documents/sheet-document-p
 import { useSheetPluginElements } from "./sheet-plugin-elements.js";
 import "@smartdoca/sheet/style.css";
 import "@web/features/documents/surface.css";
-import { Sparkles, Eye, EyeOff, MessageSquare } from "lucide-react";
+import { Sparkles, MessageSquare } from "lucide-react";
 const factory: SurfaceFactory<ExlsxCollaborationSession> = async (
   b,
   sessionId,
@@ -115,7 +115,7 @@ export default function SheetDocument({
   const [active, setActive] = useState<string | null>(null),
     [candidateIds, setCandidateIds] = useState<string[]>([]),
     [error, setError] = useState("");
-  const [showCommentMarks, setShowCommentMarks] = useState(true);
+  const [showCommentMarks, setShowCommentMarks] = useState(false);
   const attachmentPreview = useAttachmentPreview({ sheetImages: () => ref.current?.getImageGallery() ?? [] });
   const pasteDocumentLink = useSheetDocumentLinks(handle, editable, setError);
   const documentPicker = useSheetDocumentPicker(id, editable);
@@ -336,21 +336,7 @@ export default function SheetDocument({
         <p className="empty">正在加载表格…</p>
       )}
       <RegionComments
-        visibilityControl={
-          <button
-            className="icon comment-control canvas-comment-visibility"
-            aria-label={showCommentMarks ? "隐藏表格评论标记" : "显示表格评论标记"}
-            title={showCommentMarks ? "隐藏表格评论标记" : "显示表格评论标记"}
-            aria-pressed={showCommentMarks}
-            onClick={() => {
-              setShowCommentMarks((v) => !v);
-              setActive(null);
-              setCandidateIds([]);
-            }}
-          >
-            {showCommentMarks ? <Eye size={16} /> : <EyeOff size={16} />}
-          </button>
-        }
+        onOpenChange={setShowCommentMarks}
         candidateIds={candidateIds}
         createAction={createComment}
         detail={detail}
