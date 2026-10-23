@@ -29,6 +29,10 @@ const names = [
     { length: 16 },
     (_, i) => `code-${i.toString(16).padStart(2, "0")}`,
   ),
+  ...Array.from(
+    { length: 8 },
+    (_, i) => `large-${i.toString(16).padStart(2, "0")}`,
+  ),
 ];
 const buckets = Object.fromEntries(
   names.map((name) => {
@@ -37,7 +41,7 @@ const buckets = Object.fromEntries(
   }),
 );
 const directories = [];
-function bucket(relative) {
+function bucket(relative, size) {
   if (!relative.includes("/")) return "entry";
   if (relative.startsWith("cad/")) return "cad";
   if (/\.(?:woff2?|ttf|otf|ttc)(?:\.(?:br|gz))?$/i.test(relative))
@@ -47,8 +51,15 @@ function bucket(relative) {
   const identity = relative
     .replace(/\.(?:br|gz)$/, "")
     .replace(/-[A-Za-z0-9_-]{8}(\.[^.]+)$/, "$1");
-  const number = createHash("sha256").update(identity).digest()[0] & 15;
-  return `code-${number.toString(16).padStart(2, "0")}`;
+  const original = path.join(source, relative.replace(/\.(?:br|gz)$/, ""));
+  if (original !== path.join(source, relative) && existsSync(original))
+    size = lstatSync(original).size;
+  // Isolate large, often unchanged libraries from the many small chunks whose
+  // imports are renamed together by a CSS or entry update.
+  const large = size >= 512 * 1024;
+  const number =
+    createHash("sha256").update(identity).digest()[0] & (large ? 7 : 15);
+  return `${large ? "large" : "code"}-${number.toString(16).padStart(2, "0")}`;
 }
 function walk(directory, relative = "") {
   directories.push({ relative, mode: lstatSync(directory).mode & 0o7777 });
@@ -68,11 +79,11 @@ function walk(directory, relative = "") {
     }
     if (!entry.isFile() || lstatSync(from).isSymbolicLink())
       throw new Error(`Unexpected Web build entry: ${name}`);
-    const selected = bucket(name),
+    const stat = lstatSync(from);
+    const selected = bucket(name, stat.size),
       to = path.join(output, selected, name),
       record = buckets[selected];
     mkdirSync(path.dirname(to), { recursive: true });
-    const stat = lstatSync(from);
     const hash = createHash("sha256").update(readFileSync(from)).digest("hex");
     linkSync(from, to);
     record.files++;
