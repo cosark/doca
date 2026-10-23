@@ -2,10 +2,17 @@ import { readFile } from "node:fs/promises";
 import vm from "node:vm";
 import { createHash, randomUUID, webcrypto } from "node:crypto";
 import { expect, it } from "vitest";
-const source = await readFile(
-  new URL("../apps/browser-extension/background.js", import.meta.url),
-  "utf8",
-);
+import {
+  prepareCaptureImage,
+  readCaptureImageResponse,
+  MAX_IMAGE_SOURCE_BYTES,
+} from "../apps/browser-extension/image-processing.js";
+const source = (
+  await readFile(
+    new URL("../apps/browser-extension/background.js", import.meta.url),
+    "utf8",
+  )
+).replace(/^import \{[\s\S]*?\} from "\.\/image-processing\.js";\n/, "");
 const origin = "https://doca.example.test",
   connectionId = randomUUID();
 const config = {
@@ -33,6 +40,9 @@ function runtime() {
     },
   });
   const context = vm.createContext({
+    prepareCaptureImage,
+    readCaptureImageResponse,
+    MAX_IMAGE_SOURCE_BYTES,
     URL,
     crypto: {
       randomUUID,
@@ -77,6 +87,61 @@ function runtime() {
     handle: (message: any, sender: any) => context.handle(message, sender),
   };
 }
+it("opens standalone settings from a trusted top-frame page without requiring login", async () => {
+  const r = runtime();
+  delete r.session.authorization;
+  const created: unknown[] = [];
+  r.context.chrome.tabs.create = async (input: unknown) => created.push(input);
+  const sender = {
+    id: "fixture",
+    url: "https://source.test",
+    tab: { id: 7 },
+    frameId: 0,
+  };
+  await expect(r.handle({ type: "openSettings" }, sender)).resolves.toEqual({
+    opened: true,
+  });
+  expect(created).toEqual([
+    { url: "chrome-extension://fixture/ui.html#settings" },
+  ]);
+  await expect(
+    r.handle({ type: "openSettings" }, { ...sender, frameId: 1 }),
+  ).rejects.toThrow("clipper_scope_denied");
+  await expect(
+    r.handle({ type: "openSettings" }, { ...sender, id: "other" }),
+  ).rejects.toThrow("clipper_scope_denied");
+});
+
+it("persists only a validated vertical dock position and leaves invalid stored data for review", async () => {
+  const r = runtime();
+  delete r.session.authorization;
+  const sender = {
+    id: "fixture",
+    url: "https://source.test",
+    tab: { id: 7 },
+    frameId: 0,
+  };
+  await expect(
+    r.handle({ type: "dockPreferences", operation: "get" }, sender),
+  ).resolves.toEqual({ position: null, locale: "zh" });
+  await expect(
+    r.handle(
+      { type: "dockPreferences", operation: "set", position: 0.25 },
+      sender,
+    ),
+  ).resolves.toEqual({ position: 0.25, locale: "zh" });
+  for (const position of [-1, 2, NaN, Infinity, "0.5", null])
+    await expect(
+      r.handle({ type: "dockPreferences", operation: "set", position }, sender),
+    ).rejects.toThrow("clipper_invalid_input");
+  expect(r.local.dockPosition).toBe(0.25);
+  r.local.dockPosition = "invalid";
+  await expect(
+    r.handle({ type: "dockPreferences", operation: "get" }, sender),
+  ).rejects.toThrow("clipper_invalid_input");
+  expect(r.local.dockPosition).toBe("invalid");
+});
+
 it("recovers a missing capture receiver after navigation without reloading the page", async () => {
   const r = runtime();
   const capture = {

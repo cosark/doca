@@ -7,7 +7,11 @@ export const messages = {
     profileSettingsHelp:
       "在 Doca 设置保存位置、追加或新建策略，可配置多套规则。",
     handoff: "交给 AI",
-    imagesHelp: "正文与原图一起保存。AI 助手将在浏览器右侧打开。",
+    imagesHelp: "正文与图片一起保存，大图自动压缩。AI 助手将在浏览器右侧打开。",
+    captureImagePolicy: "图片一起归档 · 大图自动压缩",
+    clipper_image_compression_failed: "图片压缩失败，收录尚未完成，请重试。",
+    clipper_animated_image_too_large:
+      "动图超过 20 MiB 或 2500 万像素，不会转成静态图，请选择更小的图片。",
     saveNow: "立即收录",
     analyze: "交给 AI 分析",
     browserSource: "浏览器会话",
@@ -85,7 +89,7 @@ export const messages = {
     clipper_selection_missing: "请先在网页选择需要收录的内容。",
     clipper_image_failed: "图片读取失败，请保持原网页打开并重试。",
     clipper_image_invalid:
-      "图片格式不支持、内容无效或超过 20 MiB，收录尚未完成。",
+      "图片格式不支持、内容无效或超出处理上限，收录尚未完成。",
     clipper_images_missing: "仍有图片未上传，请重试，正文尚未保存。",
     clipper_conversion_warning:
       "此页面包含当前无法完整转换的内容，收录尚未完成。",
@@ -112,7 +116,12 @@ export const messages = {
       "Configure destinations and append or create strategies in Doca. Multiple rules are supported.",
     handoff: "Ask AI",
     imagesHelp:
-      "Content and original images are saved together. AI opens in your browser’s sidebar.",
+      "Content and images are saved together; large images are compressed. AI opens in your browser’s sidebar.",
+    captureImagePolicy: "Images included · Large images compressed",
+    clipper_image_compression_failed:
+      "Image compression failed. Capture is incomplete; please retry.",
+    clipper_animated_image_too_large:
+      "The animation exceeds 20 MiB or 25 million pixels. It will not be flattened; choose a smaller image.",
     saveNow: "Save now",
     analyze: "Analyze with AI",
     browserSource: "Browser conversation",
@@ -203,7 +212,7 @@ export const messages = {
     clipper_image_failed:
       "An image could not be read. Keep the source page open and retry.",
     clipper_image_invalid:
-      "An image is unsupported, invalid or over 20 MiB. Capture is incomplete.",
+      "An image is unsupported, invalid or exceeds the processing limit. Capture is incomplete.",
     clipper_images_missing:
       "Some images have not uploaded. Retry; content has not been saved.",
     clipper_conversion_warning:

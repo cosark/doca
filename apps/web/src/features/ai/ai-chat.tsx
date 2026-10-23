@@ -156,6 +156,7 @@ import {
 import { referenceTextParts } from "@web/features/ai/ai-reference-text.js";
 import { AIQuestionNav } from "@web/features/ai/ai-question-nav.js";
 import { AIPendingQueue } from "@web/features/ai/ai-pending-queue.js";
+import { waitingPendingItems } from "./ai-pending-presentation.js";
 import {
   AssistantIdentity,
   AssistantWelcome,
@@ -2059,13 +2060,15 @@ export function AIChat({ full = false, browser = false }: { full?: boolean; brow
     });
   };
   if (!ai.userId) return <div className="empty">{t("chat.signIn")}</div>;
+  const currentOptimistic = optimistic.filter(message => message.userId === ai.userId &&
+    (message.sessionId ? message.sessionId === ai.sessionId : message.draftKey === draftKey));
+  const timelineMessages = currentOptimistic.filter(message => message.delivery !== "queued");
+  const waitingPending = waitingPendingItems(pending, [...older, ...timelineMessages, ...(conversation?.messages ?? [])]);
   const visibleMessages: Conversation["messages"] = [
     ...new Map(
       [
         ...older,
-        ...pending.map(item => ({ ...item, role: "user", explorer: item.files, delivery: "queued" as const })),
-        ...optimistic.filter(message => message.userId === ai.userId &&
-          (message.sessionId ? message.sessionId === ai.sessionId : message.draftKey === draftKey)),
+        ...timelineMessages,
         ...(conversation?.messages ?? []),
       ].map((m) => [m.id, m]),
     ).values(),
@@ -3636,7 +3639,7 @@ export function AIChat({ full = false, browser = false }: { full?: boolean; brow
                 </div>)}
               </div>}
               <AIPendingQueue
-                items={pending}
+                items={waitingPending}
                 waiting={jobs.length > 0 || busy}
                 onEdit={async (item) => {
                   sendControllers.current.get(item.id)?.abort();

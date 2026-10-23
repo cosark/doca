@@ -35,6 +35,13 @@ body.sidebar {
   min-height: 0;
   max-height: none;
 }
+body.settings-page {
+  width: min(520px, 100%);
+  min-height: 100vh;
+  max-height: none;
+  margin-inline: auto;
+  overflow: visible;
+}
 body > header {
   display: flex;
   align-items: center;
