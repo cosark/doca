@@ -10,8 +10,8 @@ The current checkout integrates five editors. Use actual installed exports; targ
 | --- | --- | --- |
 | Rich text | @smartdoca/slate 0.4.25 | document-editor.tsx |
 | Markdown | @smartdoca/markdown 0.4.4 | markdown-editor.tsx |
-| Spreadsheet | @smartdoca/sheet 0.2.11 | spreadsheet-editor.tsx |
-| Canvas | @smartdoca/canvas 0.5.14 | canvas-editor.tsx |
+| Spreadsheet | @smartdoca/sheet 0.2.12 | spreadsheet-editor.tsx |
+| Canvas | @smartdoca/canvas 0.5.15 | canvas-editor.tsx |
 | Slides | @smartdoca/slides 0.3.0-alpha.4 | presentation-editor.tsx |
 
 Entries are in the [document feature](../apps/web/src/features/documents). Packages own models, editing commands, undo, rendering, selections, and conversion. The host owns identity, ACLs, uploads/downloads, references, user cards, navigation, comments, and collaboration transport. Locale updates chrome without translating content or rebuilding the editor.
@@ -198,3 +198,15 @@ Doca pins the official npm `@smartdoca/canvas` 0.5.8 and `@smartdoca/sheet` 0.2.
 Canvas includes 0.5.7's style, wheel, mention and redo fixes, embedded view controls, and 0.5.8's native unbound-connector body translation. Grid/background choices remain view state. Native edit gestures use the existing model, undo, host outbox and durable ACKs. Canvas remains `aidcanvas-yjs` schema 1; Sheet remains `exlsx-cell-registers` schema 6. No host API adapter, new compatibility behavior, stored-data conversion, historical-field default, DDL or epoch/checkpoint/pending-message rewrite is introduced. Existing historical readers, virtual worksheet recovery, normalization helpers and previously approved display rules remain in their established paths without redesign.
 
 Verification uses isolated synthetic documents and databases. Published artifact identities, runtime comparisons, passed checks and limits are recorded in [the integration verification](verification/editor-packages-2026-10-21/README.md). Keep the preceding pins, lockfile, workspace configuration and artifacts from source revision `31fca12f48a54f1c2ce3caeec6a0d976e164ac4e` for package rollback; rebuild server and Web together and preserve later writes. No user document/database or deployment is used.
+
+## Canvas table selection and host comments — 2026-10-23
+
+Doca pins the official npm `@smartdoca/canvas` 0.5.15. Newly drawn native tables participate as whole objects in fully enclosing marquee selections without requiring a reload; cell pointer handling and partial-containment rules stay independent. Relative to 0.5.14, public exports, dependencies, declarations, model/preferences runtime and CSS are unchanged. The 155-file registry archive is byte-identical to the reviewed release archive; its `dist` files match the tested candidate.
+
+Canvas, Sheet and Slides comment annotations are hidden until the host comment sidebar opens and hide when it closes. The separate eye control is removed. Doca forwards the current locale context into SDK-owned rich-text React roots for user cards, and retains comment sending feedback between the write receipt and the refreshed comment list. These host view changes do not modify permanent anchor formats, inline JSON, document transport, schema, epochs, checkpoints or pending updates. Existing historical readers and display normalization remain in their established paths without redesign; no data conversion, backfill or DDL is introduced.
+
+Verification uses isolated synthetic documents and databases, including native table selection, mention re-entry/user cards/editing/undo/peer synchronization, and five-format compiled-Web comments checks. Exact receipts and limits are in [the verification record](verification/editor-comments-2026-10-23.md). Retain the preceding official package, dependency pins and lockfile for rollback and preserve subsequent content writes. No production deployment is claimed.
+
+## Published filter-range fix — 2026-10-23
+
+Doca 0.2.11 pins official Sheet 0.2.12, which implements the explicitly approved filter range policy in the collaboration contract. Public exports, dependencies and declarations match 0.2.11; the changed Yjs runtimes author content and range together using schema 6. Original baselines, epochs, checkpoints and pending updates are preserved. Opening does not repair old short ranges; explicit criteria confirmation does. Existing historical readers/defaults remain unchanged, without a new compatibility adapter or data conversion. Keep 0.2.11 and the previous host pins/lockfile for rollback, preserving all later content and authored native ranges. See [filter verification](verification/sheet-filter-range-2026-10-23.md).
