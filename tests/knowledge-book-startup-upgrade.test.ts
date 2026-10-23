@@ -4,7 +4,8 @@ import { sql } from "kysely";
 import type { DB } from "@db/index.js";
 import { createSchema, CURRENT_SCHEMA_BASELINE } from "@db/create-schema.js";
 import { currentSchemaTables } from "@db/introspection.js";
-import { databaseDriver, transact } from "@db/transactions.js";
+import { databaseDriver, registerDriver, transact } from "@db/transactions.js";
+import { inheritDatabaseRuntimeScope } from "@db/runtime-scope.js";
 import { HISTORY_SCHEMA_BASELINE } from "@db/history-schema.js";
 import {
   bookPayloadTables,
@@ -269,27 +270,31 @@ it("rejects a review-required structure before applying any additions", async ()
 
 it("rolls back table additions if final generation recording fails", async () => {
   await inlineFixture();
-  if (databaseDriver(db) === "postgres") {
-    await sql
-      .raw(
-        "create function reject_book_generation() returns trigger language plpgsql as $$ begin raise exception 'synthetic generation failure'; end $$",
-      )
-      .execute(db);
-    await sql
-      .raw(
-        "create trigger reject_book_generation before update of id on schema_baseline for each row execute function reject_book_generation()",
-      )
-      .execute(db);
-  } else
-    await sql
-      .raw(
-        "create trigger reject_book_generation before update of id on schema_baseline begin select raise(abort, 'synthetic generation failure'); end",
-      )
-      .execute(db);
+  let attempted = false;
+  const failing = db.withPlugin({
+    transformQuery({ node }) {
+      const text = JSON.stringify(node);
+      if (
+        node.kind === "UpdateQueryNode" &&
+        text.includes('"name":"schema_baseline"') &&
+        text.includes('"name":"id"')
+      ) {
+        attempted = true;
+        throw new Error("synthetic generation failure");
+      }
+      return node;
+    },
+    async transformResult({ result }) {
+      return result;
+    },
+  });
+  registerDriver(failing, databaseDriver(db));
+  inheritDatabaseRuntimeScope(db, failing);
   const before = await snapshot();
-  await expect(createSchema(db)).rejects.toThrow(
+  await expect(createSchema(failing)).rejects.toThrow(
     "synthetic generation failure",
   );
+  expect(attempted).toBe(true);
   await expectUnchanged(before);
 });
 
