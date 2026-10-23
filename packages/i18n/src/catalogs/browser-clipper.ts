@@ -1,4 +1,19 @@
 export const browserClipperEn = {
+  "clipper.chat.welcome": "What would you like to save?",
+  "clipper.chat.welcomeHelp":
+    "Save this page, extract key points, or organize it for your library.",
+  "clipper.chat.capture": "Save this page",
+  "clipper.chat.capturePrompt":
+    "Save the current page using the selected capture profile, preserving its content and original images.",
+  "clipper.chat.summary": "Summarize this page",
+  "clipper.chat.summaryPrompt":
+    "Summarize the current page and list its key points and source link.",
+  "clipper.chat.selection": "Extract key points",
+  "clipper.chat.selectionPrompt":
+    "Extract useful facts and quotations from the attached web material, with source attribution, for my notes.",
+  "clipper.chat.organize": "Organize and save",
+  "clipper.chat.organizePrompt":
+    "Organize the attached web material into structured notes, keep the source link, and save them using the selected capture profile.",
   "clipper.downloadTitle": "Bring Doca to your browser",
   "clipper.rulesLink": "View capture destinations and rules",
   "clipper.connecting": "Connecting your browser",
@@ -100,6 +115,18 @@ export const browserClipperEn = {
   "clipper.error.clipper_invalid_input": "Check the form and try again.",
 };
 export const browserClipperZh: Record<keyof typeof browserClipperEn, string> = {
+  "clipper.chat.welcome": "想收录这个网页吗？",
+  "clipper.chat.welcomeHelp": "收录当前网页、提炼要点，或整理成知识笔记。",
+  "clipper.chat.capture": "收录网页",
+  "clipper.chat.capturePrompt": "按当前收录规则保存这个网页，保留正文和原图。",
+  "clipper.chat.summary": "总结页面",
+  "clipper.chat.summaryPrompt": "总结当前网页，列出核心观点和来源链接。",
+  "clipper.chat.selection": "提炼要点",
+  "clipper.chat.selectionPrompt":
+    "从附加的网页材料中提取有用的事实和摘录，注明来源，方便我记录。",
+  "clipper.chat.organize": "整理收录",
+  "clipper.chat.organizePrompt":
+    "将附加的网页材料整理成结构清晰的笔记，保留来源链接，并按当前收录规则保存。",
   "clipper.downloadTitle": "把 Doca 带到浏览器",
   "clipper.rulesLink": "查看收录位置与规则",
   "clipper.connecting": "正在连接浏览器",

@@ -1038,6 +1038,44 @@ try {
     await undoRedo(id, before, after);
     await reload(id, after.value);
   });
+  await run("marquee-table", [], async () => {
+    const id = await seed("table"), before = await preview(id), count = a.updates.length;
+    const table = node(before.value, "qa-table");
+    await click(a.page, table.x + 40, table.y + 20);
+    await a.page.locator('[data-slate-editor]').waitFor();
+    await click(a.page, table.x - 80, table.y - 80);
+    await delay(450);
+    const start = await xy(a.page, table.x - 30, table.y - 30);
+    const end = await xy(a.page, table.x + 450, table.y + 240);
+    await a.page.mouse.move(start.x, start.y);
+    await a.page.mouse.down();
+    await a.page.mouse.move(end.x, end.y, { steps: 15 });
+    await a.page.mouse.up();
+    await selected(a.page, "qa-table");
+    await unchanged(id, before, count);
+    await a.page.screenshot({ path: join(output, "marquee-table.png") });
+  });
+  await run("marquee-new-table", [], async () => {
+    const id = await seed("table");
+    await a.page.getByRole("button", { name: "表格", exact: true }).click();
+    await a.page.getByRole("button", { name: "3 × 3", exact: true }).click();
+    await click(a.page, 1250, 400);
+    await until(async () => names((await preview(id)).value.scene.children).filter(n => n.data?.kind === "table").length === 2, "native new table saved");
+    await a.page.getByRole("button", { name: "选择 (V / 1)", exact: true }).click();
+    await delay(700);
+    await click(a.page, 1300, 700);
+    await delay(450);
+    const before = await preview(id), count = a.updates.length;
+    const table = names(before.value.scene.children).find(n => n.data?.kind === "table" && n.id !== "qa-table");
+    const start = await xy(a.page, table.x - 30, table.y - 30), end = await xy(a.page, table.x + 450, table.y + 190);
+    await a.page.mouse.move(start.x, start.y);
+    await a.page.mouse.down();
+    await a.page.mouse.move(end.x, end.y, { steps: 15 });
+    await a.page.mouse.up();
+    await selected(a.page, table.id);
+    await unchanged(id, before, count);
+    await a.page.screenshot({ path: join(output, "marquee-new-table.png") });
+  });
   await run("note", [52, 39], async () => {
     const id = await seed("note");
     await click(a.page, 520, 350);
@@ -1678,6 +1716,24 @@ try {
     await a.page.screenshot({
       path: join(output, "note-mention-inserted.png"),
     });
+    await click(a.page, 1300, 750);
+    await delay(450);
+    await click(a.page, 600, 450);
+    await delay(450);
+    await click(a.page, 600, 450);
+    await a.page.locator('[data-slate-editor] .document-user-mention').waitFor();
+    await a.page.locator('[data-slate-editor] .document-user-mention').hover();
+    await a.page.locator('.user-profile-card').waitFor();
+    await a.page.mouse.move(900, 700);
+    await a.page.keyboard.press("End");
+    await a.page.keyboard.insertText(" still editable");
+    await a.page.keyboard.press("Escape");
+    await until(async () => node((await preview(id)).value, "qa-note-label").text.includes("still editable"), "mention re-entry remains editable");
+    assert(JSON.stringify(node((await preview(id)).value, "qa-note-label").data).includes(mentionUser.id));
+    await a.page.locator(".canvas-app").focus();
+    await a.page.keyboard.press("ControlOrMeta+z");
+    await until(async () => node((await preview(id)).value, "qa-note-label").text === node(mentioned.value, "qa-note-label").text, "undo re-entry edit");
+    const beforeDelete = await preview(id);
     await a.page.getByRole("button", { name: "选择 (V / 1)", exact: true }).click();
     await click(a.page, 1300, 750);
     await click(a.page, 350, 220);
@@ -1689,7 +1745,7 @@ try {
       "whole note delete after mention",
     );
     const deleted = await preview(id);
-    assert.equal(deleted.seq, mentioned.seq + 1);
+    assert.equal(deleted.seq, beforeDelete.seq + 1);
     assert(!find(deleted.value, "qa-note-label"));
     await until(
       async () => !(await runtime(b.page, "qa-note")).found,

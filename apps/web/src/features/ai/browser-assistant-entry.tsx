@@ -1,4 +1,4 @@
-import { useEffect, useMemo, useRef, useState } from "react";
+import { useEffect, useMemo, useRef } from "react";
 import { createRoot } from "react-dom/client";
 import { LocaleProvider } from "@web/shared/i18n.js";
 import { AIProvider, useAI } from "./ai-context.js";
@@ -37,11 +37,11 @@ function BrowserComposerBridge({ controller }: { controller: ComposerController 
 }
 
 function BrowserAssistant({ config, controller }: { config: BrowserAssistantConfig; controller: ComposerController }) {
-  const [page, setPage] = useState(config.page);
+  const page = config.page;
   const captures = useRef(new Map<string, Promise<BrowserPageCapture>>()).current;
-  useEffect(() => setPage(config.page), [config.page.title, config.page.url]);
   const runtime = useMemo<AIChatRuntime>(() => {
-    const request = createBrowserAssistantRequest({ ...config, captured: (capture) => setPage({ title: capture.title, url: capture.url }) }, captures);
+    // Retried messages keep their frozen material; the composer follows the active page.
+    const request = createBrowserAssistantRequest({ ...config, captured: () => {} }, captures);
     const stream = (id: string): AIJobStream => {
       const target = new EventTarget();
       let closed = false, busy = false;
@@ -98,7 +98,7 @@ function BrowserAssistant({ config, controller }: { config: BrowserAssistantConf
     <AIChatRuntimeProvider runtime={contextualRuntime}>
       <LocaleProvider initialLocale={config.locale}>
         <AIProvider userId={`browser:${config.userId}:${config.connectionId}`} hash={`#/ai${config.sessionId ? `?session=${config.sessionId}` : ""}`} contextLoading={false}>
-          <AIChat full />
+          <AIChat full browser />
           <BrowserComposerBridge controller={controller} />
         </AIProvider>
       </LocaleProvider>

@@ -10,6 +10,12 @@
     saved: "已保存，打开文档",
     login: "登录 Doca",
     setup: "请先连接 Doca",
+    noProfiles: "请先在 Doca 设置收录规则",
+    settings: "设置收录规则",
+    connectionFailed: "暂时无法获取登录状态，请重试",
+    reconnect: "重试连接",
+    updated: "插件已更新，请刷新当前网页后重试",
+    reload: "刷新当前网页",
     retry: "重试收录",
     failed: "收录未完成，请在扩展中查看详情",
   };
@@ -21,11 +27,18 @@
     saved: "Saved · Open document",
     login: "Sign in to Doca",
     setup: "Connect Doca first",
+    noProfiles: "Set up a capture profile in Doca first",
+    settings: "Set up capture profiles",
+    connectionFailed: "Could not check sign-in. Please retry.",
+    reconnect: "Retry connection",
+    updated: "The extension was updated. Reload this page to continue.",
+    reload: "Reload this page",
     retry: "Retry",
     failed: "Capture incomplete. Open the extension for details.",
   };
   let text = zh;
   const send = async (message) => {
+    if (!chrome.runtime?.id) throw Error("Extension context invalidated");
     const result = await chrome.runtime.sendMessage(message);
     if (!result?.ok) throw Error(result?.error || "clipper_connection_failed");
     return result.value;
@@ -111,6 +124,7 @@
       panel.className = "panel";
       panel.hidden = true;
       const profiles = document.createElement("select"),
+        profileField = document.createElement("div"),
         save = document.createElement("button"),
         ai = document.createElement("button"),
         status = document.createElement("span"),
@@ -119,7 +133,8 @@
       status.setAttribute("role", "status");
       actions.className = "actions";
       actions.append(save, ai);
-      panel.append(profiles, actions, status);
+      profileField.append(profiles);
+      panel.append(profileField, actions, status);
       shadow.append(style, launcher, panel);
       document.documentElement.append(host);
       const current = host;
@@ -144,7 +159,7 @@
         if (e.target instanceof Element && e.target.closest("button,a"))
           e.preventDefault();
       });
-      let loaded = false;
+      let stateGeneration = 0;
       icon.onclick = async (event) => {
         if (!event.isTrusted) return;
         panel.hidden = !panel.hidden;
@@ -154,14 +169,24 @@
           return;
         }
         position();
-        if (loaded) return;
-        loaded = true;
+        await loadState();
+      };
+      async function loadState() {
+        const generation = ++stateGeneration;
         save.disabled = ai.disabled = true;
+        profiles.disabled = true;
+        ai.hidden = false;
+        profileField.hidden = false;
+        profiles.replaceChildren();
+        dropdown?.close();
+        dropdown?.sync();
+        status.replaceChildren();
+        save.onclick = (e) => run(e, false);
         save.textContent = text.capture;
         ai.textContent = text.ai;
         try {
           const state = await send({ type: "state" });
-          if (host !== current) return;
+          if (host !== current || generation !== stateGeneration) return;
           text = state.locale === "en" ? en : zh;
           save.textContent = text.capture;
           ai.textContent = text.ai;
@@ -169,23 +194,40 @@
           close.setAttribute("aria-label", text.close);
           icon.setAttribute("aria-label", text.capture);
           if (!state.connected) {
-            profiles.hidden = true;
+            profileField.hidden = true;
             ai.hidden = true;
             save.disabled = false;
             save.textContent = text.login;
-            status.textContent = text.setup;
+            status.textContent = [
+              "clipper_login_required",
+              "clipper_not_connected",
+            ].includes(state.error)
+              ? text.setup
+              : text.connectionFailed;
             save.onclick = async (e) => {
               if (e.isTrusted) {
-                await send({ type: "login" }).catch(() => {});
-                dismiss();
+                save.disabled = true;
+                try {
+                  await send({ type: "login" });
+                } catch {
+                  status.textContent = text.connectionFailed;
+                }
+                if (host === current) await loadState();
               }
             };
             position();
             return;
           }
           if (!state.profiles.length) {
-            profiles.hidden = true;
-            status.textContent = text.setup;
+            profileField.hidden = true;
+            ai.hidden = true;
+            status.textContent = text.noProfiles;
+            const link = document.createElement("a");
+            link.href = state.origin + "/#/browser-assistant";
+            link.textContent = text.settings;
+            link.target = "_blank";
+            link.rel = "noopener noreferrer";
+            status.append(" · ", link);
             position();
             return;
           }
@@ -209,15 +251,31 @@
             "aria-label",
             state.locale === "en" ? "Capture profile" : "收录方案",
           );
-          dropdown = globalThis.DocaSelect.enhance(profiles);
+          profiles.disabled = false;
+          dropdown ||= globalThis.DocaSelect.enhance(profiles);
+          dropdown.sync();
           save.disabled = ai.disabled = false;
           ai.hidden = !state.assistantEnabled;
           position();
-        } catch {
-          status.textContent = text.setup;
+        } catch (error) {
+          if (host !== current || generation !== stateGeneration) return;
+          profileField.hidden = ai.hidden = true;
+          save.disabled = false;
+          const invalidated = /Extension context invalidated/i.test(
+            error.message,
+          );
+          status.textContent = invalidated
+            ? text.updated
+            : text.connectionFailed;
+          save.textContent = invalidated ? text.reload : text.reconnect;
+          save.onclick = async (e) => {
+            if (!e.isTrusted) return;
+            if (invalidated) location.reload();
+            else await loadState();
+          };
           position();
         }
-      };
+      }
       async function run(event, assistant) {
         if (!event.isTrusted) return;
         save.disabled = ai.disabled = true;

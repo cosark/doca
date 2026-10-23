@@ -483,7 +483,7 @@ function SessionSourceBadge({ session }: { session: Session }) {
     </span>
   ) : null;
 }
-export function AIChat({ full = false }: { full?: boolean }) {
+export function AIChat({ full = false, browser = false }: { full?: boolean; browser?: boolean }) {
   const runtime = useAIChatRuntime();
   const api = runtime.request;
   const FileSourceDialog = runtime.workspace?.FileSourceDialog;
@@ -1275,7 +1275,7 @@ export function AIChat({ full = false }: { full?: boolean }) {
     renderQuestions: number;
     focusedQuestionId: string | null;
     locale: typeof locale;
-    surface: "full" | "book" | "library" | "folder" | "document";
+    surface: "browser" | "full" | "book" | "library" | "folder" | "document";
     fileContextKey: string;
     items: BubbleItemType[];
   } | null>(null);
@@ -2167,7 +2167,9 @@ export function AIChat({ full = false }: { full?: boolean }) {
       setRenderQuestions((current) => current + RENDER_EXPAND_QUESTIONS),
     loadOlder: revealOlderHistory,
   };
-  const surface = full
+  const surface = browser
+    ? "browser"
+    : full
     ? "full"
     : ai.resource?.knowledgeBook
       ? "book"
@@ -2177,7 +2179,14 @@ export function AIChat({ full = false }: { full?: boolean }) {
         ? "folder"
         : "document";
   const suggestions =
-    surface === "book"
+    surface === "browser"
+      ? [
+          { key: "capture", icon: <FileText size={18} />, label: t("clipper.chat.capture"), description: t("clipper.chat.capturePrompt") },
+          { key: "summary", icon: <Search size={18} />, label: t("clipper.chat.summary"), description: t("clipper.chat.summaryPrompt") },
+          { key: "selection", icon: <WandSparkles size={18} />, label: t("clipper.chat.selection"), description: t("clipper.chat.selectionPrompt") },
+          { key: "organize", icon: <FolderOpen size={18} />, label: t("clipper.chat.organize"), description: t("clipper.chat.organizePrompt") },
+        ]
+    : surface === "book"
       ? [
           { key: "book-sources", icon: <FolderOpen size={18} />, label: t("books.case.sources.title"), description: t("books.case.sources.prompt") },
           { key: "book-review", icon: <Search size={18} />, label: t("books.humanTasks"), description: t("books.assistantPrompt") },
@@ -3112,7 +3121,9 @@ export function AIChat({ full = false }: { full?: boolean }) {
           <AssistantWelcome
             profile="personal"
             title={
-              surface === "full"
+              surface === "browser"
+                ? t("clipper.chat.welcome")
+              : surface === "full"
                 ? t("chat.welcome")
                 : surface === "book"
                   ? t("books.assistantWelcome")
@@ -3125,7 +3136,9 @@ export function AIChat({ full = false }: { full?: boolean }) {
                     : t("chat.documentWelcome")
             }
             description={
-              surface === "full"
+              surface === "browser"
+                ? t("clipper.chat.welcomeHelp")
+              : surface === "full"
                 ? t("chat.welcomeHelp")
                 : surface === "book"
                   ? t("books.assistantHelp")

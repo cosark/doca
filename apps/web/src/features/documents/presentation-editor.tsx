@@ -89,7 +89,7 @@ export default function PresentationDocument({
   const rank = Math.min(roleRank(detail.resource.role), sync.rank);
   const [presenting, setPresenting] = useState(false),
     [failed, setFailed] = useState(false),
-    [annotationsVisible, setAnnotationsVisible] = useState(true);
+    [annotationsVisible, setAnnotationsVisible] = useState(false);
   const root = useRef<HTMLElement>(null);
   const reading = useDocumentReadOnly(model ? rank >= 3 : undefined);
   const editable =
@@ -416,10 +416,7 @@ export default function PresentationDocument({
           candidateIds={candidates}
           targetComment={targetComment}
           loadMoreComments={loadMoreComments}
-          annotationVisibility={{
-            visible: annotationsVisible,
-            change: setAnnotationsVisible,
-          }}
+          onOpenChange={setAnnotationsVisible}
         />
       )}
     </section>

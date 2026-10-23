@@ -1,6 +1,7 @@
 import { checkDocumentSize } from "../access/operation-policy.js";
 import type { Transaction } from "kysely";
 import { randomUUID } from "node:crypto";
+import { createEditor, Editor, Element, Node, Transforms, type Point } from "slate";
 import {
   Doc,
   applyUpdate,
@@ -46,19 +47,61 @@ export const DOCUMENT_CODECS = {
 } as const;
 export const b64 = (bytes: Uint8Array) => Buffer.from(bytes).toString("base64");
 export function setDocumentTitle(runtime: YjsDocument, title: string) {
-  const first = runtime.getValue()[0];
-  if (
-    first &&
-    "type" in first &&
-    first.type === "paragraph"
-  )
-    runtime.editText(
-      first.id,
-      0,
-      runtime.doc.getText(`slate-kit:text:${first.id}`).length,
-      title,
+  const value = runtime.getValue();
+  const first = value[0];
+  if (first && "type" in first && first.type === "paragraph") {
+    // Use native text replacement so retained title text keeps its marks and
+    // links; newly typed text inherits the format at the replacement point.
+    const editor = createEditor();
+    const inlineTypes = new Set<string>(
+      runtime.inlineCodecs.map((codec) => codec.type),
     );
-  else
+    editor.isInline = (node) =>
+      node.type === "link" || inlineTypes.has(node.type);
+    editor.isVoid = (node) => inlineTypes.has(node.type);
+    editor.children = [structuredClone(first)];
+    const original = Array.from(Node.string(first)),
+      replacement = Array.from(title);
+    let prefix = 0,
+      suffix = 0;
+    while (
+      prefix < original.length &&
+      prefix < replacement.length &&
+      original[prefix] === replacement[prefix]
+    )
+      prefix++;
+    while (
+      suffix < original.length - prefix &&
+      suffix < replacement.length - prefix &&
+      original[original.length - suffix - 1] ===
+        replacement[replacement.length - suffix - 1]
+    )
+      suffix++;
+    const start = original.slice(0, prefix).join("").length;
+    const end = original.slice(0, original.length - suffix).join("").length;
+    const point = (offset: number): Point => {
+      for (const [leaf, path] of Node.texts(editor)) {
+        if (offset <= leaf.text.length) return { path, offset };
+        offset -= leaf.text.length;
+      }
+      return Editor.end(editor, [0]);
+    };
+    const hasAtom = Array.from(Node.descendants(first)).some(
+      ([node]) => Element.isElement(node) && editor.isVoid(node),
+    );
+    Transforms.insertText(
+      editor,
+      hasAtom
+        ? title
+        : replacement.slice(prefix, replacement.length - suffix).join(""),
+      {
+        at: hasAtom
+          ? Editor.range(editor, [0])
+          : { anchor: point(start), focus: point(end) },
+      },
+    );
+    runtime.acceptEditorValue(value, [editor.children[0]!, ...value.slice(1)]);
+  } else
     runtime.execute({
       type: "insertBlock",
       block: {

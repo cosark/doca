@@ -7,12 +7,13 @@ import {
   lookupUsers,
   mentionLabel,
 } from "@web/features/comments/rich-comments.js";
-import { useI18n } from "@web/shared/i18n.js";
+import { LocaleScope, useI18n } from "@web/shared/i18n.js";
 import { internalDocumentId } from "./internal-document-id.js";
 
 type Data = { userId?: string; documentId?: string; label: string };
 export function useCanvasRichExtensions() {
-  const { t } = useI18n();
+  const i18n = useI18n();
+  const { t } = i18n;
   return useMemo<CanvasRichTextExtension[]>(
     () => [
       {
@@ -24,11 +25,13 @@ export function useCanvasRichExtensions() {
           data: data!,
         }),
         render: ({ element }) => (
+          <LocaleScope value={i18n}>
           <UserMention
             id={(element.data as Data).userId!}
             name={element.label}
             className="document-user-mention"
           />
+          </LocaleScope>
         ),
         suggestions: {
           trigger: "@",
@@ -74,6 +77,6 @@ export function useCanvasRichExtensions() {
         },
       },
     ],
-    [t],
+    [i18n, t],
   );
 }

@@ -212,60 +212,6 @@ body > main:has(#assistant-pane:not([hidden])) {
   font-size: 11px;
   line-height: 1.7;
 }
-.quick-note {
-  margin-top: 18px;
-  padding-top: 16px;
-  border-top: 1px solid var(--line);
-}
-.quick-note > summary {
-  cursor: pointer;
-  font-size: 13px;
-  font-weight: 600;
-  color: #576176;
-}
-.quick-note .field {
-  margin-top: 12px;
-}
-.quick-note textarea {
-  width: 100%;
-  box-sizing: border-box;
-  font: inherit;
-  color: inherit;
-  border: 1px solid var(--line);
-  border-radius: 9px;
-  padding: 10px;
-  line-height: 1.65;
-  resize: vertical;
-}
-.quick-note textarea:focus {
-  outline: 2px solid var(--accent);
-  outline-offset: 2px;
-}
-#quick-note-target-link {
-  display: inline-block;
-  margin: 0 0 8px;
-  color: #3370ff;
-  font-size: 12px;
-}
-#quick-note-status {
-  white-space: pre-wrap;
-  overflow-wrap: anywhere;
-  font-size: 12px;
-  padding: 9px 10px;
-  border-radius: 8px;
-  background: #f6f7fa;
-}
-#quick-note-status.error {
-  color: #a45a21;
-  background: #fff6e9;
-}
-#quick-note-status.success {
-  color: #207347;
-  background: #eff8f2;
-}
-#quick-note-refresh {
-  margin-top: -5px;
-}
 #connection-pane textarea,
 #connection-pane input[type="url"] {
   font: inherit;

@@ -106,6 +106,21 @@ export function CommentContent({ comment }: { comment: Comment }) {
     </div>
   );
 }
+export type CommentPublication = { id: string; previousVersion?: number };
+
+/** Keep feedback after the write succeeds, until the refreshed list contains it. */
+export function CommentPublicationStatus({ publication, comments }: {
+  publication: CommentPublication | null;
+  comments: Comment[];
+}) {
+  const { t } = useI18n();
+  if (!publication || comments.some(c => c.id === publication.id &&
+    (publication.previousVersion === undefined || c.version > publication.previousVersion))) return null;
+  return <p className="comment-pending-status comment-publication-status" role="status">
+    <LoaderCircle size={17} className="comment-pending-spinner" />{t("chat.sending")}
+  </p>;
+}
+
 export function CommentComposer({
   resourceId,
   initial,

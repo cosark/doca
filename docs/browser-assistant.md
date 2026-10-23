@@ -2,7 +2,7 @@
 
 [简体中文](browser-assistant.zh-CN.md)
 
-Open the account menu → **Browser assistant**, or `/#/browser-assistant`. Capture selected web content or the entire loaded page with original images, append a quick note to an authorized document, and use your Doca AI assistant in the extension sidebar.
+Open the account menu → **Browser assistant**, or `/#/browser-assistant`. Capture selected web content or the entire loaded page with original images, and use your Doca AI assistant in the extension sidebar.
 
 ## Install and sign in
 
@@ -16,21 +16,15 @@ The extension never reads or copies website cookies. A same-origin Doca page pro
 
 ## Capture, AI and server address
 
+The selection toolbar rechecks sign-in whenever opened. Temporary connection failures can be retried, and missing profiles link to profile settings. After updating or reloading the extension, old page scripts ask you to reload that page before continuing.
+
 Choose a capture rule on the popup home, then capture the current page, capture the selection, or hand it to AI. The default rule is preselected and other rules remain available. Selecting page text shows a small Doca icon; click it to expand the rule selector and capture / AI actions. Whole-page capture includes loaded top-level DOM beyond the viewport. Retry reuses a request ID and does not duplicate committed content. Unsent material is kept in the current browser session and may need to be selected again after closing the entire browser.
 
-The AI action opens the browser's right side panel with the same Doca chat UI, model selector, Markdown, progress and approvals. Opening the panel does not call a model. Sending a message includes the current page by default; entering from the selection toolbar uses that selection. There is no attach-page checkbox. AI uses Doca's models, metering and approval flow. Continue the conversation in Doca. Connections initially allow AI; edit a connection in Doca to change its name or AI switch. Account and model policies still apply.
+The AI action opens the browser's right side panel with the same Doca chat UI, model selector, Markdown, progress and approvals. Opening the panel does not call a model. Sending a new message reads the latest active page. A selection is used only while its source tab and URL still match; tab switches, navigation and in-page routes update the reference. Retrying one message keeps its original material. Unsupported or unavailable images do not prevent AI from reading the staged text; full archival still requires every original image. Welcome prompts cover saving, summarizing, extracting key points and organizing web material. There is no attach-page checkbox. AI uses Doca's models, metering and approval flow. Continue the conversation in Doca. Connections initially allow AI; edit a connection in Doca to change its name or AI switch. Account and model policies still apply.
 
 New AI sends are saved transactionally in IndexedDB before the input is consumed, scoped to the Doca site, account, connection and selected profile. Refreshing can continue the original message ID; a job already accepted by the server is reconciled before any new page capture or submission. Previous localStorage pending messages remain unchanged and require an explicit Continue or Withdraw with the current model and scope selected.
 
 Use the top-right settings icon to open Doca's capture-rule settings or edit **Doca server address**, for example `https://doca.example.com`, without `/api/v1`, other paths or query parameters. Alternatively copy the public site configuration in Doca and paste it in the extension's expandable configuration section. Production requires HTTPS; loopback HTTP is allowed for development. The strict format is `{ "version": 2, "origin": "https://doca.example.com" }`. Switching sites verifies the account signed in there and never forwards the previous site's pending material.
-
-## Quick notes
-
-Expand **Quick note** below the three capture actions. Explicitly choose an existing rich-text or Markdown document from an enabled append rule, enter text and select **Append note**. No target is selected automatically. Create rules do not authorize an existing-document target; configure an append rule in Doca if the list is empty. This action preserves existing content, reads no web page and calls no AI. Markdown receives ordinary source text and follows the document's current rendering behavior.
-
-The target and text live only in the current extension view. Closing or reloading it clears them. Switching sites, accounts or connections clears the target and send binding while retaining the current text for the user to handle. A successful acknowledgement clears only the text that was sent; a newer draft remains.
-
-If the result is uncertain, the view keeps the text and document link. **Retry the same note** continues the original attempt without appending it again when already accepted. A stopped attempt must be checked in the target document before explicitly ending it or starting a new note; ending an attempt does not undo saved content. Expired send state or a server restart can prevent further retry. See the [quick-note contract](browser-quick-note.md) for deployment and failure boundaries.
 
 ## Revoke and restore
 

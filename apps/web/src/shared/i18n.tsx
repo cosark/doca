@@ -43,6 +43,11 @@ type I18nValue = {
 
 const I18nContext = createContext<I18nValue | null>(null);
 
+/** Forward the host context into SDK-owned React roots without locale effects. */
+export function LocaleScope({ value, children }: { value: I18nValue; children: ReactNode }) {
+  return <I18nContext.Provider value={value}>{children}</I18nContext.Provider>;
+}
+
 export function LocaleProvider({ children, initialLocale }: { children: ReactNode; initialLocale?: Locale }) {
   const [locale, setLocaleState] = useState<Locale>(() => initialLocale ?? storedLocale());
   useEffect(() => {

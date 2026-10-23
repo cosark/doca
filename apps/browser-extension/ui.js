@@ -23,17 +23,6 @@ let assistant = null,
   assistantConfig = null,
   assistantGeneration = 0,
   assistantLoading = null;
-let quickNoteScopeKey = null,
-  quickNoteGeneration = 0,
-  quickNoteTargets = [],
-  quickNoteTarget = null,
-  quickNoteText = "",
-  quickNoteAttempt = null,
-  quickNoteLoading = false,
-  quickNoteLoaded = false,
-  quickNoteSending = false,
-  quickNoteResetConfirmation = false,
-  quickNoteStatus = null;
 if (isSidebar) {
   document.body.classList.add("sidebar");
   const css = document.createElement("link");
@@ -74,367 +63,6 @@ function errorMessage(error) {
     ? t("generalError")
     : translated;
 }
-const quickNoteUuid =
-  /^[a-f0-9]{8}-[a-f0-9]{4}-[a-f0-9]{4}-[a-f0-9]{4}-[a-f0-9]{12}$/i;
-const quickNoteErrorKeys = new Set([
-  "quick_note_text_invalid",
-  "quick_note_invalid_response",
-  "quick_note_ticket_missing",
-  "quick_note_request_conflict",
-  "quick_note_request_already_used",
-  "quick_note_signin_changed",
-  "quick_note_busy",
-  "clipper_connection_failed",
-  "clipper_connection_revoked",
-  "clipper_login_required",
-  "clipper_not_connected",
-  "clipper_profile_changed",
-  "clipper_profile_unavailable",
-  "clipper_scope_denied",
-  "clipper_target_uninitialized",
-]);
-function quickNoteErrorMessage(code) {
-  return t(quickNoteErrorKeys.has(code) ? code : "quicknote.error.generic");
-}
-function quickNoteAckValid(result, snapshot) {
-  try {
-    if (typeof result.url !== "string" || typeof result.epochId !== "string")
-      return false;
-    const url = new URL(result.url);
-    return (
-      result.requestId === snapshot.requestId &&
-      result.targetId === snapshot.targetId &&
-      ["http:", "https:"].includes(url.protocol) &&
-      url.origin === snapshot.origin &&
-      url.pathname === "/" &&
-      url.search === "" &&
-      url.hash === "#/r/" + snapshot.targetId &&
-      !url.username &&
-      !url.password &&
-      Number.isSafeInteger(result.seq) &&
-      result.seq >= 0 &&
-      quickNoteUuid.test(result.epochId) &&
-      typeof result.changed === "boolean"
-    );
-  } catch {
-    return false;
-  }
-}
-function quickNoteScope() {
-  return state.connected
-    ? {
-        origin: state.origin,
-        connectionId: state.connectionId,
-        userId: state.user.id,
-      }
-    : null;
-}
-function renderQuickNote() {
-  $("quick-note").hidden = isSidebar;
-  if (isSidebar) return;
-  const scope = quickNoteScope();
-  const key = scope
-    ? JSON.stringify([scope.origin, scope.userId, scope.connectionId])
-    : null;
-  if (key !== quickNoteScopeKey) {
-    const retained = quickNoteTarget || quickNoteAttempt || quickNoteText;
-    quickNoteScopeKey = key;
-    quickNoteGeneration++;
-    quickNoteTargets = [];
-    quickNoteTarget = quickNoteAttempt = null;
-    quickNoteLoading = quickNoteLoaded = quickNoteResetConfirmation = false;
-    quickNoteStatus = retained
-      ? { key: "quicknote.scope.changed", error: true }
-      : null;
-  }
-  const select = $("quick-note-target");
-  select.replaceChildren();
-  const placeholder = document.createElement("option");
-  placeholder.value = "";
-  placeholder.disabled = true;
-  placeholder.textContent = t("quicknote.choose");
-  select.append(placeholder);
-  for (const target of quickNoteTargets) {
-    const option = document.createElement("option");
-    option.value = target.profileId;
-    option.textContent = `${target.title} · ${target.profileName}`;
-    select.append(option);
-  }
-  select.value = quickNoteTarget?.profileId || "";
-  select.disabled =
-    !scope ||
-    busy ||
-    quickNoteLoading ||
-    quickNoteSending ||
-    !!quickNoteAttempt;
-  $("quick-note-refresh").disabled =
-    !scope ||
-    busy ||
-    quickNoteLoading ||
-    quickNoteSending ||
-    !!quickNoteAttempt;
-  $("quick-note-empty").hidden =
-    !quickNoteLoaded || quickNoteLoading || !!quickNoteTargets.length;
-  if ($("quick-note-text").value !== quickNoteText)
-    $("quick-note-text").value = quickNoteText;
-  $("quick-note-save").disabled =
-    !scope ||
-    busy ||
-    quickNoteSending ||
-    !quickNoteTarget ||
-    !quickNoteText.trim() ||
-    !!quickNoteAttempt;
-  $("quick-note-retry").hidden =
-    !quickNoteAttempt ||
-    !["prepare-uncertain", "commit-uncertain"].includes(quickNoteAttempt.phase);
-  $("quick-note-retry").disabled = !scope || busy || quickNoteSending;
-  $("quick-note-clear").hidden = !quickNoteAttempt;
-  $("quick-note-clear").disabled = busy || quickNoteSending;
-  $("quick-note-reset-confirmation").hidden = !quickNoteResetConfirmation;
-  $("quick-note-confirm-reset").disabled = busy || quickNoteSending;
-  const link = $("quick-note-target-link");
-  const linkTarget = quickNoteAttempt?.snapshot || quickNoteTarget;
-  link.hidden = !linkTarget;
-  if (linkTarget && scope)
-    link.href =
-      scope.origin + "/#/r/" + encodeURIComponent(linkTarget.targetId);
-  else link.removeAttribute("href");
-  const status = $("quick-note-status");
-  status.hidden = !quickNoteStatus && !quickNoteLoading;
-  status.textContent = quickNoteLoading
-    ? t("quicknote.loading")
-    : quickNoteStatus
-      ? t(quickNoteStatus.key) +
-        (quickNoteStatus.code
-          ? "\n" + quickNoteErrorMessage(quickNoteStatus.code)
-          : "")
-      : "";
-  status.className = quickNoteStatus?.error
-    ? "error"
-    : quickNoteStatus?.success
-      ? "success"
-      : "";
-  dropdowns.forEach((dropdown) => dropdown.sync());
-  if (
-    $("quick-note").open &&
-    scope &&
-    !quickNoteLoaded &&
-    !quickNoteLoading &&
-    !quickNoteAttempt
-  )
-    void loadQuickNoteTargets();
-}
-async function loadQuickNoteTargets() {
-  const scope = quickNoteScope(),
-    generation = quickNoteGeneration;
-  if (
-    isSidebar ||
-    !scope ||
-    quickNoteLoading ||
-    quickNoteSending ||
-    quickNoteAttempt
-  )
-    return;
-  quickNoteLoading = true;
-  renderQuickNote();
-  try {
-    const result = await send({
-      type: "quickNoteTargets",
-      origin: scope.origin,
-      connectionId: scope.connectionId,
-    });
-    if (generation !== quickNoteGeneration) return;
-    if (
-      !Array.isArray(result?.items) ||
-      result.items.some(
-        (item) =>
-          typeof item.profileId !== "string" ||
-          !quickNoteUuid.test(item.profileId) ||
-          typeof item.targetId !== "string" ||
-          !quickNoteUuid.test(item.targetId) ||
-          !Number.isSafeInteger(item.profileRevision) ||
-          item.profileRevision < 1 ||
-          !["rich_text", "markdown"].includes(item.format) ||
-          typeof item.title !== "string" ||
-          typeof item.profileName !== "string" ||
-          typeof item.isDefault !== "boolean",
-      ) ||
-      new Set(result.items.map((item) => item.profileId)).size !==
-        result.items.length
-    )
-      throw Error("quick_note_invalid_response");
-    quickNoteTargets = result.items.map((item) => ({ ...item }));
-    if (quickNoteTarget) {
-      const previous = quickNoteTarget;
-      quickNoteTarget =
-        quickNoteTargets.find(
-          (item) =>
-            item.profileId === previous.profileId &&
-            item.profileRevision === previous.profileRevision &&
-            item.targetId === previous.targetId &&
-            item.format === previous.format,
-        ) || null;
-      if (!quickNoteTarget)
-        quickNoteStatus = { key: "quicknote.target.changed", error: true };
-    }
-  } catch (error) {
-    if (generation === quickNoteGeneration)
-      quickNoteStatus = {
-        key: "quicknote.failed",
-        code: error.message,
-        error: true,
-      };
-  } finally {
-    if (generation === quickNoteGeneration) {
-      quickNoteLoading = false;
-      quickNoteLoaded = true;
-      renderQuickNote();
-    }
-  }
-}
-async function submitQuickNote(retry = false) {
-  const scope = quickNoteScope();
-  if (isSidebar || busy || quickNoteSending || !scope) return;
-  if (!retry) {
-    if (quickNoteAttempt || !quickNoteTarget) return;
-    if (
-      !quickNoteText.trim() ||
-      new TextEncoder().encode(quickNoteText).byteLength > 64 * 1024
-    ) {
-      quickNoteStatus = {
-        key: "quicknote.failed",
-        code: "quick_note_text_invalid",
-        error: true,
-      };
-      renderQuickNote();
-      return;
-    }
-    quickNoteAttempt = {
-      snapshot: Object.freeze({
-        ...scope,
-        requestId: crypto.randomUUID(),
-        profileId: quickNoteTarget.profileId,
-        profileRevision: quickNoteTarget.profileRevision,
-        targetId: quickNoteTarget.targetId,
-        format: quickNoteTarget.format,
-        text: quickNoteText,
-      }),
-      ticket: null,
-      expiresAt: null,
-      phase: "preparing",
-    };
-  } else if (
-    !quickNoteAttempt ||
-    !["prepare-uncertain", "commit-uncertain"].includes(quickNoteAttempt.phase)
-  )
-    return;
-  const operation = quickNoteAttempt,
-    snapshot = operation.snapshot,
-    generation = quickNoteGeneration;
-  const current = () =>
-    generation === quickNoteGeneration && quickNoteAttempt === operation;
-  quickNoteSending = true;
-  quickNoteResetConfirmation = false;
-  quickNoteStatus = { key: "quicknote.saving" };
-  render();
-  try {
-    if (!operation.ticket) {
-      operation.phase = "preparing";
-      const prepared = await send({
-        type: "quickNotePrepare",
-        origin: snapshot.origin,
-        connectionId: snapshot.connectionId,
-        requestId: snapshot.requestId,
-        profileId: snapshot.profileId,
-        profileRevision: snapshot.profileRevision,
-        text: snapshot.text,
-      });
-      if (!current()) return;
-      if (
-        prepared?.requestId !== snapshot.requestId ||
-        prepared.targetId !== snapshot.targetId ||
-        prepared.format !== snapshot.format ||
-        typeof prepared.ticket !== "string" ||
-        !/^[a-f0-9]{64}$/.test(prepared.ticket) ||
-        typeof prepared.expiresAt !== "string" ||
-        !/^\d{4}-\d{2}-\d{2}T\d{2}:\d{2}:\d{2}(?:\.\d+)?(?:Z|[+-]\d{2}:\d{2})$/.test(
-          prepared.expiresAt,
-        ) ||
-        !Number.isFinite(Date.parse(prepared.expiresAt))
-      )
-        throw Error("quick_note_invalid_response");
-      operation.ticket = prepared.ticket;
-      operation.expiresAt = prepared.expiresAt;
-    }
-    if (Date.parse(operation.expiresAt) <= Date.now())
-      throw Error("quick_note_ticket_missing");
-    operation.phase = "committing";
-    const result = await send({
-      type: "quickNoteCommit",
-      origin: snapshot.origin,
-      connectionId: snapshot.connectionId,
-      requestId: snapshot.requestId,
-      ticket: operation.ticket,
-    });
-    if (!current()) return;
-    if (!quickNoteAckValid(result, snapshot))
-      throw Error("quick_note_invalid_response");
-    if (quickNoteText === snapshot.text) quickNoteText = "";
-    quickNoteAttempt = null;
-    quickNoteStatus = { key: "quicknote.saved", success: true };
-  } catch (error) {
-    if (!current()) return;
-    const invalidAcknowledgement =
-      operation.phase === "committing" &&
-      error.message === "quick_note_invalid_response";
-    const targetInvalid =
-      [403, 404].includes(error.status) ||
-      [
-        "clipper_profile_changed",
-        "clipper_profile_unavailable",
-        "clipper_target_unsupported",
-        "clipper_target_uninitialized",
-      ].includes(error.message);
-    const blocked =
-      !invalidAcknowledgement &&
-      error.message !== "quick_note_busy" &&
-      ([400, 401, 403, 404, 409].includes(error.status) ||
-        [
-          "quick_note_invalid_response",
-          "quick_note_ticket_missing",
-          "quick_note_request_conflict",
-          "quick_note_request_already_used",
-          "quick_note_signin_changed",
-          "clipper_profile_changed",
-          "clipper_profile_unavailable",
-          "clipper_connection_revoked",
-          "clipper_scope_denied",
-          "clipper_target_unsupported",
-          "clipper_target_uninitialized",
-        ].includes(error.message));
-    operation.phase = blocked
-      ? "blocked"
-      : operation.ticket
-        ? "commit-uncertain"
-        : "prepare-uncertain";
-    if (targetInvalid) {
-      operation.needsReselect = true;
-      quickNoteTarget = null;
-    }
-    quickNoteStatus = {
-      key: targetInvalid
-        ? "quicknote.target.blocked"
-        : blocked
-          ? "quicknote.blocked"
-          : "quicknote.uncertain",
-      code: error.message,
-      error: true,
-    };
-  } finally {
-    quickNoteSending = false;
-    render();
-  }
-}
 function selectTab(value) {
   tab = value;
   for (const item of ["capture", "assistant", "connection"]) {
@@ -448,6 +76,9 @@ function selectTab(value) {
 function pageReference() {
   const capture =
     pendingReference &&
+    pendingReference.tabId === activeTab?.id &&
+    pendingReference.capture?.url === activeTab?.url &&
+    pendingReference.capture?.mode === "selection" &&
     pendingReference.origin === state.origin &&
     pendingReference.connectionId === state.connectionId &&
     pendingReference.profileId === $("ai-profile").value
@@ -549,13 +180,16 @@ async function syncAssistant() {
       signal?.throwIfAborted();
       return result;
     },
-    captureCurrentPage: () =>
-      send({
+    captureCurrentPage: async () => {
+      // Query again at send time; tab events may still be queued.
+      await refreshTab();
+      return send({
         type: "assistantPreparePage",
         ...scope,
         profileRevision: profile.revision,
         tabId: activeTab?.id,
-      }),
+      });
+    },
     onSessionChange: (id) => {
       void send({
         type: "assistantSession",
@@ -667,18 +301,12 @@ function render() {
     : "#";
   $("settings-link").hidden = !state.origin;
   for (const id of ["capture-page", "capture-selection"])
-    $(id).disabled =
-      busy || quickNoteSending || !state.connected || !$("profile").value;
+    $(id).disabled = busy || !state.connected || !$("profile").value;
   $("open-assistant").disabled =
-    busy ||
-    quickNoteSending ||
-    !state.connected ||
-    !state.assistantEnabled ||
-    !$("profile").value;
+    busy || !state.connected || !state.assistantEnabled || !$("profile").value;
   $("retry").hidden = !state.pending;
   $("open-assistant").hidden = !state.assistantEnabled;
   profileDetail();
-  renderQuickNote();
   dropdowns.forEach((dropdown) => dropdown.sync());
   if (!state.connected) {
     const desired = tab;
@@ -746,7 +374,7 @@ function refreshConnection() {
   void loadState(false).catch((error) => notice(errorMessage(error)));
 }
 async function action(work, label) {
-  if (busy || quickNoteSending) return;
+  if (busy) return;
   stateGeneration++;
   rememberProfile();
   busy = true;
@@ -877,46 +505,6 @@ $("open-assistant").onclick = async () => {
   } catch (error) {
     notice(errorMessage(error));
   }
-};
-$("quick-note").ontoggle = () => {
-  if ($("quick-note").open) renderQuickNote();
-};
-$("quick-note-target").onchange = () => {
-  if (quickNoteAttempt || quickNoteSending) return;
-  quickNoteTarget =
-    quickNoteTargets.find(
-      (item) => item.profileId === $("quick-note-target").value,
-    ) || null;
-  quickNoteStatus = null;
-  renderQuickNote();
-};
-$("quick-note-text").oninput = () => {
-  quickNoteText = $("quick-note-text").value;
-  renderQuickNote();
-};
-$("quick-note-refresh").onclick = () => void loadQuickNoteTargets();
-$("quick-note-save").onclick = () => void submitQuickNote();
-$("quick-note-retry").onclick = () => void submitQuickNote(true);
-$("quick-note-clear").onclick = () => {
-  if (!quickNoteAttempt || quickNoteSending || busy) return;
-  quickNoteResetConfirmation = true;
-  renderQuickNote();
-};
-$("quick-note-confirm-reset").onclick = () => {
-  if (!quickNoteResetConfirmation || quickNoteSending || busy) return;
-  if (quickNoteAttempt?.needsReselect) {
-    quickNoteTarget = null;
-    quickNoteTargets = [];
-    quickNoteLoaded = false;
-  }
-  quickNoteAttempt = null;
-  quickNoteResetConfirmation = false;
-  quickNoteStatus = { key: "quicknote.reset.done" };
-  renderQuickNote();
-};
-$("quick-note-cancel-reset").onclick = () => {
-  quickNoteResetConfirmation = false;
-  renderQuickNote();
 };
 chrome.storage.onChanged.addListener((changes, area) => {
   if (area === "session" && changes.assistantPending) {

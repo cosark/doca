@@ -163,6 +163,44 @@ export function markdownTitle(text: string) {
       .trim() || "未命名"
   ).slice(0, 160);
 }
+/** Keep the title's Markdown wrappers when its visible text is renamed. */
+export function markdownTitleReplacement(first: string, title: string) {
+  type TitleNode = {
+    type: string;
+    children?: TitleNode[];
+    position?: { start: { offset?: number }; end: { offset?: number } };
+  };
+  let node: TitleNode = fromMarkdown(first);
+  while (node.children?.length === 1) node = node.children[0]!;
+  // The metadata title can already contain Markdown supplied by the editor.
+  // Reuse that explicit syntax rather than nesting it inside the old wrappers.
+  const replacement = fromMarkdown(title).children[0];
+  const plain =
+    replacement?.type === "paragraph" &&
+    replacement.children.every((child) => child.type === "text");
+  if (
+    plain &&
+    node.type === "text" &&
+    node.position?.start.offset !== undefined &&
+    node.position.end.offset !== undefined
+  ) {
+    return {
+      index: node.position.start.offset,
+      length: node.position.end.offset - node.position.start.offset,
+      text: title,
+    };
+  }
+  const prefix = /^[ \t]{0,3}#{1,6}(?:[ \t]+|(?=\r?$))/.exec(first)?.[0] ?? "";
+  const ending = first.endsWith("\r") ? "\r" : "";
+  const body = first.slice(prefix.length, first.length - ending.length);
+  const suffix =
+    (prefix ? /[ \t]+#+[ \t]*$/.exec(body)?.[0] : "") ?? "";
+  return {
+    index: prefix.length,
+    length: body.length - suffix.length,
+    text: prefix && /#$/.test(prefix) ? ` ${title}` : title,
+  };
+}
 export async function storeNewMarkdown(
   tx: Transaction<Schema>,
   id: string,
