@@ -15,6 +15,7 @@ import {
 import { imageProfileForModel, imageModelIdForOperation, imageSizeForRatio, validImageSize, type ImageOperation } from "@core/modules/ai/image-model-catalog.js";
 import { invokeImageProvider, imageProviderPixels, validateImageProviderInput, ImageProviderHttpError, type ImageProviderOutput } from "./image-provider-adapters.js";
 import { visualSourceAccess } from "./session-attachments.js";
+import { browserAssistantBoundary, resourceScope } from "@core/modules/browser-clipper/access.js";
 import { editRegionsSchema, preserveOutsideRegions, restoreViewport } from "./image-edit-regions.js";
 import { prepareImageEdit, imageEditPatch, cropImageReferences, referenceCropsSchema } from "./image-edit-adapter.js";
 import { aiJobSessionFolder } from "./session-file-folders.js";
@@ -28,6 +29,7 @@ import { imageGenerationV1ReceiptSchema } from "./image-generation-contract.js";
 import { prepareSavedLocalBitmap, composeSavedLocalBitmap } from "./image-saved-local-bitmap.js";
 import { beginCall, settleCall } from "@core/modules/ai/usage.js";
 import { imageRelatedJobIds, reserveImageBatchAttempt, type PaidImageAttempt } from "./image-batch-attempts.js";
+import { assertImageRetriesResolved } from "./image-retry-guard.js";
 import { imagePageAttemptLimit } from "./image-attempt-policy.js";
 import type { ImageBatchAttemptScope } from "./image-batch.js";
 import {
@@ -98,6 +100,8 @@ export async function availableImageReferences(db: DB, ctx: ToolContext, request
     .where("s.user_id", "=", ctx.actor.id)
     .executeTakeFirst();
   if (!job) fail(404, "参考图片的会话不存在或无权访问");
+  const browser = await browserAssistantBoundary(db, job.session_id, ctx.jobId);
+  const allowed = browser ? resourceScope.parse(JSON.parse(browser.binding.job_ids)).ids : null;
   const [jobs, operations] = await Promise.all([
     db
       .selectFrom("ai_jobs")
@@ -105,6 +109,7 @@ export async function availableImageReferences(db: DB, ctx: ToolContext, request
       .where("session_id", "=", job.session_id)
       .where("user_id", "=", ctx.actor.id)
       .where("created_at", "<=", job.created_at)
+      .$if(allowed !== null, query => query.where("id", "in", allowed!))
       .orderBy("created_at", "desc")
       .execute(),
     db
@@ -115,6 +120,7 @@ export async function availableImageReferences(db: DB, ctx: ToolContext, request
       .where("j.user_id", "=", ctx.actor.id)
       .where("o.user_id", "=", ctx.actor.id)
       .where("j.created_at", "<=", job.created_at)
+      .$if(allowed !== null, query => query.where("j.id", "in", allowed!))
       .where((eb) =>
         eb.or([
           eb("o.result", "like", '%"image_generation"%'),
@@ -436,6 +442,10 @@ export async function generateImageAsset(
       resourceId:input.resourceId,...receiptRequest,paidAttempt});
     if (old) return JSON.parse(old.result);
     const relatedJobs = await imageRelatedJobIds(tx, ctx, options.relatedJobIds);
+    // Distinct parallel requests in this executor remain legal. An ancestor's
+    // unresolved result never authorizes a fresh paid request with changed args.
+    if (!options.exportOnly)
+      await assertImageRetriesResolved(tx, ctx.actor.id, relatedJobs.filter(id => id !== ctx.jobId));
     // A document (or a chat with no resourceId) can receive several different
     // images. Guard the request identity, not the shared destination.
     let pendingQuery = tx

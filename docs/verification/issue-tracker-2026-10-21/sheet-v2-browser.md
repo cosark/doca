@@ -1,0 +1,37 @@
+# Sheet 0.2.9 Doca website verification
+
+> 原始截图、JSON 和运行日志保存在本地忽略目录 `artifacts/verification/issue-tracker-2026-10-21/`；下文“本地产物”和“本地图片”的相对路径以该目录为基准，不随 Git 提交。原验收日期、结果和指纹保持原记录，仅整理附件位置。
+
+This supplements the package's 0.2.8 clipboard and 0.2.9 dropdown-delete acceptance with the installed `@smartdoca/sheet` **0.2.9** inside the actual Doca website. The host business code is unchanged. All accounts, workbook imports, database rows and file storage are isolated synthetic fixtures. No user document or paid model is used.
+
+The independent script is `scripts/qa-sheet-v2-host.mts`. It checks the installed package version before opening Chrome. Fixtures enter through the existing authorized `createContent(...).create` import workflow. Edits use the real name box, canvas context menus, keyboard, dropdown dialogs and document mode. Reads use the existing permission-checked preview endpoint plus the public `projectExlsxWorkbook` API. DOM event observation records actual clipboard/paste activity; there is no private runtime mutation, React-fiber access, native command injection or replacement save transport.
+
+## Passed server-backed Vite run
+
+The result receipt（本地产物：`sheet-v2-browser/results.json`） records **three passed groups**, four actual Chrome pages, two documents, no page errors, no paid provider calls and no production-acceptance claim.
+
+- **Clipboard:** native copy/paste preserves all cells in a 3×4 matrix. Copy and cut pasted beyond the 26-column sheet display the explicit “insert enough rows or columns” warning. Both rejected attempts leave the entire persisted document state, model, dimensions and local update count unchanged. The original cut then succeeds at a valid destination without copying again. One undo restores every source cell and clears every destination cell; redo restores the whole cut. The peer reads the resulting cell through the native clipboard UI, emits zero content echoes, and still reads it after both pages reload with zero writes.
+- **Dropdown deletion:** Backspace on a mixed dropdown/plain-cell range removes only the selected single-choice rule, preserving all values and styles and the rule's unselected ranges. Delete removes further selected single-choice controls. A separate multi-choice shared rule is removed only in its selected cell; the other cell remains a dropdown. Native undo/redo and peer/reload checks pass. The peer's own dropdown dialog reads retained options or an empty rule, rather than assuming server convergence proves the peer applied it. A normal cell still clears with Backspace and restores with undo.
+- **Keyboard ownership and idle:** the actual formula-bar canvas and ordinary native text editor both accept Backspace, commit the shorter text and restore it with undo. Option-dialog and external comment textarea Backspace edit their own input while the document stays unchanged. Reading mode refuses both grid Delete and Backspace, preserving rules, values and styles. After the editing, selection, dialogs and reloads, all four pages remain idle for **60 seconds** with no document-state changes or additional content frames.
+
+The list cell's F2 draft has its own native options popup. Its Backspace screenshot visibly shows `待` from `待办`; the native cancel control then leaves the persisted state and rules unchanged. This character observation was manually inspected, using the actual draft screenshot（本地产物：`sheet-v2-browser/dropdown-native-text-draft.png`）. The script does not claim that pressing Enter must commit a value absent from the list: that key can be handled by the native options popup. The separate formula-bar screenshot（本地产物：`sheet-v2-browser/dropdown-formula-bar-text-draft.png`） is a real click in that bar, followed by a persisted ordinary-cell text assertion and undo.
+
+Useful screenshots: copy rejection（本地产物：`sheet-v2-browser/clipboard-copy-out-of-bounds-warning.png`）, cut rejection（本地产物：`sheet-v2-browser/clipboard-cut-out-of-bounds-warning.png`）, clipboard peer after reload（本地产物：`sheet-v2-browser/clipboard-peer-reloaded.png`）, partial shared rule（本地产物：`sheet-v2-browser/dropdown-peer-partial-backspace.png`）, partial multi-choice rule（本地产物：`sheet-v2-browser/dropdown-peer-multiselect-partial.png`）, external comment input（本地产物：`sheet-v2-browser/dropdown-external-comment-backspace.png`）, reading mode（本地产物：`sheet-v2-browser/dropdown-readonly-keeps-rule-value-style.png`） and dropdown peer after reload（本地产物：`sheet-v2-browser/dropdown-peer-reloaded.png`）.
+
+## Reproduction and limits
+
+```sh
+node_modules/.bin/tsx scripts/qa-sheet-v2-host.mts
+```
+
+The default port is 39508 and output is `.local/sheet-v2-host-2026-10-22`. `DOCA_QA_PORT` and `DOCA_QA_OUTPUT` override these. Development uses an isolated server-backed Vite page; the reusable Vite dependency cache remains under `.local`. `DOCA_QA_STAGES` can limit diagnostic runs to `clipboard`, `dropdown-delete` or `idle`; the complete acceptance receipt above contains all three groups. A 60-second idle run requires the preceding fixture groups to provide meaningful document coverage.
+
+## Final static website run
+
+The coordinator's final Web build completed in `.local/release-0.2.8/web-build-final.log`. The same script then passed all **three groups** against the served `apps/web/dist` files with `DOCA_QA_BUILT_WEB=1`, using a new isolated database and the unique `.local/sheet-v2-host-static-2026-10-22` output. The separate static receipt（本地产物：`sheet-v2-built-browser/results.json`） records `webMode: "production-build"`, Sheet 0.2.9, four pages, two documents, 60 seconds of idle observation, zero page errors and zero paid calls. The earlier Vite evidence above is preserved.
+
+The acceptance fingerprint（本地产物：`sheet-v2-built-browser/acceptance-fingerprint.json`） records index SHA-256 `bdf45a1b8fdfaa39a59e78df26fa9ab25ad83164d7dc9914ccfc5fbaaf0a2b64`. All **483 built files** and **773 host source/config files** were hashed during the run and rechecked unchanged after completion. The host source aggregate is `c066cc1efa103c9624976ccf6edb9caf7c078b001234797a6d8b1db1b91c64d7`. Retained evidence includes the complete installed dependency tree（本地产物：`sheet-v2-built-browser/package-tree.json`）, five editor package file trees（本地产物：`sheet-v2-built-browser/editor-package-files-hashes.json`）, built-file hashes（本地产物：`sheet-v2-built-browser/built-assets-hashes.json`） and host source hashes（本地产物：`sheet-v2-built-browser/host-source-hashes.json`）. No product source changed for this test.
+
+The static screenshots are separately retained, including clipboard rejection（本地产物：`sheet-v2-built-browser/clipboard-cut-out-of-bounds-warning.png`）, partial multi-select deletion（本地产物：`sheet-v2-built-browser/dropdown-peer-multiselect-partial.png`）, native dropdown draft（本地产物：`sheet-v2-built-browser/dropdown-native-text-draft.png`）, formula-bar editing（本地产物：`sheet-v2-built-browser/dropdown-formula-bar-text-draft.png`）, comment input（本地产物：`sheet-v2-built-browser/dropdown-external-comment-backspace.png`）, reading mode（本地产物：`sheet-v2-built-browser/dropdown-readonly-keeps-rule-value-style.png`） and peer reload（本地产物：`sheet-v2-built-browser/dropdown-peer-reloaded.png`）.
+
+This test does not claim every clipboard media/formula permutation, every validation type, an arbitrary-version workbook upgrade, mobile acceptance or production deployment. The final full-workspace suite is recorded by the coordinator separately; this task did not rerun or change that suite.

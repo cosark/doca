@@ -1,3 +1,11 @@
+import { decodeSystemError } from "@doca/i18n";
+
+/** Only explicit structured reasons disable retry; historical display text is opaque. */
+export function imageRetryBlocked(error: string) {
+  return ["image_result_uncertain", "image_save_failed", "image_save_failed_retry_blocked"]
+    .includes(decodeSystemError(error)?.code ?? "");
+}
+
 type Message = { id: string; role: string; createdAt?: string };
 type Job = { id: string; status: string; created_at?: string };
 type CompletionProgress = {

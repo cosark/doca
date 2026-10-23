@@ -1,7 +1,7 @@
 import { PluginSlot, useExtensionContext } from "./extensions.js";
 import { PluginStoreIcon } from "./store-icon.js";
 import { webPluginRegistry } from "./registry.js";
-import { useEffect, useRef, useState } from "react";
+import { Fragment, useEffect, useRef, useState, type ReactNode } from "react";
 import { Tooltip } from "antd";
 import {
   Package,
@@ -124,8 +124,10 @@ export function NavigationArea({
   slot,
   data: provided,
   action,
+  afterEntry,
 }: {
   slot: NavigationSlot;
+  afterEntry?: { id: string; node: ReactNode };
   data?: ResolvedNavigation;
   action?: "search" | "other";
 }) {
@@ -157,58 +159,63 @@ export function NavigationArea({
               ? "both"
               : (p.display ?? "both");
         return (
-          <Tooltip
-            key={`${p.entryId}:${slot}`}
-            title={title}
-            placement="bottom"
-            mouseEnterDelay={0.3}
-          >
-            <a
-              href={`#${entry.webPath}`}
-              onClick={(event) => {
-                if (
-                  entry.id === "doca.search" ||
+          <Fragment key={`${p.entryId}:${slot}`}>
+            <Tooltip title={title} placement="bottom" mouseEnterDelay={0.3}>
+              <a
+                href={`#${entry.webPath}`}
+                onClick={(event) => {
+                  if (
+                    entry.id === "doca.search" ||
+                    entry.id === "doca.notifications"
+                  ) {
+                    event.preventDefault();
+                    window.dispatchEvent(
+                      new CustomEvent("doca-navigation-action", {
+                        detail: entry.id,
+                      }),
+                    );
+                  }
+                }}
+                aria-label={
                   entry.id === "doca.notifications"
-                ) {
-                  event.preventDefault();
-                  window.dispatchEvent(
-                    new CustomEvent("doca-navigation-action", {
-                      detail: entry.id,
-                    }),
-                  );
+                    ? `${title} ${t("shell.unread", { count: unread })}`
+                    : title
                 }
-              }}
-              aria-label={entry.id === "doca.notifications" ? `${title} ${t("shell.unread", { count: unread })}` : title}
-              data-display={display}
-              data-entry-id={entry.id}
-              className={
-                (entry.webPath.includes("?")
-                  ? location.hash
-                  : location.hash.split("?")[0]) === `#${entry.webPath}`
-                  ? "active"
-                  : ""
-              }
-            >
-              {display !== "text" && (
-                entry.pluginId && !p.icon ? (
-                  <PluginStoreIcon
-                    pluginId={entry.pluginId}
-                    size={slot === "web.topRight" || slot === "web.more" ? 20 : 16}
-                  />
-                ) : (
-                  <Icon
-                    size={
-                      slot === "web.topRight" || slot === "web.more" ? 20 : 16
-                    }
-                  />
-                )
-              )}
-              {display !== "icon" && <span>{title}</span>}
-              {entry.id === "doca.notifications" && unread > 0 && (
-                <b className="notification-count" aria-hidden="true">{unread}</b>
-              )}
-            </a>
-          </Tooltip>
+                data-display={display}
+                data-entry-id={entry.id}
+                className={
+                  (entry.webPath.includes("?")
+                    ? location.hash
+                    : location.hash.split("?")[0]) === `#${entry.webPath}`
+                    ? "active"
+                    : ""
+                }
+              >
+                {display !== "text" &&
+                  (entry.pluginId && !p.icon ? (
+                    <PluginStoreIcon
+                      pluginId={entry.pluginId}
+                      size={
+                        slot === "web.topRight" || slot === "web.more" ? 20 : 16
+                      }
+                    />
+                  ) : (
+                    <Icon
+                      size={
+                        slot === "web.topRight" || slot === "web.more" ? 20 : 16
+                      }
+                    />
+                  ))}
+                {display !== "icon" && <span>{title}</span>}
+                {entry.id === "doca.notifications" && unread > 0 && (
+                  <b className="notification-count" aria-hidden="true">
+                    {unread}
+                  </b>
+                )}
+              </a>
+            </Tooltip>
+            {afterEntry?.id === entry.id && afterEntry.node}
+          </Fragment>
         );
       });
   return (
@@ -226,6 +233,15 @@ export function NavigationArea({
           <div key="default">{render(group)}</div>
         ),
       )}
+      {afterEntry &&
+        !placements.some(
+          (p) =>
+            p.entryId === afterEntry.id &&
+            data.entries.some(
+              (entry) => entry.id === p.entryId && entry.webPath,
+            ),
+        ) &&
+        afterEntry.node}
     </nav>
   );
 }

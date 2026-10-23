@@ -36,19 +36,22 @@ jobs:
           node-version: "22"
       - name: Enable pnpm
         run: corepack enable && corepack prepare pnpm@11.25.0 --activate
+      - name: Verify published editor package sources
+        run: node scripts/verify-editor-package-sources.mjs
       - name: Install dependencies
         run: pnpm install --frozen-lockfile
       - name: Build the web app
         run: pnpm build
       - name: Pack web assets
         run: |
-          archive="doca-web-assets-${GITHUB_REF_NAME}.tar.gz"
+          mkdir -p artifacts/releases
+          archive="artifacts/releases/doca-web-assets-${GITHUB_REF_NAME}.tar.gz"
           tar -C apps/web/dist -czf "$archive" assets
           echo "archive=$archive" >> "$GITHUB_ENV"
       - name: Pack deployment files
         run: |
           node scripts/pack-deployment.mjs
-          echo "deployment_archive=.cache/deployment/doca-deploy-${GITHUB_REF_NAME}.tar.gz" >> "$GITHUB_ENV"
+          echo "deployment_archive=artifacts/releases/doca-deploy-${GITHUB_REF_NAME}.tar.gz" >> "$GITHUB_ENV"
       - name: Publish GitHub Release
         env:
           GH_TOKEN: ${{ github.token }}

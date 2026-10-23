@@ -1,5 +1,6 @@
 import { randomUUID } from "node:crypto";
 import { z } from "zod";
+import sharp from "sharp";
 import { createTool } from "@mastra/core/tools";
 import type { DB } from "@db/index.js";
 import { fail } from "@core/shared/errors.js";
@@ -79,6 +80,7 @@ async function canvasAssets(
   signal?: AbortSignal,
 ) {
   const assets: CanvasRenderInput["assets"] = Object.create(null);
+  const warnings: { code: string; message: string }[] = [];
   const storage = createStorage(runtime);
   let total = 0;
   for (const path of imagePaths(snapshot.value)) {
@@ -112,9 +114,37 @@ async function canvasAssets(
       asset.size,
     );
     if (data.length !== asset.size) fail(409, "画板图片内容大小已变化");
-    assets[path] = { mime: asset.mime, data: data.toString("base64") };
+    // Native IO validates every embedded source as an imported image (10 MiB),
+    // while the host accepts uploads up to 20 MiB. A model overview is already
+    // limited to 1600px: prepare a bounded, request-local raster for oversized
+    // uploads instead of making the entire canvas impossible to inspect.
+    // Never substitute these preview bytes in storage or the document model.
+    if (data.length > 10 * 1024 * 1024 && ["image/png", "image/jpeg", "image/webp"].includes(asset.mime)) {
+      const preview = await sharp(data, { limitInputPixels: 32_000_000 })
+        .rotate().resize(1600, 1600, { fit: "inside", withoutEnlargement: true })
+        .png().toBuffer();
+      assets[path] = { mime: "image/png", data: preview.toString("base64") };
+      warnings.push({ code: "LARGE_IMAGE_PREVIEW", message: `资产 ${path} 的原图超过原生导出单图10MiB限制，本次使用最长边1600像素的临时预览；原图未改动，放大细节须核对原图。` });
+    } else assets[path] = { mime: asset.mime, data: data.toString("base64") };
   }
-  return assets;
+  return { assets, warnings };
+}
+
+/** Authorized, read-only pixels shared by inspection and explicit PNG export. */
+export async function renderCanvasSnapshot(options: {
+  db: DB;
+  ctx: ToolContext;
+  read(resourceId: string): Promise<CanvasViewSnapshot>;
+  storage?: StorageRuntime;
+  signal?: AbortSignal;
+  render?: typeof renderCanvas;
+}, query: z.infer<typeof canvasViewSchema>) {
+  const snapshot = await options.read(query.resourceId);
+  if (snapshot.resource.format !== "canvas") fail(400, "canvas_view 仅支持画板");
+  const prepared = await canvasAssets(options.db, options.ctx, snapshot, options.storage ?? storageRuntime(), options.signal);
+  const result = await (options.render ?? renderCanvas)({ source: snapshot.value as CanvasRenderInput["source"], assets: prepared.assets, elementIds: query.elementIds, region: query.region }, options.signal);
+  await checkScope(options.db, { ...options.ctx, writable: false }, query.resourceId);
+  return { snapshot, result: { ...result, warnings: [...result.warnings, ...prepared.warnings] } };
 }
 
 export function createCanvasView(options: {
@@ -149,31 +179,7 @@ export function createCanvasView(options: {
     execute: async (query) => {
       if (!options.vision && !options.inspect)
         fail(422, "当前模型未启用图片理解，无法查看画板；请选择视觉模型");
-      const snapshot = await options.read(query.resourceId);
-      if (snapshot.resource.format !== "canvas")
-        fail(400, "canvas_view 仅支持画板");
-      const assets = await canvasAssets(
-        options.db,
-        options.ctx,
-        snapshot,
-        options.storage ?? storageRuntime(),
-        options.signal,
-      );
-      const result = await (options.render ?? renderCanvas)(
-        {
-          source: snapshot.value as CanvasRenderInput["source"],
-          assets,
-          elementIds: query.elementIds,
-          region: query.region,
-        },
-        options.signal,
-      );
-      // Authorization can change while the browser is rendering.
-      await checkScope(
-        options.db,
-        { ...options.ctx, writable: false },
-        query.resourceId,
-      );
+      const { snapshot, result } = await renderCanvasSnapshot(options, query);
       const viewId = randomUUID();
       const receipt = {
         kind: "canvas_view",

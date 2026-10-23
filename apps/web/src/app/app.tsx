@@ -46,6 +46,7 @@ import {
   parsedComment,
 } from "@web/features/comments/rich-comments.js";
 import { Select } from "@web/shared/components/select.js";
+import { useCommentPages } from "@web/features/comments/use-comment-pages.js";
 import { realtime } from "@web/features/documents/realtime.js";
 import { UserBadge } from "@web/shared/components/user-badge.js";
 import { setCurrentUserId } from "@web/shared/components/user-mention.js";
@@ -109,7 +110,7 @@ import { useDesktopNavigation, useNavigationCollapse } from "@web/features/works
 const Admin = lazy(() => import("@web/features/admin/admin.js").then((module) => ({ default: module.Admin })));
 const KnowledgeBooksPage = lazy(() => import("@web/features/knowledge-books/knowledge-books.js").then((module) => ({ default: module.KnowledgeBooksPage })));
 const DiscoveryPage = lazy(() => import("@web/features/discovery/discovery.js").then((module) => ({ default: module.DiscoveryPage })));
-const AIChat = lazy(() => import("@web/features/ai/ai-chat.js").then((module) => ({ default: module.AIChat })));
+const AIChat = lazy(() => import("@web/features/ai/ai-chat-host.js").then((module) => ({ default: module.AIChat })));
 const DocumentEditor = lazy(() =>
   import("@web/features/documents/document-editor.js").then((m) => ({ default: m.DocumentEditor })),
 );
@@ -293,23 +294,27 @@ function WorkspaceApp() {
       return path[0]?.name || t("nav.sharedFiles");
     } catch { return t("nav.sharedFiles"); }
   })();
+  const commentPageRequests = useRef(new Set<string>());
   async function loadMoreComments() {
     if (
       !detail ||
-      detail.commentsNextCursor == null ||
-      busy
+      detail.commentsNextCursor == null
     )
       return;
-    setBusy(true);
+    const requestedCursor = detail.commentsNextCursor;
+    const requestKey = `${detail.resource.id}:${requestedCursor}`;
+    if (commentPageRequests.current.has(requestKey)) return;
+    commentPageRequests.current.add(requestKey);
     try {
       const page = await api<{
         items: Detail["comments"];
         nextCursor?: string | null;
       }>(
-        `/resources/${detail.resource.id}/comments?cursor=${encodeURIComponent(detail.commentsNextCursor)}`,
+        `/resources/${detail.resource.id}/comments?cursor=${encodeURIComponent(requestedCursor)}`,
       );
       setDetail((d) =>
-        d?.resource.id === detail.resource.id
+        d?.resource.id === detail.resource.id &&
+        d.commentsNextCursor === requestedCursor
           ? {
               ...d,
               comments: [
@@ -324,8 +329,7 @@ function WorkspaceApp() {
     } catch (e) {
       setError((e as Error).message);
     } finally {
-      setBusy(false);
-      setImportProgress(null);
+      commentPageRequests.current.delete(requestKey);
     }
   }
   const libraryIdFromDetail =
@@ -1719,11 +1723,10 @@ function Comments({
   const { t } = useI18n();
   const [reply, setReply] = useState<string | null>(null);
   const [editing, setEditing] = useState<string | null>(null);
-  const [visibleCount, setVisibleCount] = useState(10);
+  useCommentPages(detail.resource.id, true, detail.commentsNextCursor, loadMoreComments);
   useEffect(() => {
     const index = detail.comments.findIndex((c) => c.id === targetComment);
     if (index < 0) return;
-    setVisibleCount((n) => Math.max(n, index + 1));
     const t = setTimeout(
       () =>
         document
@@ -1765,7 +1768,7 @@ function Comments({
         {t("shell.pageComments")}{" "}
         <small>{detail.comments.filter((c) => !c.deleted_at).length}</small>
       </h2>
-      {detail.comments.slice(0, visibleCount).map((c) => (
+      {detail.comments.map((c) => (
         <article
           id={`comment-${c.id}`}
           className={`whole-comment ${c.parent_id ? "reply" : ""} ${targetComment === c.id ? "notification-target" : ""}`}
@@ -1834,24 +1837,6 @@ function Comments({
           )}
         </article>
       ))}
-      {visibleCount < detail.comments.length && (
-        <button
-          className="comments-load-more"
-          onClick={() => setVisibleCount((n) => n + 10)}
-        >
-          {t("shell.moreComments")}
-        </button>
-      )}
-      {visibleCount >= detail.comments.length &&
-        detail.commentsNextCursor != null && (
-          <button
-            className="comments-load-more"
-            disabled={busy}
-            onClick={() => void loadMoreComments?.()}
-          >
-            {t("shell.laterComments")}
-          </button>
-        )}
       {user && rank >= 2 ? (
         <CommentComposer
           resourceId={r.id}

@@ -324,3 +324,54 @@
   font-weight: 600;
   box-shadow: 0 1px 2px #1f23290d;
 }
+
+.clipper-download {
+  display: flex;
+  align-items: center;
+  gap: 18px;
+  flex-wrap: wrap;
+  padding: 22px 24px;
+  margin-bottom: 24px;
+  background: #f4f0ff;
+  border: 1px solid #e6ddf5;
+  border-radius: 14px;
+}
+.clipper-download > div {
+  flex: 1;
+  min-width: 180px;
+}
+.clipper-download strong {
+  font-size: 16px;
+  color: #655084;
+}
+.clipper-download p {
+  color: #9685a8;
+  font-size: 12px;
+  margin: 7px 0 0;
+}
+.clipper-download .primary {
+  padding: 11px 16px;
+  background: #7051be;
+  color: #fff;
+  border: 1px solid #7051be;
+  border-radius: 8px;
+}
+.clipper-download .primary:hover {
+  background: #6042ac;
+}
+.clipper-download .clipper-rules-link {
+  border: 0;
+  background: transparent;
+  color: #7051be;
+  padding: 8px 0;
+  font-size: 12px;
+}
+@media (max-width: 680px) {
+  .clipper-download {
+    padding: 18px;
+    gap: 12px;
+  }
+  .clipper-download > div {
+    flex-basis: 100%;
+  }
+}

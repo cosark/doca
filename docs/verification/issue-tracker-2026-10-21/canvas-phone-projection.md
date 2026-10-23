@@ -1,0 +1,16 @@
+# Canvas phone projection regression
+
+The first actual Doca run against the official Canvas 0.5.10 artifact found a phone-container projection defect. The retained synthetic AI-created model has a current-schema `Frame` with `data.kind="container"`, `containerType="phone"`, a stroke and ordinary content children. Its live view lost the phone bezel after later content updates, despite the model retaining the frame stroke. The model and review result alone therefore do not establish visible-border acceptance.
+
+The native host run separately reached a visible phone, then a frame gesture raised `Cannot read properties of undefined (reading 'get')` from `CanvasModel.applyScene` and subsequent `ELEMENT_ID_REUSE` errors. Later stages in that same crashed page are not independent product failures. The first harness also clicked native resize handles when trying to drag the borders; those points are now moved away from handles. The diagram multi-selection points are moved away from editable labels.
+
+Source inspection identifies two connected view-bookkeeping errors in `CanvasEditor.projectModel`:
+
+1. `syncPhoneFrame` creates native hardware and clears the original stroke in the live view. Identity reconciliation removes hardware not present in the authoritative model. A content-only update does not put the parent frame in `changed`, so the hardware was not recreated.
+2. Generated hardware could already be present in the native snapshot used as the scene-diff baseline, although its IDs were absent from the authoritative model. A later native flush treated those IDs as existing model entries and attempted to read missing Y.Map placements.
+
+The same missing-model-entry problem applies to an automatically generated title on a Web or Board container. The prepared upstream repair records only affected container parents while deleting unused children, normalizes those parents, and marks titles/phone hardware generated solely for the current model projection as `skipJSON`. Existing persisted titles/hardware keep their original model IDs and properties. It does not retain arbitrary unused decorations, change title-generation text/rules, convert model data, add stored fields, change schema/codec, or create a transaction while opening a scene.
+
+The dedicated upstream test is `tests/browser/phone-model-projection.spec.mjs`. Its four cases supply a model-only phone with and without an explicit title, plus Web and Board containers without titles. The cases check content-only projection, two-client convergence without remote echo, native style flush, undo/redo and reopening; original model children remain intact with no generated parts added. Four live phone bezel pixel samples are compared with PNG export, and SVG must retain the same even-odd bezel. Actual browser execution and a released-artifact Doca rerun remain required before this regression can be marked passed.
+
+Use its dedicated `tests/browser/phone-projection.playwright.config.mjs` configuration. The isolated Vite cache scans only the actual app and host-example entrypoints. This avoids loading another React from ignored release-consumer HTML files under `tmp/`; the initial default-cache startup failure is a test-environment issue, not a phone-rendering result.

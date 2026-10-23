@@ -29,7 +29,7 @@ await new Promise((resolve, reject) =>
 );
 const publicOrigin = `http://127.0.0.1:${qaPort}`,
   host = `127.0.0.1:${qaPort}`;
-const output = resolve(`docs/verification/release-0.2.5/${arch}-mcp`);
+const output = resolve(`artifacts/verification/release-0.2.5/${arch}-mcp`);
 const fixturePath = resolve(`.cache/release-0.2.5/${arch}-mcp.json`);
 await mkdir(output, { recursive: true });
 await mkdir(resolve(".cache/release-0.2.5"), { recursive: true });

@@ -38,6 +38,7 @@ __pycache__/
 !/plugins/README.md
 
 # Local browser-test output, scratch work and logs.
+# Put generated screenshots, JSON reports, logs and temporary QA notes under artifacts/.
 /artifacts/
 test-results/
 playwright-report/

@@ -21,7 +21,7 @@ assert.equal(fixture.origin, "http://127.0.0.1:39472");
   assert.equal(login.status(), 200, await login.text());
   const page = await context.newPage(),
     errors = [],
-    output = path.resolve("docs/verification/mcp-2026-10-20");
+    output = path.resolve("artifacts/verification/mcp-2026-10-20");
   await fs.mkdir(output, { recursive: true });
   page.on("pageerror", (error) => errors.push(error.message));
   try {

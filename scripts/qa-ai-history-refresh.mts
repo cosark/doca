@@ -297,7 +297,9 @@ try {
     if (route.request().method() === "POST") { uploads++; await uploadGate; }
     await route.continue();
   });
-  await sending.route("**/api/v1/ai/sessions/*/messages", async route => {
+  // A second mounted chat in this context may drain the same durable queue
+  // under the shared session lock. Count every tab's POST, not only the sender.
+  await context.route("**/api/v1/ai/sessions/*/messages", async route => {
     if (route.request().method() === "POST") { sends++; submitted = route.request().postDataJSON(); }
     await route.continue();
   });
@@ -324,14 +326,29 @@ try {
     for (let i = 0; i < 100 && !uploads; i++) await delay(50);
     assert.equal(uploads, 1);
     await sending.getByRole("button", { name: "收起 AI", exact: true }).click();
+    await sending.waitForFunction(() => !new URLSearchParams(location.hash.split("?")[1] ?? "").has("session"));
     releaseUpload();
     for (let i = 0; i < 100 && !sends; i++) await delay(50);
+    if (!sends) {
+      await sending.locator(".ai-document-trigger").click();
+      await sending.screenshot({ path: join(output, "canvas-collapse-upload-failure.png") });
+      await writeFile(join(output, "canvas-collapse-upload-failure.html"), await sending.content());
+      await writeFile(join(output, "canvas-collapse-upload-failure.json"), JSON.stringify({ errors, uploads, sends, jobs: await db.selectFrom("ai_jobs").select(["id", "status", "error"]).where("user_id", "=", owner.id).execute(), storage: await sending.evaluate(() => Object.fromEntries(Object.entries(localStorage))) }, null, 2));
+    }
     assert.equal(sends, 1, "Collapsing must not cancel the submitted image");
     await sending.locator(".ai-document-trigger").click();
     await bubble.waitFor();
     await sending.waitForFunction(() => [...document.querySelectorAll<HTMLImageElement>(".ai-message-attachments img")].some(image => image.naturalWidth > 0));
     assert.equal(await bubble.count(), 1);
     assert.equal(uploads, 1);
+    // A selected chat adds session to the document URL. Closing it removes only
+    // that parameter, keeping the same document and the running chat mounted.
+    assert(new URL(sending.url()).hash.includes("session="));
+    await sending.getByRole("button", { name: "收起 AI", exact: true }).click();
+    await sending.waitForFunction(() => !new URLSearchParams(location.hash.split("?")[1] ?? "").has("session"));
+    assert.equal(new URL(sending.url()).hash, "#/r/" + sendBoard.id);
+    await sending.locator(".ai-document-trigger").click();
+    await bubble.waitFor();
     await sending.screenshot({ path: join(output, "canvas-collapse-upload.png") });
     await sending.reload();
     await bubble.waitFor();

@@ -4,6 +4,7 @@
 export function scrollCommentIntoView(
   target: Element | null | undefined,
   block: "nearest" | "center" = "nearest",
+  behavior: ScrollBehavior = "smooth",
 ) {
   if (!target) return;
   for (let parent = target.parentElement; parent; parent = parent.parentElement) {
@@ -17,7 +18,7 @@ export function scrollCommentIntoView(
       ? (box.top + box.bottom - top - bottom) / 2
       : box.top < top ? box.top - top
         : box.bottom > bottom ? Math.min(box.bottom - bottom, box.top - top) : 0;
-    if (delta) parent.scrollTo({ top: parent.scrollTop + delta, behavior: "smooth" });
+    if (delta) parent.scrollTo({ top: parent.scrollTop + delta, behavior });
     return;
   }
 }

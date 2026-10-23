@@ -10,7 +10,7 @@ import { getDocument } from "pdfjs-dist/legacy/build/pdf.mjs";
 import { renderDocumentPdf } from "../apps/server/src/services/document-pdf.js";
 
 const root = fileURLToPath(new URL("../", import.meta.url));
-const output = resolve(root, ".local/document-pdf-qa");
+const output = resolve(root, process.env.DOCA_QA_OUTPUT ?? "artifacts/verification/document-pdf");
 await mkdir(output, { recursive: true });
 const html = `${output}/view.html`;
 await writeFile(html, `<!doctype html><meta charset="utf-8"><div id="root"></div><script type="module">import R from "/@react-refresh";R.injectIntoGlobalHook(window);window.$RefreshReg$=()=>{};window.$RefreshSig$=()=>t=>t;window.__vite_plugin_react_preamble_installed__=true;</script><script type="module" src="/@fs/${root}tests/fixtures/document-pdf-view.tsx"></script>`);

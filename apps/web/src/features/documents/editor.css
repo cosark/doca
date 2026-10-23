@@ -298,24 +298,39 @@
   grid-template-columns: minmax(0, 1fr);
 }
 .compact-document .content-comments {
-  position: fixed;
-  right: var(--document-panel-right, 0px);
-  top: var(--document-panel-top, 120px);
-  bottom: var(--document-panel-bottom, 0px);
+  position: sticky;
+  right: auto;
+  top: 0;
+  bottom: auto;
   z-index: 20;
-  width: min(360px, calc(100vw - 80px));
-  box-shadow: -8px 0 24px #18233418;
+  width: 100%;
+  height: calc(100dvh - var(--document-panel-top, 120px) - var(--document-panel-bottom, 0px));
   max-height: none;
   overflow: auto;
   overflow-anchor: none;
   overscroll-behavior: contain;
-  padding: 16px;
+  padding: 0 16px 16px;
   background: #fff;
   border-left: 1px solid #dee0e3;
   border-radius: 0;
 }
+.editor-columns.with-comments .editor-content {
+  overflow-x: auto;
+}
+.editor-columns.with-comments .editor-content > .sk-editor,
+.editor-columns.with-comments .editor-content > .discussion {
+  min-width: var(--document-paper-width, 0px);
+}
+.ai-document-layout:has(.editor-columns.with-comments) > .ai-document-trigger,
+.ai-document-layout:has(.editor-columns.with-comments) .document-scroll-buttons {
+  right: 302px;
+}
+.ai-document-layout:has(.compact-document .editor-columns.with-comments) > .ai-document-trigger,
+.ai-document-layout:has(.compact-document .editor-columns.with-comments) .document-scroll-buttons {
+  right: calc(min(360px, max(240px, 42%)) + 22px);
+}
 .compact-document .content-comments > header {
-  top: -16px;
+  top: 0;
   padding-block: 12px;
 }
 .comment-cards {

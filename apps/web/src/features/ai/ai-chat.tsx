@@ -5,6 +5,7 @@ import { AIChoiceCard } from "@web/features/ai/ai-choice-card.js";
 import {
   aiTimeline,
   completionPresentation,
+  imageRetryBlocked,
   taskDuration,
 } from "@web/features/ai/ai-timeline.js";
 import {
@@ -20,6 +21,26 @@ import { AIFolderPreview } from "./ai-folder-preview.js";
 import { notifyAISessionFilesChanged } from "./ai-file-events.js";
 import { uploadErrorMessage } from "./ai-upload-errors.js";
 import { prepareSendFiles, type SendFile, type SendFileProgress } from "./ai-send-files.js";
+import { sendOrReconcilePendingItem, reconcilePendingItem, PendingMessageConflictError, type PendingSessionSnapshot } from "./ai-pending-runner.js";
+import {
+  adoptOutgoingPending,
+  completeOutgoingPending,
+  holdPendingDelivery,
+  PendingQueueChangedError,
+  PendingQueueStorageError,
+  persistOutgoingPending,
+  withdrawOutgoingPending,
+  promoteOutgoingPending,
+  readPendingQueue,
+  readLegacyPendingQueue,
+  subscribePendingStore,
+  verifyLegacyPendingSource,
+  pendingScopeKey,
+  type PendingQueueScope,
+  type LegacyPendingItem,
+  withPendingDeliveryLock,
+} from "./ai-pending-delivery.js";
+import { getPendingEntry, samePendingItem } from "./ai-pending-store.js";
 import { systemErrorMessage } from "@web/shared/system-errors.js";
 import type { AIUploadLimits } from "@core/modules/ai/upload-policy.js";
 import {
@@ -29,10 +50,6 @@ import {
   type ComposerDraft,
 } from "./ai-composer-draft.js";
 import { FileDeliveryCard } from "@web/features/ai/ai-file-card.js";
-import {
-  readPageState,
-  writePageState,
-} from "@web/features/page-state/client.js";
 import { createPortal, flushSync } from "react-dom";
 import {
   applyProgressPatch,
@@ -82,15 +99,10 @@ import {
   SquareCheck,
 } from "lucide-react";
 import {
-  api,
   assetUrl,
   type FileItem,
   type Resource,
 } from "@web/shared/api.js";
-import {
-  FileSourceDialog,
-  FolderFilePicker,
-} from "@web/features/files/files.js";
 import {
   captureExternalDrop,
   isExternalFileDrag,
@@ -137,13 +149,11 @@ import type {
 import type { AIReference } from "@core/workflows/ai-documents.js";
 import type { Attachment, AttachmentsRef } from "@ant-design/x/es/attachments";
 import { useAI } from "@web/features/ai/ai-context.js";
-import { AIUserSettings } from "@web/features/ai/ai-user-settings.js";
 import {
   AIReferenceTag,
   referenceLabel,
 } from "@web/features/ai/ai-reference-tag.js";
 import { referenceTextParts } from "@web/features/ai/ai-reference-text.js";
-import { SearchPanel } from "@web/features/search/search.js";
 import { AIQuestionNav } from "@web/features/ai/ai-question-nav.js";
 import { AIPendingQueue } from "@web/features/ai/ai-pending-queue.js";
 import {
@@ -156,16 +166,12 @@ import {
   INITIAL_RENDER_QUESTIONS,
   PENDING_QUEUE_EVENT,
   RENDER_EXPAND_QUESTIONS,
-  adoptDraftQueue,
   activeQuestionFromPositions,
   formatContextTokens,
-  loadPendingQueue,
   type ExplorerTarget,
-  promotePendingItem,
   questionsToReveal,
   userQuestions,
   windowedMessages,
-  writePendingQueue,
   type PendingSendItem,
 } from "@web/features/ai/ai-session-ux.js";
 import {
@@ -173,6 +179,7 @@ import {
   writeConversationCache,
 } from "@web/features/ai/ai-local-cache.js";
 import "@web/features/ai/ai.css";
+import { pendingQueueScope, useAIChatRuntime } from "./ai-runtime.js";
 const AIAnswer = lazy(() => import("@web/features/ai/ai-markdown.js"));
 
 function jobFolderDeliveries(job: {
@@ -251,6 +258,7 @@ function AIChatHeader({
 type Session = {
   id: string;
   title: string;
+  source: "doca" | "browser_assistant";
   model_id: string | null;
   resource_ids: string;
   archived: number;
@@ -432,6 +440,7 @@ type ClientMessage = Conversation["messages"][number] & {
 };
 type OutgoingMessage = {
   item: PendingSendItem;
+  queueScope: PendingQueueScope;
   userId: string;
   sessionId: string | null;
   draftKey: string | null;
@@ -441,12 +450,15 @@ type OutgoingMessage = {
   composerText: string;
   composerDraft: ComposerDraft;
   composerFiles: Attachment<ChatFile>[];
+  /** A recovered queue item must not consume a newer, independent draft. */
+  consumeComposer?: boolean;
 };
 function SessionStatusBadges({ session }: { session: Session }) {
   const { t, locale } = useI18n();
 
   return (
     <>
+      <SessionSourceBadge session={session} />
       {session.awaitingApproval && (
         <span
           className="ai-session-status pending"
@@ -463,7 +475,21 @@ function SessionStatusBadges({ session }: { session: Session }) {
     </>
   );
 }
+function SessionSourceBadge({ session }: { session: Session }) {
+  const { t } = useI18n();
+  return session.source === "browser_assistant" ? (
+    <span className="ai-session-status ai-session-source" title={t("chat.source.browserAssistant")}>
+      {t("chat.source.browserAssistant")}
+    </span>
+  ) : null;
+}
 export function AIChat({ full = false }: { full?: boolean }) {
+  const runtime = useAIChatRuntime();
+  const api = runtime.request;
+  const FileSourceDialog = runtime.workspace?.FileSourceDialog;
+  const FolderFilePicker = runtime.workspace?.FolderFilePicker;
+  const SearchPanel = runtime.workspace?.SearchPanel;
+  const AIUserSettings = runtime.workspace?.AIUserSettings;
   const { t, locale } = useI18n();
   const documentFormats: Record<string, string> = {
     rich_text: t("shell.type.rich"),
@@ -500,6 +526,10 @@ export function AIChat({ full = false }: { full?: boolean }) {
   }
 
   const ai = useAI()!;
+  const queueScope = ai.userId ? pendingQueueScope(runtime, ai.userId) : null;
+  const queueScopeIdentity = queueScope ? pendingScopeKey(queueScope) : "";
+  const currentQueueScope = useRef(queueScope);
+  currentQueueScope.current = queueScope;
   const launchDraft = useSyncExternalStore(subscribeAssistantDraft, () => assistantDraft(ai.userId, ai.sessionId));
   const launchModel = useRef<{ sessionId: string; modelId: string } | null>(null);
   const currentAI = useRef(ai);
@@ -521,6 +551,9 @@ export function AIChat({ full = false }: { full?: boolean }) {
   const localDraftFiles = useRef(new Map<string, Attachment<ChatFile>[]>());
   const activeDraftKey = useRef<string | null>(null);
   const sendControllers = useRef(new Map<string, AbortController>());
+  useLayoutEffect(() => () => {
+    for (const controller of sendControllers.current.values()) controller.abort();
+  }, [queueScopeIdentity]);
   useEffect(() => {
     const uploads = localUploads.current;
     return () => {
@@ -652,6 +685,7 @@ export function AIChat({ full = false }: { full?: boolean }) {
     };
   }, [pendingExtractKey]);
   const upload = (file: File) => {
+    if (!runtime.workspaceActions) return;
     if (busy) return;
     if (
       !allowsAttachments([
@@ -852,6 +886,7 @@ export function AIChat({ full = false }: { full?: boolean }) {
     return [...files, ...folderTargetsRef.current];
   };
   const onExplorerDragOver = (event: ReactDragEvent) => {
+    if (!runtime.workspaceActions) return;
     if (
       !isInternalFileDrag(event.dataTransfer) &&
       !isExternalFileDrag(event.dataTransfer)
@@ -862,6 +897,7 @@ export function AIChat({ full = false }: { full?: boolean }) {
     if (!composerDrop) setComposerDrop(true);
   };
   const onExplorerDrop = (event: ReactDragEvent) => {
+    if (!runtime.workspaceActions) return;
     const internal =
       isInternalFileDrag(event.dataTransfer) ||
       !!readFileDrag(event.dataTransfer);
@@ -903,7 +939,7 @@ export function AIChat({ full = false }: { full?: boolean }) {
       delete: false,
       modify: false,
     }),
-    [list, setList] = useState(full),
+    [list, setList] = useState(full && !runtime.embedded),
     [batch, setBatch] = useState(false),
     [selected, setSelected] = useState<string[]>([]),
     [skillIds, setSkillIds] = useState<string[]>([]),
@@ -1225,6 +1261,8 @@ export function AIChat({ full = false }: { full?: boolean }) {
   const [activeQuestionId, setActiveQuestionId] = useState<string | null>(null);
   const [atHistoryHead, setAtHistoryHead] = useState(false);
   const [pending, setPending] = useState<PendingSendItem[]>([]);
+  const [legacyPending, setLegacyPending] = useState<LegacyPendingItem[]>([]);
+  const [legacyUnknown, setLegacyUnknown] = useState(false);
   const queueKey = ai.sessionId ?? DRAFT_QUEUE_KEY;
   const pendingScrollKey = useRef<string | null>(null);
   const threadCache = useRef<{
@@ -1255,7 +1293,7 @@ export function AIChat({ full = false }: { full?: boolean }) {
       api<Session[]>(
         `/ai/sessions?archived=false${!full && ai.resource ? `&resourceId=${ai.resource.id}` : ""}`,
       ),
-      api<any>("/ai/skills"),
+      runtime.workspaceActions ? api<any>("/ai/skills") : Promise.resolve({ personal: [] }),
     ]);
     setOptions(o);
     setSessions(s);
@@ -1286,9 +1324,9 @@ export function AIChat({ full = false }: { full?: boolean }) {
   useEffect(() => {
     if (!ai.userId) return;
     let active = true;
-    void readPageState<string>("ai.model")
+    void runtime.readModel()
       .then((item) => {
-        if (active && item?.value && launchModel.current?.sessionId !== ai.sessionId) setModel(item.value);
+        if (active && item && launchModel.current?.sessionId !== ai.sessionId) setModel(item);
       })
       .catch(() => undefined);
     return () => {
@@ -1435,9 +1473,7 @@ export function AIChat({ full = false }: { full?: boolean }) {
         });
     };
     void load();
-    const events = new EventSource(
-      `/api/v1/ai/sessions/${ai.sessionId}/stream`,
-    );
+    const events = runtime.stream(ai.sessionId);
     events.addEventListener("job", (event) => {
       if (!active) return;
       const data = JSON.parse((event as MessageEvent).data);
@@ -1480,16 +1516,27 @@ export function AIChat({ full = false }: { full?: boolean }) {
     };
   }, [ai.sessionId, ai.userId]);
   useEffect(() => {
-    const sync = () =>
-      setPending(ai.userId ? loadPendingQueue(ai.userId, queueKey) : []);
-    sync();
+    let active = true;
+    const sync = async () => {
+      if (!queueScope || !ai.userId) { setPending([]); setLegacyPending([]); return; }
+      try {
+        const items = await readPendingQueue(queueScope, queueKey);
+        const legacy = await readLegacyPendingQueue(queueScope, ai.userId, queueKey);
+        if (active) { setPending(items); setLegacyPending(legacy.items); setLegacyUnknown(legacy.unknown); }
+      } catch (error) { if (active) ai.setError(error instanceof PendingQueueChangedError ? t("chat.pendingConflict") : t("chat.draftSaveFailed")); }
+    };
+    setPending([]); setLegacyPending([]); setLegacyUnknown(false);
+    void sync();
+    const unsubscribe = queueScope ? subscribePendingStore(queueScope, () => void sync()) : () => {};
+    const timer = setInterval(() => void sync(), 2000);
     window.addEventListener(PENDING_QUEUE_EVENT, sync);
     window.addEventListener("storage", sync);
     return () => {
+      active = false; unsubscribe(); clearInterval(timer);
       window.removeEventListener(PENDING_QUEUE_EVENT, sync);
       window.removeEventListener("storage", sync);
     };
-  }, [ai.userId, queueKey]);
+  }, [ai.userId, queueKey, queueScopeIdentity]);
   useEffect(() => {
     const key = pendingScrollKey.current;
     if (!key) return;
@@ -1530,21 +1577,23 @@ export function AIChat({ full = false }: { full?: boolean }) {
     const inflight = submitting.current ? requestId.current : null;
     if (inflight) haltJobId.current = inflight;
     for (const controller of sendControllers.current.values()) controller.abort();
-    persistPending([]);
     const ids = [
       ...new Set([
         ...jobs.map((job) => job.id),
         ...(inflight ? [inflight] : []),
       ]),
     ];
-    if (!ids.length) return;
-    void action(() =>
-      Promise.all(ids.map((jobId) => api(`/ai/jobs/${jobId}/cancel`, "POST"))),
-    );
+    void action(async () => {
+      if (queueScope) {
+        const items = await readPendingQueue(queueScope, queueKey);
+        for (const item of items) await withdrawOutgoingPending(queueScope, item);
+      }
+      await Promise.all(ids.map((jobId) => api(`/ai/jobs/${jobId}/cancel`, "POST")));
+    });
   };
   const openDocument = useCallback((id: string) => {
     const current = currentAI.current;
-    location.hash = `/r/${id}${current.sessionId ? `?session=${current.sessionId}` : ""}`;
+    runtime.navigate(`/r/${id}${current.sessionId ? `?session=${current.sessionId}` : ""}`);
     current.setOpen(true);
   }, []);
   const seenJumps = useRef(new Set<string>());
@@ -1561,7 +1610,7 @@ export function AIChat({ full = false }: { full?: boolean }) {
   };
   const openFolderDelivery = useCallback((href: string) => {
     const current = currentAI.current;
-    location.hash = withSessionHash(href, current.sessionId);
+    runtime.navigate(withSessionHash(href, current.sessionId));
     current.setOpen(true);
   }, []);
   const freshJob = (job: { status: string }) =>
@@ -1636,9 +1685,21 @@ export function AIChat({ full = false }: { full?: boolean }) {
       skipReferenceInsert.current = false;
     });
   };
-  const persistPending = (items: PendingSendItem[]) => {
-    setPending(items);
-    if (ai.userId) writePendingQueue(ai.userId, queueKey, items);
+  const mutatePending = async (item: PendingSendItem, operation: "withdraw" | "promote") => {
+    if (!ai.userId || !queueScope) return false;
+    const userId = ai.userId, key = queueKey, identity = queueScopeIdentity;
+    const currentScope = () => currentAI.current.userId === userId && (currentAI.current.sessionId ?? DRAFT_QUEUE_KEY) === key && !!currentQueueScope.current && pendingScopeKey(currentQueueScope.current) === identity;
+    try {
+      if (operation === "withdraw") await withdrawOutgoingPending(queueScope, item);
+      else await promoteOutgoingPending(queueScope, item);
+      const items = await readPendingQueue(queueScope, key);
+      if (!currentScope()) return false;
+      setPending(items);
+      return true;
+    } catch (error) {
+      if (currentScope()) ai.setError(error instanceof PendingQueueChangedError ? t("chat.pendingConflict") : t("chat.draftSaveFailed"));
+      return false;
+    }
   };
   const pinToLatest = () => {
     pendingScrollKey.current = null;
@@ -1654,11 +1715,13 @@ export function AIChat({ full = false }: { full?: boolean }) {
   };
   const isOutgoingScope = (snapshot: OutgoingMessage) =>
     currentAI.current.userId === snapshot.userId &&
+    !!currentQueueScope.current && pendingScopeKey(currentQueueScope.current) === pendingScopeKey(snapshot.queueScope) &&
     (currentDraftKey.current === snapshot.draftKey ||
       (!!snapshot.sessionId &&
         currentAI.current.sessionId === snapshot.sessionId));
   const consumeOutgoingComposer = (snapshot: OutgoingMessage) => {
     if (
+      snapshot.consumeComposer === false ||
       !isOutgoingScope(snapshot) ||
       composerValue() !== snapshot.composerText ||
       filesRef.current.length !== snapshot.files.length ||
@@ -1699,6 +1762,7 @@ export function AIChat({ full = false }: { full?: boolean }) {
   };
   const restoreOutgoingComposer = (snapshot: OutgoingMessage) => {
     if (
+      snapshot.consumeComposer === false ||
       !isOutgoingScope(snapshot) ||
       restoringDraft.current ||
       composerValue() ||
@@ -1735,11 +1799,17 @@ export function AIChat({ full = false }: { full?: boolean }) {
     });
   };
   const submitOutgoing = async (snapshot: OutgoingMessage) => {
-    const { item, userId: sendingUserId, draftKey: sendingDraftKey } = snapshot;
+    const { item, userId: sendingUserId, draftKey: sendingDraftKey, queueScope: sendingScope } = snapshot;
     const id = item.id;
     if (sendControllers.current.has(id)) return;
-    flushSync(() => consumeOutgoingComposer(snapshot));
+    const releaseDelivery = holdPendingDelivery(sendingScope, id);
+    let persisted = false;
     const controller = new AbortController();
+    const assertSendingScope = () => {
+      if (currentAI.current.userId !== sendingUserId || !currentQueueScope.current ||
+          pendingScopeKey(currentQueueScope.current) !== pendingScopeKey(sendingScope)) controller.abort();
+      controller.signal.throwIfAborted();
+    };
     sendControllers.current.set(id, controller);
     requestId.current = id;
     submitting.current = true;
@@ -1748,6 +1818,19 @@ export function AIChat({ full = false }: { full?: boolean }) {
     setOptimistic(messages => messages.map(message => message.id === id
       ? { ...message, delivery: "sending", deliveryError: undefined } : message));
     try {
+      assertSendingScope();
+      const existingPending = await getPendingEntry(sendingScope, id);
+      assertSendingScope();
+      if (existingPending && (existingPending.state !== "pending" || !samePendingItem(existingPending.item, item))) throw new PendingQueueChangedError();
+      // Persist a complete replayable snapshot before clearing any input. A
+      // local upload is kept in the composer until its remote IDs are ready.
+      if (snapshot.files.every(file => file.uploaded && file.uploaded.extractStatus !== "pending" && file.uploaded.extractStatus !== "failed")) {
+        if (!existingPending) item.attachments = snapshot.files.map(file => asChatFile(file.uploaded!));
+        await persistOutgoingPending(sendingScope, snapshot.sessionId ?? DRAFT_QUEUE_KEY, item);
+        assertSendingScope();
+        persisted = true;
+        flushSync(() => consumeOutgoingComposer(snapshot));
+      }
       // Give the newly inserted bubble a frame before document flushing or uploads.
       await new Promise<void>(resolve => {
         const timer = setTimeout(resolve, 100);
@@ -1756,12 +1839,13 @@ export function AIChat({ full = false }: { full?: boolean }) {
           resolve();
         }));
       });
-      controller.signal.throwIfAborted();
+      assertSendingScope();
       let sid = snapshot.sessionId;
       if (!sid) {
         const key = `${sendingUserId}:${sendingDraftKey}`;
         let creation = newSessionRequests.current.get(key);
         if (!creation) {
+          assertSendingScope();
           creation = api<Session>("/ai/sessions", "POST", {
             modelId: item.modelId,
             resourceIds: item.currentResourceId ? [item.currentResourceId] : [],
@@ -1771,7 +1855,10 @@ export function AIChat({ full = false }: { full?: boolean }) {
         let s: Session;
         try { s = await creation; }
         finally { newSessionRequests.current.delete(key); }
+        assertSendingScope();
         sid = s.id;
+        if (persisted) await adoptOutgoingPending(sendingScope, sid!, item);
+        assertSendingScope();
         snapshot.sessionId = sid;
         sendingSession.current = sid;
         setOptimistic(messages => messages.map(message => message.id === id
@@ -1787,29 +1874,48 @@ export function AIChat({ full = false }: { full?: boolean }) {
         if (currentDraftKey.current === sendingDraftKey) {
           localDraftFiles.current.set(composerDraftKey(sendingUserId, sid),
             filesRef.current.filter(file => localUploads.current.has(file.uid)));
-          if (sendingUserId) setPending(adoptDraftQueue(sendingUserId, sid));
+          if (sendingUserId) setPending(await readPendingQueue(sendingScope, sid));
           ai.setSessionId(sid);
         }
       }
       await snapshot.beforeSend();
-      const attachments = await prepareSendFiles(snapshot.files, controller.signal, progress => {
+      assertSendingScope();
+      const attachments = (await prepareSendFiles(snapshot.files, controller.signal, progress => {
           setOptimistic(messages => messages.map(message => message.id === id
             ? { ...message, localFiles: message.localFiles?.map(file => file.uid === progress.uid
               ? { ...file, ...progress } : file) } : message));
-        });
-      controller.signal.throwIfAborted();
-      item.attachments = attachments;
+        })).map(file => asChatFile(file));
+      assertSendingScope();
+      if (!persisted) {
+        item.attachments = attachments;
+        await persistOutgoingPending(sendingScope, sid!, item);
+        assertSendingScope();
+        persisted = true;
+        flushSync(() => consumeOutgoingComposer(snapshot));
+      }
       setOptimistic(messages => messages.map(message => message.id === id
         ? { ...message, attachments, localFiles: undefined } : message));
       if (snapshot.queued) {
-        writePendingQueue(sendingUserId, sid, [...loadPendingQueue(sendingUserId, sid), item]);
         setOptimistic(messages => messages.filter(message => message.id !== id));
       } else {
-        await api(`/ai/sessions/${sid}/messages`, "POST", {
-          ...item, attachments: attachments.map(file => file.id),
-        });
+        const delivery = await withPendingDeliveryLock(sendingScope, sid, () =>
+          sendOrReconcilePendingItem(sid!, item, api, async () => {
+            assertSendingScope();
+            const latest = await getPendingEntry(sendingScope, item.id);
+            if (!latest || latest.state !== "pending" || latest.sessionId !== sid || !samePendingItem(latest.item, item)) throw new PendingQueueChangedError();
+            await verifyLegacyPendingSource(latest);
+            assertSendingScope();
+          }, controller.signal), controller.signal);
+        assertSendingScope();
+        if (delivery.state !== "waiting") {
+          try { await completeOutgoingPending(sendingScope, sid!, item, delivery.id); }
+          catch (error) {
+            if (error instanceof PendingQueueChangedError && delivery.state === "sent") await api(`/ai/jobs/${delivery.id}/cancel`, "POST");
+            throw error;
+          }
+        }
         setOptimistic(messages => messages.map(message => message.id === id
-          ? { ...message, delivery: undefined } : message));
+          ? { ...message, delivery: delivery.state === "waiting" ? "queued" : undefined } : message));
       }
       if (haltJobId.current === id) {
         haltJobId.current = null;
@@ -1826,12 +1932,17 @@ export function AIChat({ full = false }: { full?: boolean }) {
       if (requestId.current === id) requestId.current = null;
       void refresh();
     } catch (e) {
-      const message = controller.signal.aborted ? t("chat.sendCancelled") : uploadErrorMessage(e, t);
+      const message = controller.signal.aborted ? t("chat.sendCancelled") :
+        e instanceof PendingQueueStorageError ? t("chat.draftSaveFailed") :
+        e instanceof PendingQueueChangedError || (e as { code?: string }).code === "pending_message_conflict" ? t("chat.pendingConflict") : uploadErrorMessage(e, t);
       setOptimistic(messages => messages.map(entry => entry.id === id
         ? { ...entry, delivery: "failed", deliveryError: message } : entry));
       ai.setError(message);
-      flushSync(() => restoreOutgoingComposer(snapshot));
+      // A durable queued item is the recoverable copy. Restoring a second
+      // composer copy would invite a new message ID while it is still pending.
+      if (!persisted) flushSync(() => restoreOutgoingComposer(snapshot));
     } finally {
+      releaseDelivery();
       if (haltJobId.current === id) haltJobId.current = null;
       sendControllers.current.delete(id);
       submitting.current = sendControllers.current.size > 0;
@@ -1839,7 +1950,7 @@ export function AIChat({ full = false }: { full?: boolean }) {
     }
   };
   const startSend = (choice?: string, queued = false) => {
-    if (ai.restoring || ai.contextLoading || !ai.userId || !model || folderImport) return;
+    if (ai.restoring || ai.contextLoading || !ai.userId || !queueScope || !model || folderImport) return;
     const item = snapshotComposer(choice);
     if (!item) return;
     if ([...outgoing.current.values()].some(message => sendControllers.current.has(message.item.id) &&
@@ -1851,9 +1962,13 @@ export function AIChat({ full = false }: { full?: boolean }) {
       return file.response ? [{ uid: file.uid, filename: file.response.filename,
         mime: file.response.mime, size: file.response.size, uploaded: file.response }] : [];
     });
+    if (selected.length !== filesRef.current.length) {
+      ai.setError(t("chat.draftSaveFailed"));
+      return;
+    }
     const snapshot: OutgoingMessage = {
       item: { ...item, webSearch: webSearch && !!options?.webSearchAvailable },
-      files: selected, userId: ai.userId, sessionId: ai.sessionId,
+      files: selected, userId: ai.userId, queueScope, sessionId: ai.sessionId,
       draftKey, queued, beforeSend: ai.beforeSend, composerText: composerValue(),
       composerDraft: captureComposerDraft(), composerFiles: [...filesRef.current],
     };
@@ -1870,6 +1985,79 @@ export function AIChat({ full = false }: { full?: boolean }) {
   };
   const enqueueComposer = (choice?: string) => startSend(choice, true);
   const send = async (choice?: string) => { await startSend(choice); };
+  const continueDraftPending = (item: PendingSendItem) => {
+    if (!ai.userId || !queueScope || ai.sessionId || busy) return;
+    const snapshot: OutgoingMessage = {
+      item, userId: ai.userId, queueScope, sessionId: null, draftKey,
+      files: item.attachments.map(file => ({ uid: file.id, filename: file.filename, mime: file.mime, size: file.size, uploaded: file })),
+      queued: false, beforeSend: ai.beforeSend, consumeComposer: false,
+      composerText: composerValue(), composerDraft: captureComposerDraft(), composerFiles: [...filesRef.current],
+    };
+    outgoing.current.set(item.id, snapshot);
+    void submitOutgoing(snapshot);
+  };
+  const continueLegacyPending = (legacy: LegacyPendingItem, withdraw = false) => {
+    if (!queueScope || !ai.userId || !model || legacy.conflict) return;
+    const identity = queueScopeIdentity, sessionKey = queueKey, legacyUserId = ai.userId;
+    let selectedModel = model;
+    let selectedScope: "all" | "document" = legacy.item.scope ?? "all";
+    let selectedSearch = legacy.item.webSearch ?? (webSearch && !!options?.webSearchAvailable);
+    let selectedSkills = legacy.item.skillIds ? [...legacy.item.skillIds] : [...skillIds];
+    modal.confirm({
+      title: t(withdraw ? "chat.legacyWithdrawTitle" : "chat.legacyContinueTitle"),
+      okText: t(withdraw ? "chat.legacyWithdraw" : "chat.legacyContinue"),
+      content: <div>
+        <p>{t("chat.legacyConfirm", { origin: queueScope.docaOrigin, account: queueScope.userId,
+          profile: queueScope.profile?.id ?? t("chat.legacyWebsite") })}</p>
+        <p>{legacy.item.text}</p>
+        <label style={{ display: "grid", gap: 6, marginBottom: 12 }}>{t("chat.legacyModel")}<Select style={{ width: "100%" }} defaultValue={selectedModel}
+          options={options?.models.map(model => ({ value: model.id, label: model.name }))}
+          onChange={value => { selectedModel = value; }} /></label>
+        <label style={{ display: "grid", gap: 6, marginBottom: 12 }}>{t("chat.legacyScope")}<Select style={{ width: "100%" }} defaultValue={selectedScope}
+          options={[{ value: "all", label: t("chat.legacyAll") }, { value: "document", label: t("chat.legacyDocument") }]}
+          onChange={value => { selectedScope = value; }} /></label>
+        <label style={{ display: "grid", gap: 6, marginBottom: 12 }}>{t("chat.legacySkills")}<Select mode="multiple" style={{ width: "100%" }} defaultValue={selectedSkills}
+          options={personalSkills.map(skill => ({ value: skill.id, label: skill.name }))}
+          onChange={value => { selectedSkills = value; }} /></label>
+        <Checkbox defaultChecked={selectedSearch} disabled={!options?.webSearchAvailable}
+          onChange={event => { selectedSearch = event.target.checked; }}>{t("chat.webSearch")}</Checkbox>
+        <p>{t("chat.legacyNoMixedSenders")}</p>
+      </div>,
+      onOk: async () => {
+        if (!currentQueueScope.current || pendingScopeKey(currentQueueScope.current) !== identity ||
+            (currentAI.current.sessionId ?? DRAFT_QUEUE_KEY) !== sessionKey ||
+            !options?.models.some(model => model.id === selectedModel)) throw new PendingQueueChangedError();
+        if (runtime.embedded && (legacy.item.attachments.length || legacy.item.references.length || legacy.item.files?.length)) {
+          ai.setError(t("chat.legacyUnsupported")); throw new PendingQueueChangedError();
+        }
+        try {
+          const latest = await readLegacyPendingQueue(queueScope, legacyUserId, sessionKey);
+          if (!latest.items.some(item => item.item.id === legacy.item.id && item.source.hash === legacy.source.hash && !item.conflict)) throw new PendingQueueChangedError();
+          let accepted = false;
+          if (sessionKey !== DRAFT_QUEUE_KEY) {
+            const server = await api<PendingSessionSnapshot & { browserProfile?: { id: string; revision: number } }>(`/ai/sessions/${sessionKey}?pendingId=${encodeURIComponent(legacy.item.id)}`);
+            if (queueScope.profile && (!server.browserProfile || server.browserProfile.id !== queueScope.profile.id || server.browserProfile.revision !== queueScope.profile.revision)) throw new PendingQueueChangedError();
+            const state = reconcilePendingItem(legacy.item, server);
+            if (state === "conflict" || state === "unverified") throw new PendingMessageConflictError(state);
+            accepted = state === "accepted";
+          }
+          if (!currentQueueScope.current || pendingScopeKey(currentQueueScope.current) !== identity ||
+              (currentAI.current.sessionId ?? DRAFT_QUEUE_KEY) !== sessionKey) throw new PendingQueueChangedError();
+          const rechecked = await readLegacyPendingQueue(queueScope, legacyUserId, sessionKey);
+          if (!rechecked.items.some(item => item.item.id === legacy.item.id && item.source.hash === legacy.source.hash && !item.conflict)) throw new PendingQueueChangedError();
+          const item: PendingSendItem = { ...legacy.item, modelId: selectedModel, scope: selectedScope,
+            skillIds: selectedSkills, webSearch: selectedSearch };
+          await persistOutgoingPending(queueScope, sessionKey, item, legacy.source,
+            accepted ? { state: "accepted", serverJobId: item.id } : withdraw ? { state: "withdrawn" } : undefined);
+          setLegacyPending(items => items.filter(entry => entry.source.hash !== legacy.source.hash || entry.item.id !== item.id));
+          if (!accepted && !withdraw && sessionKey === DRAFT_QUEUE_KEY) continueDraftPending(item);
+        } catch (error) {
+          ai.setError(error instanceof PendingQueueChangedError || error instanceof PendingMessageConflictError ? t("chat.pendingConflict") : t("chat.draftSaveFailed"));
+          throw error;
+        }
+      },
+    });
+  };
   if (!ai.userId) return <div className="empty">{t("chat.signIn")}</div>;
   const visibleMessages: Conversation["messages"] = [
     ...new Map(
@@ -2158,9 +2346,9 @@ export function AIChat({ full = false }: { full?: boolean }) {
                 name: f.filename,
                 byte: f.size,
                 type: f.mime.startsWith("image/") ? "image" : "file",
-                src: f.mime.startsWith("image/") ? assetUrl(f.id) : undefined,
+                src: runtime.workspaceActions && f.mime.startsWith("image/") ? assetUrl(f.id) : undefined,
                 description: (
-                  <a href={assetUrl(f.id)} target="_blank" rel="noreferrer">
+                  <a href={runtime.resolveHref(assetUrl(f.id))} target="_blank" rel="noreferrer">
                     {t("chat.attachments")}
                   </a>
                 ),
@@ -2360,7 +2548,7 @@ export function AIChat({ full = false }: { full?: boolean }) {
             footer: ["failed", "interrupted", "cancelled"].includes(j.status) ? (
               <Button
                 size="small"
-                disabled={busy || !model || jobs.length > 0}
+                disabled={busy || !model || jobs.length > 0 || imageRetryBlocked(j.error)}
                 onClick={() =>
                   void action(async () => {
                     await api(`/ai/sessions/${ai.sessionId}/messages`, "POST", {
@@ -3004,8 +3192,11 @@ export function AIChat({ full = false }: { full?: boolean }) {
             title={t("nav.assistant")}
             compact
           />
+          {conversation?.session.id === ai.sessionId && (
+            <SessionSourceBadge session={conversation.session} />
+          )}
           {!full && <span className="ai-flex" />}
-          <button
+          {runtime.workspaceActions && <button
             type="button"
             title={t("chat.sessionFiles")}
             aria-label={t("chat.sessionFiles")}
@@ -3018,7 +3209,7 @@ export function AIChat({ full = false }: { full?: boolean }) {
             }}
           >
             <FolderOpen size={17} />
-          </button>
+          </button>}
           {!!conversation?.resources?.length && (
             <Popover
               trigger="click"
@@ -3031,7 +3222,7 @@ export function AIChat({ full = false }: { full?: boolean }) {
                       type="text"
                       onClick={() =>
                         r.href
-                          ? (location.hash = r.href.replace(/^.*#/, ""))
+                          ? runtime.navigate(r.href)
                           : openDocument(r.id)
                       }
                     >
@@ -3072,12 +3263,12 @@ export function AIChat({ full = false }: { full?: boolean }) {
               onJump={jumpToQuestion}
             />
           )}
-          <button
+          {runtime.workspaceActions && <button
             title={t("chat.preferences")}
             onClick={() => setSettings(true)}
           >
             <Settings size={17} />
-          </button>
+          </button>}
           {!full && (
             <>
               <button
@@ -3104,7 +3295,7 @@ export function AIChat({ full = false }: { full?: boolean }) {
               className="ai-session-list"
               aria-label={t("chat.history")}
             >
-              <div className="ai-session-tools">
+              {runtime.workspaceActions && <div className="ai-session-tools">
                 <div className="ai-session-batch-row">
                   <button
                     className="ai-batch-toggle"
@@ -3148,7 +3339,7 @@ export function AIChat({ full = false }: { full?: boolean }) {
                     </button>
                   </div>
                 )}
-              </div>
+              </div>}
               <Conversations
                 creation={{ label: t("chat.newChat"), onClick: newSession }}
                 activeKey={ai.sessionId ?? undefined}
@@ -3212,7 +3403,7 @@ export function AIChat({ full = false }: { full?: boolean }) {
                   ai.setError("");
                 }}
                 menu={(item) =>
-                  batch
+                  batch || !runtime.workspaceActions
                     ? undefined
                     : {
                         items: [
@@ -3420,21 +3611,37 @@ export function AIChat({ full = false }: { full?: boolean }) {
                   onClose={() => ai.setError("")}
                 />
               )}
+              {legacyUnknown && <Alert type="warning" title={t("chat.legacyUnknown")} />}
+              {!!legacyPending.length && <div className="ai-pending-list ai-legacy-pending-list">
+                <div className="ai-pending-heading">{t("chat.legacyHeading")}</div>
+                <p>{t("chat.legacyReadOnly")}</p>
+                {legacyPending.map(entry => <div className="ai-pending-item" key={entry.item.id + entry.source.hash}>
+                  <span className="ai-pending-text" title={entry.item.text}>{entry.item.text}</span>
+                  {entry.conflict && <span>{t("chat.pendingConflict")}</span>}
+                  <Button size="small" disabled={entry.conflict || busy || !model} onClick={() => continueLegacyPending(entry)}>{t("chat.legacyContinue")}</Button>
+                  <Button size="small" disabled={entry.conflict || busy || !model} onClick={() => continueLegacyPending(entry, true)}>{t("chat.legacyWithdraw")}</Button>
+                </div>)}
+              </div>}
               <AIPendingQueue
                 items={pending}
                 waiting={jobs.length > 0 || busy}
-                onEdit={(item) => {
-                  persistPending(
-                    pending.filter((entry) => entry.id !== item.id),
-                  );
+                onEdit={async (item) => {
+                  sendControllers.current.get(item.id)?.abort();
+                  if (!await mutatePending(item, "withdraw")) return;
                   restorePending(item);
                   senderRef.current?.focus();
                 }}
-                onWithdraw={(id) =>
-                  persistPending(pending.filter((entry) => entry.id !== id))
-                }
-                onBump={(item) => {
-                  persistPending(promotePendingItem(pending, item.id));
+                onWithdraw={(id) => {
+                  sendControllers.current.get(id)?.abort();
+                  const item = pending.find(item => item.id === id);
+                  if (item) void mutatePending(item, "withdraw");
+                }}
+                onBump={async (item) => {
+                  if (!ai.sessionId) {
+                    continueDraftPending(item);
+                    return;
+                  }
+                  if (!await mutatePending(item, "promote")) return;
                   if (!jobs.length) return;
                   void action(() =>
                     Promise.all(
@@ -3491,6 +3698,7 @@ export function AIChat({ full = false }: { full?: boolean }) {
               {composerDrop && (
                 <div className="ai-file-drop-hint">{t("chat.dropHelp")}</div>
               )}
+              {runtime.composerContext}
               <Sender
                 ref={senderRef}
                 slotConfig={initialSlots.current}
@@ -3569,7 +3777,7 @@ export function AIChat({ full = false }: { full?: boolean }) {
                 }
                 footer={(_, { components: { SendButton } }) => (
                   <div className="ai-composer-tools">
-                    <Button
+                    {runtime.workspaceActions && <Button
                       type="text"
                       onClick={() => setFileSourceOpen(true)}
                       className="ai-upload-trigger"
@@ -3578,9 +3786,9 @@ export function AIChat({ full = false }: { full?: boolean }) {
                       aria-label={t("chat.upload")}
                     >
                       <Plus size={20} />
-                    </Button>
+                    </Button>}
 
-                    <Popover
+                    {runtime.workspaceActions && SearchPanel && <Popover
                       trigger="click"
                       placement="topLeft"
                       open={picking}
@@ -3628,7 +3836,7 @@ export function AIChat({ full = false }: { full?: boolean }) {
                       >
                         <AtSign size={17} />
                       </Button>
-                    </Popover>
+                    </Popover>}
                     <Button
                       type={webSearch ? "primary" : "text"}
                       size="small"
@@ -3645,7 +3853,7 @@ export function AIChat({ full = false }: { full?: boolean }) {
                       <Globe size={16} />
                       {full && t("chat.web")}
                     </Button>
-                    <Popover
+                    {runtime.workspaceActions && <Popover
                       trigger="click"
                       placement="topLeft"
                       content={
@@ -3689,7 +3897,7 @@ export function AIChat({ full = false }: { full?: boolean }) {
                         <ShieldCheck size={16} />
                         {full && t("chat.approvals")}
                       </Button>
-                    </Popover>
+                    </Popover>}
 
                     <span className="ai-flex" />
                     <Select
@@ -3705,10 +3913,10 @@ export function AIChat({ full = false }: { full?: boolean }) {
                       placeholder={t("chat.noModel")}
                       onChange={(value) => {
                         setModel(value);
-                        void writePageState("ai.model", value).catch(
+                        void runtime.writeModel(value).catch(
                           () => undefined,
                         );
-                        if (ai.sessionId)
+                        if (ai.sessionId && runtime.workspaceActions)
                           void action(() =>
                             api(`/ai/sessions/${ai.sessionId}`, "PATCH", {
                               modelId: value,
@@ -3795,7 +4003,7 @@ export function AIChat({ full = false }: { full?: boolean }) {
             </div>
           </div>
         </div>
-        {settings && (
+        {settings && AIUserSettings && (
           <AIUserSettings
             options={options}
             openSession={async (id) => {
@@ -3810,7 +4018,7 @@ export function AIChat({ full = false }: { full?: boolean }) {
             }}
           />
         )}
-        {filePickerOpen && (
+        {filePickerOpen && FolderFilePicker && (
           <FolderFilePicker
             initialSource={filePickerOpen === "materials" ? "materials" : "folders"}
             close={() => setFilePickerOpen(false)}
@@ -3835,7 +4043,7 @@ export function AIChat({ full = false }: { full?: boolean }) {
             close={() => setPreviewFolder(null)}
           />
         )}
-        {fileSourceOpen && (
+        {fileSourceOpen && FileSourceDialog && (
           <FileSourceDialog
             title={t("chat.addFiles")}
             close={() => setFileSourceOpen(false)}

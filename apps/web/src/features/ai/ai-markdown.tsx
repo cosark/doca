@@ -7,8 +7,10 @@ import XMarkdown, { type ComponentProps } from "@ant-design/x-markdown";
 import "@ant-design/x-markdown/themes/light.css";
 import Latex from "@ant-design/x-markdown/plugins/Latex";
 import type { FileDelivery, FolderDelivery } from "@core/modules/ai/progress.js";
-import { webPluginRegistry } from "@web/plugins/registry.js";
 import { AIAssetImage } from "./ai-asset-image.js";
+import { useAIChatRuntime } from "./ai-runtime.js";
+import { FileDeliveryCard } from "./ai-file-card.js";
+import { FolderDeliveryCard } from "./ai-folder-card.js";
 import {
   answerSegments,
   folderExplorerHash,
@@ -167,6 +169,7 @@ function AIAnswer({
   streaming?: boolean;
 }) {
   const { locale } = useI18n();
+  const runtime = useAIChatRuntime();
   const segments = answerSegments(text, folders, {
     ensureCards: ensureFolderCards,
     files,
@@ -178,6 +181,12 @@ function AIAnswer({
         onClickCapture={(event) => {
           const link = (event.target as Element).closest("a");
           const href = link?.getAttribute("href") ?? "";
+          if (runtime.embedded && (/^#\//.test(href) || /^\/api\//.test(href))) {
+            event.preventDefault();
+            event.stopPropagation();
+            runtime.navigate(href);
+            return;
+          }
           const match = /^#\/r\/([a-f0-9-]{36})$/.exec(href);
           if (match) {
             event.preventDefault();
@@ -212,16 +221,26 @@ function AIAnswer({
                 streaming={streaming && index === segments.length - 1}
               />
             ) : null;
-          const block = webPluginRegistry.aiBlocks.getByConflictKey(
-            segment.type,
-          );
           const payload =
             segment.type === "folder"
               ? segment.folder
               : segment.file;
           const key =
             `${payload.id}-${index}`;
-          if (!block)
+          const context = {
+            onOpen: onFolder,
+            renderLink: (label: string, href: string) => (
+              <MarkdownBody text={`[${label}](${folderExplorerHash(href)})`} />
+            ),
+          };
+          const block = runtime.renderBlock
+            ? runtime.renderBlock(segment.type, payload, context)
+            : segment.type === "folder"
+              ? onFolder
+                ? <FolderDeliveryCard folder={segment.folder} onOpen={onFolder} />
+                : context.renderLink(segment.folder.name, segment.folder.href)
+              : <FileDeliveryCard file={segment.file} onOpen={onFolder} />;
+          if (block === undefined)
             return (
               <MarkdownBody
                 key={key}
@@ -230,14 +249,7 @@ function AIAnswer({
             );
           return (
             <Fragment key={key}>
-              {block.render(payload, {
-                onOpen: onFolder,
-                renderLink: (label, href) => (
-                  <MarkdownBody
-                    text={`[${label}](${folderExplorerHash(href)})`}
-                  />
-                ),
-              })}
+              {block}
             </Fragment>
           );
         })}

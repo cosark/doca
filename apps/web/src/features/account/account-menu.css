@@ -143,3 +143,11 @@
 .locale-switch-menu button[aria-selected="true"] {
   background: var(--surface-soft, #f4f6fa);
 }
+
+.account-menu nav.configured-navigation {
+  padding: 0;
+}
+.account-menu nav a > svg,
+.account-menu nav button > svg {
+  flex-shrink: 0;
+}

@@ -61,8 +61,6 @@ overrides:
 
 patchedDependencies:
   '@mastra/memory@1.29.0': 60d56858970164a4f0b90b5f380282484f93fef17d89ee36db8a8a4d2ceb02ab
-  '@smartdoca/markdown@0.4.3': ef72ffab67d6316303352f1f55effff258b20adbababfc9e4857ea222fefe81a
-  '@smartdoca/slate@0.4.23': 9524bc2f432ac385217164e95fc7021301fe7fc711240fed4809281ce3d55cd6
 
 importers:
 
@@ -156,8 +154,8 @@ importers:
         specifier: ^0.34.52
         version: 0.34.52
       '@smartdoca/canvas':
-        specifier: 0.5.8
-        version: 0.5.8(react-dom@19.2.8(react@19.2.8))(react@19.2.8)
+        specifier: 0.5.14
+        version: 0.5.14(react-dom@19.2.8(react@19.2.8))(react@19.2.8)
       '@smartdoca/files-capability':
         specifier: workspace:*
         version: link:packages/files-capability
@@ -165,8 +163,8 @@ importers:
         specifier: workspace:*
         version: link:packages/knowledge-capability
       '@smartdoca/markdown':
-        specifier: 0.4.3
-        version: 0.4.3(patch_hash=ef72ffab67d6316303352f1f55effff258b20adbababfc9e4857ea222fefe81a)(@babel/runtime@8.0.5)(@codemirror/autocomplete@6.20.3)(@codemirror/lint@6.9.7)(@codemirror/search@6.7.2)(@codemirror/theme-one-dark@6.1.3)(@types/react@19.2.18)(codemirror@6.0.2)(react-dom@19.2.8(react@19.2.8))(react@19.2.8)(supports-color@8.1.1)(yjs@13.6.32)
+        specifier: 0.4.4
+        version: 0.4.4(@babel/runtime@8.0.5)(@codemirror/autocomplete@6.20.3)(@codemirror/lint@6.9.7)(@codemirror/search@6.7.2)(@codemirror/theme-one-dark@6.1.3)(@types/react@19.2.18)(codemirror@6.0.2)(react-dom@19.2.8(react@19.2.8))(react@19.2.8)(supports-color@8.1.1)(yjs@13.6.32)
       '@smartdoca/plugin-contracts':
         specifier: workspace:*
         version: link:packages/plugin-contracts
@@ -177,14 +175,14 @@ importers:
         specifier: workspace:*
         version: link:packages/search-host
       '@smartdoca/sheet':
-        specifier: 0.2.5
-        version: 0.2.5(@types/react-dom@19.2.7(@types/react@19.2.18))(@types/react@19.2.18)(react-dom@19.2.8(react@19.2.8))(react@19.2.8)
+        specifier: 0.2.11
+        version: 0.2.11(@types/react-dom@19.2.7(@types/react@19.2.18))(@types/react@19.2.18)(react-dom@19.2.8(react@19.2.8))(react@19.2.8)
       '@smartdoca/slate':
-        specifier: 0.4.23
-        version: 0.4.23(patch_hash=9524bc2f432ac385217164e95fc7021301fe7fc711240fed4809281ce3d55cd6)(katex@0.18.7)(react-dom@19.2.8(react@19.2.8))(react@19.2.8)(slate-dom@0.118.1(slate@0.118.1))(slate-history@0.113.1(slate@0.118.1))(slate-react@0.118.2(react-dom@19.2.8(react@19.2.8))(react@19.2.8)(slate-dom@0.118.1(slate@0.118.1))(slate@0.118.1))(slate@0.118.1)
+        specifier: 0.4.25
+        version: 0.4.25(katex@0.18.7)(react-dom@19.2.8(react@19.2.8))(react@19.2.8)(slate-dom@0.118.1(slate@0.118.1))(slate-history@0.113.1(slate@0.118.1))(slate-react@0.118.2(react-dom@19.2.8(react@19.2.8))(react@19.2.8)(slate-dom@0.118.1(slate@0.118.1))(slate@0.118.1))(slate@0.118.1)
       '@smartdoca/slides':
-        specifier: 0.3.0-alpha.3
-        version: 0.3.0-alpha.3(react-dom@19.2.8(react@19.2.8))(react@19.2.8)
+        specifier: 0.3.0-alpha.4
+        version: 0.3.0-alpha.4(react-dom@19.2.8(react@19.2.8))(react@19.2.8)
       antd:
         specifier: ^6.6.3
         version: 6.6.3(react-dom@19.2.8(react@19.2.8))(react@19.2.8)
@@ -3790,28 +3788,28 @@ packages:
       slate: '>=0.70.0'
       yjs: 13.6.32
 
-  '@smartdoca/canvas@0.5.8':
-    resolution: {integrity: sha512-VhF5sCc1PgVsViIP3NNZBRWu39Lr9rmHmeaZem32dbI7oFRA/wJfLbRK0M4fD6+pZ8lU4ozDVbnQgjG/esG33A==}
+  '@smartdoca/canvas@0.5.14':
+    resolution: {integrity: sha512-ksnBQLhP1fUjRREEfYAyX1Pa4wKLLazmdZcigW/jLAc2twlleTBuZo5muP3ojVf/0zqHiCHDxoCTwZclc6X2Zg==}
     engines: {node: '>=20', yarn: '>=1.22'}
     peerDependencies:
       react: '>=18.2.0'
       react-dom: '>=18.2.0'
 
-  '@smartdoca/markdown@0.4.3':
-    resolution: {integrity: sha512-t61X1Mj61+ofhc5B1fSc/ypL+sQUYO1iiNG7z+lLAdnLFSU0bAZWtGp4YElD0YH1RM5HPjY1InjhOMki66sXgw==}
+  '@smartdoca/markdown@0.4.4':
+    resolution: {integrity: sha512-hvf7+UhRNul8o4VMWnpfEY2B6JcpPfH2+VFWow5RbZq0KOizMkdPF1AtERN5phgbgx08wSuMqvgU3bHKTvv/gQ==}
     peerDependencies:
       react: '>=18.2.0'
       react-dom: '>=18.2.0'
       yjs: 13.6.32
 
-  '@smartdoca/sheet@0.2.5':
-    resolution: {integrity: sha512-vQtUSW55o+807DjtdppA0xR8oubidW4vqbcoJuigM1S0RE5VzT9ZDttMvvUsDGqmiKSLsw2BFe9zQ124tC6vVg==}
+  '@smartdoca/sheet@0.2.11':
+    resolution: {integrity: sha512-9YnNTtd+lbzZgLNUgYRe1GiFnZhmAhQ34hH84D5k1YVrRkiAtHqL+xKhMXTzSonFsYROq1mo60wIVogQ0cQnuA==}
     peerDependencies:
       react: '>=18'
       react-dom: '>=18'
 
-  '@smartdoca/slate@0.4.23':
-    resolution: {integrity: sha512-KPLeXQeDrWACF7rW0B1+uy36JaWYCw8NXjQ2AHIVFaPw5DO8Z5jmlFY58Hx+N0aODbgao33eTVQcc2GmF5Y3jg==}
+  '@smartdoca/slate@0.4.25':
+    resolution: {integrity: sha512-10YyVnsZ2HnvpX63j1+R51jbdfT5ro1Vz3V5S+ukuE/k3r6zik9bUk57vM9r7zpMG34+SLbrUy5qRCaE5OOhHw==}
     peerDependencies:
       katex: ^0.18.7
       react: '>=18.2.0'
@@ -3824,8 +3822,8 @@ packages:
       katex:
         optional: true
 
-  '@smartdoca/slides@0.3.0-alpha.3':
-    resolution: {integrity: sha512-SnuRVCOQRDs0mqsrVrvgY6JqwT/okVbGIatvuxBzsk1+sOeNW/aDs83tE7r6zUCvZ8deltwxf5hvMxiqt5LlLw==}
+  '@smartdoca/slides@0.3.0-alpha.4':
+    resolution: {integrity: sha512-1I2gT4stUsifHcz7IZloYTvdmIR3bpKSqHq3WEci1aduZ7Bt0dDYDFYCZ/TcAdvMZl/piaTK/EmqnX01AzXIZw==}
     peerDependencies:
       react: '>=18'
       react-dom: '>=18'
@@ -6366,7 +6364,7 @@ packages:
 
   glob@7.2.3:
     resolution: {integrity: sha512-nFR0zLpU2YCaRxwoCJvL6UvCH2JFyFVIvwTLsIf21AuHlMskA1hhTdk+LlYJtOlYt9v6dvszD2BGRqBL+iQK9Q==}
-    deprecated: Old versions of glob are not supported, and contain widely publicized security vulnerabilities, which have been fixed in the current version. Please update. Support for old versions may be purchased (at exorbitant rates) by contacting i@izs.me
+    deprecated: Glob versions prior to v9 are no longer supported
 
   gopd@1.2.0:
     resolution: {integrity: sha512-ZUKRh6/kUFoAiTAtTYPZJ3hw9wNxx+BIBOijnlG9PnrJsCcSjs1wyyD6vJpaYtgnzDrKYRSqf3OO6Rfa93xsRg==}
@@ -13613,7 +13611,7 @@ snapshots:
       y-protocols: 1.0.7(yjs@13.6.32)
       yjs: 13.6.32
 
-  '@smartdoca/canvas@0.5.8(react-dom@19.2.8(react@19.2.8))(react@19.2.8)':
+  '@smartdoca/canvas@0.5.14(react-dom@19.2.8(react@19.2.8))(react@19.2.8)':
     dependencies:
       '@icon-park/react': 1.4.2(react-dom@19.2.8(react@19.2.8))(react@19.2.8)
       '@leafer-in/arrow': 2.1.0(@leafer-in/interface@2.1.0(@leafer-ui/interface@2.1.0)(@leafer/interface@2.1.0))(@leafer-ui/draw@2.1.0)(@leafer-ui/interface@2.1.0)
@@ -13638,7 +13636,7 @@ snapshots:
       slate-react: 0.118.2(react-dom@19.2.8(react@19.2.8))(react@19.2.8)(slate-dom@0.118.1(slate@0.118.1))(slate@0.118.1)
       yjs: 13.6.32
 
-  '@smartdoca/markdown@0.4.3(patch_hash=ef72ffab67d6316303352f1f55effff258b20adbababfc9e4857ea222fefe81a)(@babel/runtime@8.0.5)(@codemirror/autocomplete@6.20.3)(@codemirror/lint@6.9.7)(@codemirror/search@6.7.2)(@codemirror/theme-one-dark@6.1.3)(@types/react@19.2.18)(codemirror@6.0.2)(react-dom@19.2.8(react@19.2.8))(react@19.2.8)(supports-color@8.1.1)(yjs@13.6.32)':
+  '@smartdoca/markdown@0.4.4(@babel/runtime@8.0.5)(@codemirror/autocomplete@6.20.3)(@codemirror/lint@6.9.7)(@codemirror/search@6.7.2)(@codemirror/theme-one-dark@6.1.3)(@types/react@19.2.18)(codemirror@6.0.2)(react-dom@19.2.8(react@19.2.8))(react@19.2.8)(supports-color@8.1.1)(yjs@13.6.32)':
     dependencies:
       '@codemirror/commands': 6.11.0
       '@codemirror/lang-markdown': 6.5.2
@@ -13683,7 +13681,7 @@ snapshots:
       - supports-color
       - utf-8-validate
 
-  '@smartdoca/sheet@0.2.5(@types/react-dom@19.2.7(@types/react@19.2.18))(@types/react@19.2.18)(react-dom@19.2.8(react@19.2.8))(react@19.2.8)':
+  '@smartdoca/sheet@0.2.11(@types/react-dom@19.2.7(@types/react@19.2.18))(@types/react@19.2.18)(react-dom@19.2.8(react@19.2.8))(react@19.2.8)':
     dependencies:
       '@antv/g2': 5.4.8
       '@univerjs/core': 0.25.1(react@19.2.8)(rxjs@7.8.2)
@@ -13703,6 +13701,7 @@ snapshots:
       '@univerjs/preset-sheets-table': 0.25.1(@types/react-dom@19.2.7(@types/react@19.2.18))(@types/react@19.2.18)(react-dom@19.2.8(react@19.2.8))(react@19.2.8)(rxjs@7.8.2)
       '@univerjs/presets': 0.25.1(@types/react-dom@19.2.7(@types/react@19.2.18))(@types/react@19.2.18)(react-dom@19.2.8(react@19.2.8))(react@19.2.8)(rxjs@7.8.2)
       '@univerjs/sheets': 0.25.1(react@19.2.8)(rxjs@7.8.2)
+      '@univerjs/sheets-data-validation': 0.25.1(react@19.2.8)(rxjs@7.8.2)
       '@univerjs/sheets-filter': 0.25.1(react@19.2.8)(rxjs@7.8.2)
       '@univerjs/sheets-ui': 0.25.1(@types/react-dom@19.2.7(@types/react@19.2.18))(@types/react@19.2.18)(react-dom@19.2.8(react@19.2.8))(react@19.2.8)(rxjs@7.8.2)
       '@univerjs/ui': 0.25.1(@types/react-dom@19.2.7(@types/react@19.2.18))(@types/react@19.2.18)(react-dom@19.2.8(react@19.2.8))(react@19.2.8)(rxjs@7.8.2)
@@ -13717,7 +13716,7 @@ snapshots:
       - '@types/react'
       - '@types/react-dom'
 
-  '@smartdoca/slate@0.4.23(patch_hash=9524bc2f432ac385217164e95fc7021301fe7fc711240fed4809281ce3d55cd6)(katex@0.18.7)(react-dom@19.2.8(react@19.2.8))(react@19.2.8)(slate-dom@0.118.1(slate@0.118.1))(slate-history@0.113.1(slate@0.118.1))(slate-react@0.118.2(react-dom@19.2.8(react@19.2.8))(react@19.2.8)(slate-dom@0.118.1(slate@0.118.1))(slate@0.118.1))(slate@0.118.1)':
+  '@smartdoca/slate@0.4.25(katex@0.18.7)(react-dom@19.2.8(react@19.2.8))(react@19.2.8)(slate-dom@0.118.1(slate@0.118.1))(slate-history@0.113.1(slate@0.118.1))(slate-react@0.118.2(react-dom@19.2.8(react@19.2.8))(react@19.2.8)(slate-dom@0.118.1(slate@0.118.1))(slate@0.118.1))(slate@0.118.1)':
     dependencies:
       '@antv/x6': 2.19.2
       '@antv/x6-plugin-clipboard': 2.1.6(@antv/x6@2.19.2)
@@ -13750,7 +13749,7 @@ snapshots:
     optionalDependencies:
       katex: 0.18.7
 
-  '@smartdoca/slides@0.3.0-alpha.3(react-dom@19.2.8(react@19.2.8))(react@19.2.8)':
+  '@smartdoca/slides@0.3.0-alpha.4(react-dom@19.2.8(react@19.2.8))(react@19.2.8)':
     dependencies:
       '@antv/g-svg': 2.1.1
       '@antv/g2': 5.4.8

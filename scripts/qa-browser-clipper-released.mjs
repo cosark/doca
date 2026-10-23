@@ -8,7 +8,7 @@ const exec = promisify(execFile),
   results = [];
 const script = resolve("scripts/qa-browser-clipper-upgrade.mjs");
 const reportRoot = resolve(
-  "docs/verification/browser-clipper-login-2026-10-21",
+  "artifacts/verification/browser-clipper-login-2026-10-21",
 );
 await mkdir(reportRoot, { recursive: true });
 for (const engine of ["sqlite", "pg17", "pg18"]) {

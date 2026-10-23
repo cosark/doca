@@ -41,6 +41,8 @@ import {
   toBase64,
 } from "@web/features/documents/realtime.js";
 import { createMarkdownReplica } from "./markdown-replica.js";
+import { useAttachmentPreview } from "./attachment-preview.js";
+import MarkdownPreview from "./markdown-preview.js";
 import { openReplica } from "@web/features/documents/offline-replica.js";
 import { UpdateOutbox } from "@web/features/documents/update-outbox.js";
 import { Feedback } from "@web/shared/components/feedback.js";
@@ -78,7 +80,7 @@ function MarkdownToolbar(props: ToolbarProps) {
       )
     : null;
 }
-const components = { Header: Empty, Footer: Empty, Toolbar: MarkdownToolbar };
+const components = { Header: Empty, Footer: Empty, Toolbar: MarkdownToolbar, Preview: MarkdownPreview };
 const protocol = {
   codec: MARKDOWN_HOST_CAPABILITIES.codec,
   schemaVersion: MARKDOWN_HOST_CAPABILITIES.schemaVersion,
@@ -99,6 +101,7 @@ export default function MarkdownDocument({
   loadMoreComments?: () => Promise<void>;
 }) {
   const { locale, t } = useI18n();
+  const attachmentPreview = useAttachmentPreview();
   const id = detail.resource.id;
   const ai = useAI();
   const createComment = useRef<() => void>(() => {});
@@ -620,6 +623,7 @@ export default function MarkdownDocument({
       }}
     >
       <section ref={container} className="markdown-document surface-editor">
+        {attachmentPreview.dialog}
         <OutlineDrawer
           container={container}
           launcherOffset={40}
@@ -703,6 +707,7 @@ export default function MarkdownDocument({
               ]}
               components={components}
               resources={resources}
+              onImagePreview={attachmentPreview.onMarkdownImagePreview}
               title={detail.resource.title}
               onChange={contentChanged}
               height="100%"

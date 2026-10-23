@@ -1,5 +1,5 @@
+import { readAIConversation } from "../services/ai/conversation.js";
 import { continuationJobStatus } from "../services/ai/continuations.js";
-import { sessionResourceHistory } from "@core/modules/ai/session-resources.js";
 import { defaultOfficialSkills } from "@core/modules/ai/skills.js";
 import { checkAttachments } from "../services/ai/attachments.js";
 import { bindAISessionAttachments, deleteAISessionFiles } from "../services/ai/session-file-folders.js";
@@ -24,6 +24,7 @@ import { aiProviders } from "@core/modules/ai/providers.js";
 import { usageOf } from "../services/ai/model.js";
 import { testAIEmbeddingModel } from "../services/ai/embeddings.js";
 import { testAIImageModel } from "../services/ai/images.js";
+import { assertImageRetriesResolved, imageRetryChain } from "../services/ai/image-retry-guard.js";
 import { fetchWebPage } from "../services/ai/web-fetch.js";
 import { createAISessionEventStore, type DB } from "@db/index.js";
 import { transact } from "@db/transactions.js";
@@ -50,12 +51,7 @@ import {
 } from "@core/workflows/ai-documents.js";
 import { createAIRunner, sessionSources } from "../services/ai/runner.js";
 import { resolveSegmentationProfile } from "../services/ai/segmentation-profile.js";
-import {
-  explorerTargets,
-  memoryOwner,
-  messageText,
-  messageReasoning,
-} from "../services/ai/memory.js";
+import { memoryOwner } from "../services/ai/memory.js";
 import { noteLimit, readNote, writeNote } from "../services/ai/notes.js";
 import {
   deleteSecret,
@@ -200,7 +196,7 @@ export async function registerAI(
       .where("user_id", "=", user.id)
       .executeTakeFirst();
     if (!row) fail(404, "会话不存在");
-    if (checkSources) await sessionSources(db, user.id, row);
+    if (checkSources) await sessionSources(db, user.id, row, []);
     return row;
   };
   api.get<{
@@ -859,6 +855,16 @@ export async function registerAI(
         );
       }
       const safe = [];
+      const browserSessionIds = new Set(
+        rows.length
+          ? (await db
+              .selectFrom("browser_clipper_assistant_sessions")
+              .select("session_id")
+              .where("user_id", "=", actor.id)
+              .where("session_id", "in", rows.map((row) => row.id))
+              .execute()).map((row) => row.session_id)
+          : [],
+      );
       const activeJobs = await db
         .selectFrom("ai_jobs")
         .select(["session_id", "status", "result"])
@@ -915,9 +921,10 @@ export async function registerAI(
           latestJobBySession.set(job.session_id, job);
       for (const row of rows) {
         try {
-          await sessionSources(db, actor.id, row);
+          await sessionSources(db, actor.id, row, []);
           safe.push({
             ...row,
+            source: browserSessionIds.has(row.id) ? "browser_assistant" : "doca",
             running: runningSessions.has(row.id),
             awaitingApproval: activeJobs.some(
               (job) =>
@@ -938,6 +945,7 @@ export async function registerAI(
         } catch {
           safe.push({
             ...row,
+            source: browserSessionIds.has(row.id) ? "browser_assistant" : "doca",
             title: "来源已不可用的会话",
             resource_ids: "[]",
             mentioned_resource_ids: "[]",
@@ -975,144 +983,16 @@ export async function registerAI(
       };
     await db.insertInto("ai_sessions").values(row).execute();
     await runner.ensureThread(row);
-    return row;
+    return { ...row, source: "doca" };
   });
-  api.get<{ Params: { id: string }; Querystring: { page?: string } }>(
+  api.get<{ Params: { id: string }; Querystring: { page?: string; pendingId?: string } }>(
     "/api/v1/ai/sessions/:id",
     async (req) => {
       const actor = auth(req),
-        s = await session(actor, req.params.id),
-        m = await runner.ensureThread(s);
-      const history = await m.memory.recall({
-        threadId: s.id,
-        resourceId: memoryOwner(actor.id),
-        perPage: 24,
-        page: parse(
-          z.coerce.number().int().min(0).max(100000),
-          req.query.page ?? 0,
-        ),
-        orderBy: { field: "createdAt", direction: "DESC" },
-      });
-      const jobs = await db
-        .selectFrom("ai_jobs")
-        .select([
-          "id",
-          "status",
-          "error",
-          "created_at",
-          "updated_at",
-          "model_id",
-          "result",
-        ])
-        .where("session_id", "=", s.id)
-        .where((eb) =>
-          eb.or([
-            ...(history.messages.length
-              ? [
-                  eb(
-                    "id",
-                    "in",
-                    history.messages.map((message) =>
-                      message.id.replace(/-answer$/, ""),
-                    ),
-                  ),
-                ]
-              : []),
-            eb("status", "in", ["queued", "running", "awaiting_approval"]),
-            eb(
-              "id",
-              "in",
-              db
-                .selectFrom("ai_jobs")
-                .select("id")
-                .where("session_id", "=", s.id)
-                .orderBy("created_at", "desc")
-                .limit(30),
-            ),
-          ]),
-        )
-        .orderBy("created_at", "desc")
-        .execute();
-      const userMessageIds = history.messages
-        .filter((message) => message.role === "user")
-        .map((message) => message.id);
-      const jobInputs = userMessageIds.length
-        ? await db
-            .selectFrom("ai_jobs")
-            .select(["id", "input"])
-            .where("id", "in", userMessageIds)
-            .execute()
-        : [];
-      const explorerByMessage = new Map(
-        jobInputs.map((job) => {
-          let files: unknown = [];
-          try {
-            files = JSON.parse(job.input).files;
-          } catch {
-            files = [];
-          }
-          return [job.id, explorerTargets(files)] as const;
-        }),
-      );
-      const operations = jobs.length
-        ? await db
-            .selectFrom("ai_operations")
-            .select(["id", "job_id", "result", "created_at"])
-            .where(
-              "job_id",
-              "in",
-              jobs.map((j) => j.id),
-            )
-            .execute()
-        : [];
-      const resources = await sessionResourceHistory(db, actor.id, s.id);
-      return {
-        session: s,
-        resources,
-        messages: [...history.messages]
-          .sort(
-            (a, b) =>
-              new Date(a.createdAt).getTime() - new Date(b.createdAt).getTime(),
-          )
-          .map((x) => ({
-            id: x.id,
-            role: x.role,
-            text: messageText(x),
-            reasoning: messageReasoning(x),
-            references: x.content.metadata?.references ?? [],
-            attachments: x.content.metadata?.attachments ?? [],
-            explorer: (() => {
-              const saved = explorerTargets(x.content.metadata?.explorer);
-              return saved.length ? saved : (explorerByMessage.get(x.id) ?? []);
-            })(),
-            createdAt: x.createdAt,
-          })),
-        hasMore: history.hasMore,
-        contextTokens: jobs.length
-          ? ((
-              await db
-                .selectFrom("ai_calls")
-                .select("input_tokens")
-                .where(
-                  "job_id",
-                  "in",
-                  jobs.map((j) => j.id),
-                )
-                .where("input_tokens", ">", 0)
-                .orderBy("created_at", "desc")
-                .executeTakeFirst()
-            )?.input_tokens ?? null)
-          : null,
-        jobs: jobs.map(({ result, ...job }) => ({
-          ...job,
-          status: continuationJobStatus({ ...job, result }),
-          progress: result ? JSON.parse(result).progress : undefined,
-        })),
-        operations: operations.map((o) => ({
-          ...o,
-          result: JSON.parse(o.result),
-        })),
-      };
+        s = await session(actor, req.params.id);
+      return readAIConversation(db, runner, actor.id, s, parse(
+        z.coerce.number().int().min(0).max(100000), req.query.page ?? 0,
+      ), undefined, req.query.pendingId === undefined ? undefined : parse(z.string().uuid(), req.query.pendingId));
     },
   );
   // The job remains owned by the background runner. Disconnecting a viewer never cancels it.
@@ -1301,6 +1181,7 @@ export async function registerAI(
     "/api/v1/ai/sessions/:id/messages",
     async (req) => {
       let retryFileSnapshot: unknown;
+      let retrySourceInput: string | undefined;
       const actor = auth(req),
         s = await session(actor, req.params.id),
         body = parse(
@@ -1367,6 +1248,7 @@ export async function registerAI(
         if (!["failed", "interrupted", "cancelled"].includes(previous.status))
           fail(409, "只能重试失败、停止或中断的任务");
         const original = JSON.parse(previous.input);
+        retrySourceInput = previous.input;
         if (!original.text) fail(409, "原任务要求已不可用，请重新发送");
         retryFileSnapshot = original.fileInputSnapshot;
         Object.assign(body, {
@@ -1423,6 +1305,11 @@ export async function registerAI(
           return old;
         }
         if (body.retryOf) {
+          const chain = await imageRetryChain(tx, actor.id, s.id, body.retryOf);
+          if (!["failed", "interrupted", "cancelled"].includes(chain[0]!.status) ||
+              chain[0]!.input !== retrySourceInput)
+            fail(409, "原任务已变化，请刷新后再试");
+          await assertImageRetriesResolved(tx, actor.id, chain.map(previous => previous.id));
           const ongoing = await tx
             .selectFrom("ai_jobs")
             .selectAll()

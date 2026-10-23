@@ -8,6 +8,16 @@ The image sets `DOCA_PDF_CHROMIUM=/usr/bin/chromium` and `DOCA_OFFICE_RENDERER=/
 
 Office conversion starts a separate headless process with a private `/tmp/doca-office-render-*` directory and a fresh LibreOffice user profile per conversion. The `node` user must be able to write `/tmp`; conversion is limited to 120 seconds and the temporary directory is removed after success or failure. Do not mount a desktop LibreOffice profile or run the application as root to make conversion work. Older binary Office formats, active content and unsupported external resources remain rejected; a conversion failure does not become a text-only success. See [AI attachments](ai-attachments.md).
 
+## Image size and update downloads
+
+Chromium runs without a visible window for PDF export and native canvas screenshots/AI visual inspection. LibreOffice handles Office document rendering. The complete image retains both renderers, their sandbox and fonts.
+
+After the Web build, runtime cleanup removes dependency declarations, TypeScript build metadata, SQLite compiler inputs and SQLite prebuilds for other platforms. It first executes the installed native SQLite binding, retains that binding and all runtime JS/TS, package manifests and license notices. Published npm packages, editor runtime code and application data are unchanged.
+
+Common Node dependencies, each editor and pnpm installation metadata use separate `COPY --link` layers. Server sources, the extension and compiled Web assets also have independent layers. Release CI imports/exports architecture-specific BuildKit registry caches under `buildcache-amd64` and `buildcache-arm64`, separate from runnable release images. Unchanged renderer and dependency layers can survive fresh CI runners and subsequent app/editor changes. See Docker's [independent COPY layers](https://docs.docker.com/reference/dockerfile/#copy---link) and [registry build cache](https://docs.docker.com/build/cache/backends/registry/).
+
+The first release with this layout downloads its new layers. Later pulls reuse layers already present on the server; base, renderer or dependency changes still require their changed layers. Release verification records compressed bytes per architecture. Docker Desktop disk usage may include both architectures and unpacked storage; it is not the download size for one server. Scoped measurements are recorded in [the issue-tracker verification](verification/issue-tracker-2026-10-21/image-size.md).
+
 ## Chromium sandbox on Linux
 
 The application explicitly enables the Chromium sandbox. Docker's runtime security policy and the host must permit user namespaces. Installing `chromium-sandbox` and using a nonroot UID does not by itself supply that permission. Playwright's [official Docker instructions](https://playwright.dev/docs/docker) use the default seccomp policy with the additional `clone`, `setns` and `unshare` allowances needed for user namespaces.

@@ -4,10 +4,12 @@ import { copyFile, mkdir, mkdtemp, readFile, rm, writeFile } from "node:fs/promi
 import { tmpdir } from "node:os";
 import { dirname, resolve } from "node:path";
 import { fileURLToPath } from "node:url";
+import { verifyRegistryEditorSources } from "./verify-editor-package-sources.mjs";
 
 const root = resolve(dirname(fileURLToPath(import.meta.url)), "..");
+await verifyRegistryEditorSources(root);
 if (process.argv.length > 3) throw new Error("Usage: node scripts/pack-deployment.mjs [output-directory]");
-const output = resolve(process.argv[2] ?? resolve(root, ".cache/deployment"));
+const output = resolve(process.argv[2] ?? resolve(root, "artifacts/releases"));
 const { version } = JSON.parse(await readFile(resolve(root, "package.json"), "utf8"));
 if (!/^\d+\.\d+\.\d+$/.test(version)) throw new Error("Deployment bundles require an official release version");
 if (process.env.GITHUB_REF_NAME && process.env.GITHUB_REF_NAME !== `v${version}`) {

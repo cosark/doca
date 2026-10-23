@@ -5,6 +5,7 @@ import { resolveRichAnchor, type RichAnchor } from "@core/modules/documents/code
 import { useDocumentReadOnly } from "@web/features/documents/document-mode.js";
 import { DocumentFind } from "@web/features/documents/document-find.js";
 import { CommentNavigation } from "@web/features/comments/comment-navigation.js";
+import { useCommentPages } from "@web/features/comments/use-comment-pages.js";
 import { scrollCommentIntoView } from "@web/features/comments/comment-scroll.js";
 import { EditorRecoveryBoundary } from "@web/features/documents/editor-recovery-boundary.js";
 import {
@@ -241,17 +242,15 @@ function RichDocument({
     [peers, setPeers] = useState<{ id: string; display_name: string }[]>([]),
     [headings, setHeadings] = useState<DocumentHeading[]>([]),
     [outlineCollapsed, setOutlineCollapsed] = useState(false),
-    [commentsChoice, setCommentsChoice] = useState(true),
-    [commentDrawerOpen, setCommentDrawerOpen] = useState(false),
+    [commentsChoice, setCommentsChoice] = useState<boolean | null>(null),
     [availableWidth, setAvailableWidth] = useState(0),
     [panelBounds, setPanelBounds] = useState({ right: 0, top: 120, bottom: 0 }),
     [liveInfo, setLiveInfo] = useState<HTMLElement | null>(null),
     [anchor, setAnchor] = useState<Anchor | null>(null),
     [activeThread, setActiveThread] = useState<string | null>(null),
     [reply, setReply] = useState<string | null>(null),
+    [revealComment, setRevealComment] = useState<string | null>(null),
     [replyTo, setReplyTo] = useState<Detail["comments"][number] | undefined>(),
-    [visibleThreads, setVisibleThreads] = useState(10),
-    [visibleReplies, setVisibleReplies] = useState<Record<string, number>>({}),
     [editingComment, setEditingComment] = useState<{
       id: string;
       version: number;
@@ -269,6 +268,17 @@ function RichDocument({
   }, []);
   const shell = useRef<HTMLElement | null>(null);
   useEffect(() => {
+    if (!revealComment || !detail.comments.some(comment => comment.id === revealComment)) return;
+    let second = 0;
+    const first = requestAnimationFrame(() => {
+      second = requestAnimationFrame(() => {
+        scrollCommentIntoView(shell.current?.querySelector(`[data-comment-id="${revealComment}"]`), "center", "instant");
+        setRevealComment(null);
+      });
+    });
+    return () => { cancelAnimationFrame(first); cancelAnimationFrame(second); };
+  }, [detail.comments, revealComment]);
+  useEffect(() => {
     if (!ready || !targetComment) return;
     const target = detail.comments.find((c) => c.id === targetComment);
     const root = target?.parent_id
@@ -277,8 +287,6 @@ function RichDocument({
     if (!root?.anchor || root.resolved || root.deleted_at) return;
     setActiveThread(root.id);
     setCommentsOpen(true);
-    setVisibleThreads(detail.comments.length);
-    setVisibleReplies((v) => ({ ...v, [root.id]: detail.comments.length }));
     const t = setTimeout(
       () =>
         scrollCommentIntoView(shell.current
@@ -291,14 +299,16 @@ function RichDocument({
   const mobileEditor = /^#\/m\/r\//.test(location.hash);
   const pageLayout = documentPageLayout(availableWidth, mobileEditor ? "fluid" : pageWidth, mobileEditor ? false : !outlineCollapsed);
   const compact = !pageLayout.commentsInline;
-  const commentsOpen = compact ? commentDrawerOpen : commentsChoice;
+  const commentsOpen = commentsChoice ?? (!compact && availableWidth > 0);
+  useCommentPages(id, commentsOpen, detail.commentsNextCursor, loadMoreComments);
   const outlineInline = !mobileEditor && pageLayout.outlineInline && !outlineCollapsed;
-  // Automatic squeezing closes the drawer, but preserves the inline preference
-  // for when space returns. Only an explicit comment action opens the drawer.
-  useLayoutEffect(() => setCommentDrawerOpen(false), [compact]);
+  // Determine the initial responsive state once. Later AI/viewport changes
+  // resize the existing sidebar rather than unmounting an in-progress draft.
+  useLayoutEffect(() => {
+    if (availableWidth > 0 && commentsChoice === null) setCommentsChoice(!compact);
+  }, [availableWidth, commentsChoice, compact]);
   const setCommentsOpen = (open: boolean) => {
-    if (compact) setCommentDrawerOpen(open);
-    else setCommentsChoice(open);
+    setCommentsChoice(open);
   };
   useEffect(() => {
     setLiveInfo(document.getElementById("document-live-info"));
@@ -675,12 +685,14 @@ function RichDocument({
           version: editingComment.version,
           richBody,
         });
-      else
-        await api(`/resources/${id}/comments`, "POST", {
+      else {
+        const created = await api<{ id: string }>(`/resources/${id}/comments`, "POST", {
           richBody,
           parentId: reply,
           ...(!reply && anchor ? { anchor: JSON.stringify(anchor) } : {}),
         });
+        setRevealComment(created.id);
+      }
       setEditingComment(null);
       setAnchor(null);
       setReply(null);
@@ -715,9 +727,10 @@ function RichDocument({
     <RichPluginElements documentId={id} handle={toolbarHandle} editable={editable}>{elementInsert => <section
       ref={shell}
       data-page-width={pageWidth}
-      style={{ "--document-panel-right": `${panelBounds.right}px`, "--document-panel-top": `${panelBounds.top}px`, "--document-panel-bottom": `${panelBounds.bottom}px` } as React.CSSProperties}
+      style={{ "--document-panel-right": `${panelBounds.right}px`, "--document-panel-top": `${panelBounds.top}px`, "--document-panel-bottom": `${panelBounds.bottom}px`, "--document-paper-width": `${pageLayout.paper}px` } as React.CSSProperties}
       className={`document-editor-shell ${compact ? "compact-document" : ""}`}
       onKeyDownCapture={(e) => {
+        if ((e.target as HTMLElement).closest(".rich-comment-composer")) return;
         if (
           (e.metaKey || e.ctrlKey) &&
           e.altKey &&
@@ -938,8 +951,8 @@ function RichDocument({
       />
       <div className={`editor-columns ${commentsOpen ? "with-comments" : ""} ${!outlineInline ? "outline-collapsed" : ""}`}
         style={{
-          gridTemplateColumns: mobileEditor ? "minmax(0, 1fr)" : `${outlineInline ? "200px " : ""}minmax(0, 1fr)${commentsOpen && !compact ? " 280px" : ""}`,
-          minWidth: mobileEditor ? 0 : pageLayout.paper ? pageLayout.paper + 40 + (outlineInline ? 216 : 0) + (commentsOpen && !compact ? 296 : 0) : 0,
+          gridTemplateColumns: mobileEditor ? "minmax(0, 1fr)" : `${outlineInline ? "200px " : ""}minmax(0, 1fr)${commentsOpen ? compact ? " min(360px, max(240px, 42cqw))" : " 280px" : ""}`,
+          minWidth: mobileEditor || commentsOpen ? 0 : pageLayout.paper ? pageLayout.paper + 40 + (outlineInline ? 216 : 0) : 0,
         }}>
         {ready && (
           <ModelFind documentId={detail.resource.id} handle={handle} revision={revision} canEdit={editable} />
@@ -1079,6 +1092,7 @@ function RichDocument({
                   collaboration={adapter}
                   resources={resources}
                   onAttachmentPreview={attachmentPreview.onRichAttachmentPreview}
+                  onMediaPreview={attachmentPreview.onRichMediaPreview}
                   onUploadStateChange={setUploadStates}
                   mode={editable ? "edit" : "readonly"}
                   onReady={editorReady}
@@ -1137,12 +1151,12 @@ function RichDocument({
             <header>
               <h3>{t("comment.region")}<small>{roots.length}</small>
               </h3>
+              <div className="comment-sidebar-actions">
               <CommentNavigation
                 ids={roots.map((c) => c.id)}
                 active={activeThread}
                 select={(id) => {
                   const c = roots.find((c) => c.id === id)!;
-                  setVisibleThreads(roots.length);
                   setActiveThread(id);
                   try {
                     scrollCommentIntoView(contentHost.current?.querySelector(
@@ -1159,6 +1173,7 @@ function RichDocument({
               >
                 <PanelRightClose size={18} />
               </button>
+              </div>
             </header>
             {!roots.length && !anchor && (
               <p className="subtle">{t("comment.selectionHint")}</p>
@@ -1168,7 +1183,7 @@ function RichDocument({
               handle={handle}
               runtime={session.runtime}
             >
-              {roots.slice(0, visibleThreads).map((c) => {
+              {roots.map((c) => {
                 let quote = t("comment.quoteDeleted"),
                   blockId = "";
                 try {
@@ -1198,7 +1213,6 @@ function RichDocument({
                       {quote}
                     </button>
                     {[c, ...detail.comments.filter((x) => x.parent_id === c.id)]
-                      .slice(0, (visibleReplies[c.id] ?? 3) + 1)
                       .map((item) => (
                         <CommentMessage
                           key={item.id}
@@ -1230,18 +1244,6 @@ function RichDocument({
                           }}
                         />
                       ))}
-                    {detail.comments.filter((x) => x.parent_id === c.id)
-                      .length > (visibleReplies[c.id] ?? 3) && (
-                      <button
-                        className="comments-load-more"
-                        onClick={() =>
-                          setVisibleReplies((v) => ({
-                            ...v,
-                            [c.id]: (v[c.id] ?? 3) + 10,
-                          }))
-                        }
-                      >{t("comment.moreReplies")}</button>
-                    )}
                     {(reply === c.id ||
                       (editingComment &&
                         [
@@ -1264,22 +1266,6 @@ function RichDocument({
                 </article>
               )}
             </CommentCards>
-            {visibleThreads < roots.length && (
-              <button
-                className="comments-load-more"
-                onClick={() => setVisibleThreads((n) => n + 10)}
-              >
-                {t("comment.more")}
-              </button>
-            )}
-            {visibleThreads >= roots.length &&
-              detail.commentsNextCursor != null && (
-                <button
-                  className="comments-load-more"
-                  disabled={busy}
-                  onClick={() => void loadMoreComments?.()}
-                >{t("comment.moreLater")}</button>
-              )}
           </aside>
         )}
       </div>

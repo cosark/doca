@@ -41,9 +41,9 @@
 
 PDF 导入优先生成可编辑内容。已交付 Markdown 解析器继续校验文件、页数、图片限制，并提取素材与警告；宿主 PDF.js 适配补充字号、基础字体、粗斜体、文字颜色、安全链接、按字号识别的标题层级、简单列表、规则列距表格及按页面位置排列的图片。富文本直接使用该本机模型，Markdown 使用其便携序列化结果。素材重新绑定和新文档一次性初始化仍是保存边界。背景色、下划线、矢量图、复杂分栏/表格和公式重建可能简化；扫描页保留为图片，不进行 OCR；原解析器警告继续展示。本次不改变持久化模型、schema、旧格式转换或迁移规则。
 
-`patches/@smartdoca__slate@0.4.20.patch` 在 ESM/CJS 转换入口补充 Word 直接指定的字体、字号、颜色、背景、段落对齐和单元格文本格式，默认标题字号、1.6 行距及 A4 页面与在线样式接近；不解析任意继承样式、复杂分节或保证精确分页。`patches/@smartdoca__markdown@0.4.3.patch` 保留预览生成的数学 span 样式，不改变 Markdown 存储模型或协议。这些是仓库内宿主补丁，不代表上游已发布对应修改。
+Slate 0.4.25 已将原宿主 DOCX 补丁正式发布到 ESM/CJS 转换入口：Word 直接字体、字号、颜色、背景、段落对齐、显式关闭 marks 和单元格文本格式，以及在线标题字号、1.6 行距和 A4 默认值。任意继承样式、复杂分节和精确分页仍不在验证范围。Markdown 0.4.4 已正式包含原 KaTeX/延迟 PDF 加载修复。Doca 直接安装这两个正式包，无编辑器补丁绑定。历史补丁可从上一版 Git 源码恢复；移除它们不转换已存文档或改变协作格式。
 
-验收：`tests/document-pdf.test.ts` 覆盖真实 Chromium PDF、可选择中文、本机 PDF 重建、真实 DOCX XML/重导入以及脚本/远端图片阻断；`tests/document-pdf-access.test.ts` 覆盖只读权限、撤销和正文 checkpoint 不变。`node --import tsx scripts/qa-document-pdf.mts` 使用隔离浏览器样本，验证上下文保留、Y.Doc 零更新、图片导出后重导入、Mermaid/公式及三页长表格，视觉产物写入 `.local/document-pdf-qa/`。使用 Poppler 将 PDF 渲染为图片，与在线截图对照；不打开用户文档或生产数据库。
+验收：`tests/document-pdf.test.ts` 覆盖真实 Chromium PDF、可选择中文、本机 PDF 重建、真实 DOCX XML/重导入以及脚本/远端图片阻断；`tests/document-pdf-access.test.ts` 覆盖只读权限、撤销和正文 checkpoint 不变。`node --import tsx scripts/qa-document-pdf.mts` 使用隔离浏览器样本，验证上下文保留、Y.Doc 零更新、图片导出后重导入、Mermaid/公式及三页长表格，视觉产物写入 `artifacts/verification/document-pdf/`。使用 Poppler 将 PDF 渲染为图片，与在线截图对照；不打开用户文档或生产数据库。
 
 ## 验收证据
 

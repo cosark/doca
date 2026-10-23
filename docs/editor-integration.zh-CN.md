@@ -8,15 +8,21 @@
 
 | 格式 | 当前安装包 | 宿主入口 |
 | --- | --- | --- |
-| 富文本 | @smartdoca/slate 0.4.23 | document-editor.tsx |
-| Markdown | @smartdoca/markdown 0.4.3 | markdown-editor.tsx |
-| 表格 | @smartdoca/sheet 0.2.5 | spreadsheet-editor.tsx |
-| 画布 | @smartdoca/canvas 0.5.8 | canvas-editor.tsx |
-| 幻灯片 | @smartdoca/slides 0.3.0-alpha.3 | presentation-editor.tsx |
+| 富文本 | @smartdoca/slate 0.4.25 | document-editor.tsx |
+| Markdown | @smartdoca/markdown 0.4.4 | markdown-editor.tsx |
+| 表格 | @smartdoca/sheet 0.2.11 | spreadsheet-editor.tsx |
+| 画布 | @smartdoca/canvas 0.5.14 | canvas-editor.tsx |
+| 幻灯片 | @smartdoca/slides 0.3.0-alpha.4 | presentation-editor.tsx |
 
 入口位于 [文档 feature](../apps/web/src/features/documents)。包负责模型、编辑命令、撤销、格式渲染、选择与转换；宿主负责身份、ACL、上传下载、引用、用户卡片、导航、评论和协同连接。语言只影响界面，不翻译用户正文，不重建编辑器。
 
 ## 引用、资源与查找
+
+五种编辑器均使用精确正式 npm 版本。已安装 Canvas 0.5.14、Sheet 0.2.11、Slate 0.4.25 与公开归档逐文件一致；Canvas 与此前通过验收的 C1 字节相同。Slate 0.4.25 已包含原 DOCX 修复，Markdown 0.4.4 已包含原 KaTeX/延迟 PDF 修复。过时编辑器补丁已移除，可通过 Git 历史及保留的本地产物恢复；部署打包与发布检查拒绝编辑器本地归档和活动补丁。逐包审计及版本限定的网站结果见[正式 npm 接入验收](verification/issue-tracker-2026-10-21/npm-direct.md)。Sheet 0.2.11 已提供实际受控缩放接口及获批尺寸；73 个安装文件与正式归档一致，最终宿主网站验收与此前 0.2.10 收据分开记录。
+
+Canvas 的 `viewPreferences` / `onViewPreferencesChange`、`creationPreferences` / `onCreationPreferencesChange` 为真实公开接口，纯校验器来自 `@smartdoca/canvas/preferences`。按用户批准，Doca 使用按网站、账号和文档隔离的独立浏览器 v1 记录，仅保存显式原生偏好变化。无记录保持当前行为，未知版本或坏 JSON 保留原文，不读取、不覆盖；存储失败时当前视图保留本次选择并提示无法保存。视图及默认样式不改已有元素、API/AI 插入、导入内容、协同数据或历史，默认样式只影响以后交互创建的元素。已有模块级会话样式缓存并非浏览器存储，不会自动转入新记录。回退仅停用新偏好，保留记录及后续正文。
+
+Canvas 0.5.14 保留菜单、投影、布局、标题及原生键盘归属修复，在真实对象移动柄和明确工具选择时归还本 Canvas 焦点；自动工具完成仍与用户选择分开，公开组件与 handle 形状不变。Sheet 0.2.10 保留剪贴板和下拉删除修复，并修复超链接输入焦点及图库销毁时的延迟验证任务；Sheet 0.2.11 的 model/Yjs 相比 0.2.10 仅改变获批默认尺寸，两个 XLSX 入口逐字节相同，schema 6 不变。普通单元格、文字草稿、公式栏、对话框及只读保持原生规则。PNG 不显示 SVG 专用字体提示；Doca 翻译保留的 SVG 提示。已批准的旧图形显示规则、历史读取、规范化及精确 schema 校验保留原路径，不扩展。无格式转换、DDL、baseline、epoch 或待确认 update 改写；回退保留上一版部署、依赖、锁文件、制品及后续文档/会话/文件写入。
 
 内部文档引用保存稳定 UUID 和 `#/r/{id}` 相对位置；提及保留用户 UUID，候选使用当前用户目录策略。引用及反向引用按当前阅读权过滤，引用本身不授予访问权。
 
@@ -24,7 +30,23 @@
 
 富文本与表格向实际安装包传入稳定的 `onAttachmentPreview` 回调。富文本提供 `AttachmentElement.path/name/mimeType`；表格原生行内附件提供 `event.node.refId/label`。宿主将资产 UUID 解析为鉴权内容端点，打开共用的 `DocumentFilePreview`，只读、历史及回收站视图也接入并保留各自访问参数。富文本编辑模式先点击选中，再点击或使用预览按钮打开；只读模式单击预览。表格点击原生附件标签触发预览，现有整单元格对象渲染仍可用。预览不修改模型、协同会话或持久化格式。
 
+实际安装的富文本、Markdown、表格和幻灯片包提供当前图片预览回调，宿主结合 Canvas 资源接入同一鉴权图集。每次图片引用保留独立稳定 ID，同一资产重复使用仍是不同条目；幻灯片按页面与元素顺序排列，表格使用公开 `getImageGallery()` 快照，包含原生单元格草稿及其他工作表。流程图、思维导图和 Mermaid 的 SVG 与普通图片一起按需解析。大图支持拖动、前后按钮、方向键、横向滚轮与触摸切图，切换图片重置平移。编辑、阅读、历史及回收站入口保留各自鉴权参数，打开、切换或关闭预览不提交草稿或写入协作内容。
+
 查找替换通过各编辑器的模型或原生能力完成。富文本使用宿主 Slate 模型适配；其他格式使用实际安装包提供的 find/replace 或原生面板。只读、断线及演示状态不提供正文替换。没有通用公开编辑器任意修改句柄，不承诺所有格式具有相同文本范围或正则能力。
+
+## 表格默认尺寸与个人缩放 — 2026-10-23
+
+Sheet 0.2.11 实际导出 `SpreadsheetViewPreferences`、`isSpreadsheetViewPreferences` 及可选 `viewPreferences` / `onViewPreferencesChange` props；纯校验器也可从 `@smartdoca/sheet/preferences` 获取。宿主在当前网站按 `doca.sheet.zoom.v1:<账号>:<文档>` 保存 `{version:1,zoomRatio}`。默认仍为 100%，只有用户明确调整原生缩放才写记录。缺记录使用 100%，匿名视图仅临时生效；未知版本、坏 JSON 和额外字段均保留且拒用，不覆盖。存储失败时当前视图保留明确选择并提示。缩放不进入快照、XLSX 正文、协作、撤销或历史。
+
+用户明确批准新工作表以及未记录默认尺寸的历史附加/恢复表采用 21.78 行高、87.12 列宽。已有 baseline 默认尺寸、手动行高列宽、原 baseline/seed/checkpoint/update 字节保留；打开不补字段或迁移数据。回退包版本恢复原缺字段显示默认，回退宿主停用独立缩放记录，保留记录和后续正文编辑。
+
+## 原生事件归属、评论与速记 — 2026-10-22
+
+组件必须在执行原生命令前拒绝属于宿主输入框或外部可编辑目标的键盘/剪贴板事件，不能只依赖宿主 React 阻止冒泡来保护组件级键盘分发。Canvas 0.5.12 校验此归属，不改公开 props、场景字段或命令 schema。Doca 负责评论输入、发送/上传状态、草稿保留、布局及授权标记分页。在正文元素保持选中时，评论输入、删除、粘贴、撤销不应改变文档 checkpoint 和 seq。永久锚点、presence 和正文 outbox 格式不变。
+
+按用户批准，扩展速记仅明确选择启用且已授权 append 方案中的既有富文本或 Markdown 目标，追加纯文本且不调用 AI。目标、文字和 ticket 仅保存在本次扩展视图内存。宿主使用既有原生正文命令、回执和协同投递，不提供任意文档权限或第二套自动保存。富文本追加字面文字段落，Markdown 追加普通原文并沿用当前渲染。响应不确定时重试同一 ticket/request ID，不自动重选目标。ticket 在当前进程内有效五分钟；重启、过期或撤权可以终止本次操作并保留输入。见[速记契约](browser-quick-note.md)。
+
+正式包及逐项证据见[问题清单验收](verification/issue-tracker-2026-10-21/README.md)。此前 Canvas 0.5.12/0.5.13 的失败保留原范围；正式 0.5.14 与通过原生 17 阶段及偏好 7 组的 C1 归档一致。Sheet 0.2.10 在编译 Doca 上通过两独立轮原生及四串行轮图库验收。后续包和宿主变更仍需自己的最终编译 Web 验证。未宣称生产部署。
 
 ## 文件导入导出
 

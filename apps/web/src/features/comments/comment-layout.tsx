@@ -19,9 +19,10 @@ export function CommentCards({
   runtime: YjsDocument;
 }) {
   const rail = useRef<HTMLDivElement>(null);
+  const lastSourceOffset = useRef<number | undefined>(undefined);
+  useEffect(() => { lastSourceOffset.current = undefined; }, [compact, runtime]);
   useEffect(() => {
     let frame = 0;
-    let lastSourceOffset: number | undefined;
     function layout() {
       const host = rail.current,
         editor = handle.current?.editor;
@@ -81,8 +82,8 @@ export function CommentCards({
         host.style.height = `${commentRailHeight(bottom, source.scrollHeight - source.clientHeight, panel.clientHeight, railOffset)}px`;
         // Extend the rail before setting scrollTop, avoiding browser clamping.
         // Manual drawer scrolling remains possible until the document moves again.
-        if (lastSourceOffset !== sourceOffset) panel.scrollTop = sourceOffset;
-        lastSourceOffset = sourceOffset;
+        if (lastSourceOffset.current !== sourceOffset) panel.scrollTop = sourceOffset;
+        lastSourceOffset.current = sourceOffset;
       } else host.style.height = `${bottom}px`;
     }
     const schedule = () => {

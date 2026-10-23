@@ -21,6 +21,8 @@ import { CommentNavigation } from "@web/features/comments/comment-navigation.js"
 import { scrollCommentIntoView } from "@web/features/comments/comment-scroll.js";
 import { isRegionCommentInteraction } from "@web/features/comments/region-comment-interaction.js";
 import { useI18n } from "@web/shared/i18n.js";
+import { useCommentPages } from "./use-comment-pages.js";
+import { CommentSidebar } from "./comment-sidebar.js";
 export type RegionController = {
   flush?(): void | Promise<void>;
   capture(): unknown | null;
@@ -76,14 +78,19 @@ export function RegionComments({
   const { t } = useI18n();
   useAIBridge(detail.resource.id, { capture: () => controller?.capture(), describe: a => controller?.label(a) ?? t("comment.quote"), reveal: a => { if (!controller?.valid(a)) throw Error(t("comment.quoteStale")); controller.reveal(a); }, ready: () => !!controller && connected && !dirty, flush: () => controller?.flush?.() });
   const [open, setOpen] = useState(false),
+    [sidebarReady, setSidebarReady] = useState(false),
+    [revealComment, setRevealComment] = useState<string | null>(null),
     [draft, setDraft] = useState<any>(null),
     [reply, setReply] = useState<Detail["comments"][number] | null>(null),
     [editing, setEditing] = useState<Detail["comments"][number] | null>(null),
-    [limit, setLimit] = useState(10),
     [busy, setBusy] = useState(false),
     [error, setError] = useState("");
   const panel = useRef<HTMLElement>(null);
+  // Native markers must include every page even while the drawer is closed.
+  useCommentPages(detail.resource.id, true, detail.commentsNextCursor, loadMoreComments, open);
   const rail = useRef<HTMLDivElement>(null);
+  const lastSourceOffset = useRef<number | undefined>(undefined);
+  useEffect(() => { lastSourceOffset.current = undefined; }, [open, detail.resource.id]);
   const roots = detail.comments.filter((c) => {
     if (!c.anchor || c.parent_id || c.deleted_at || c.resolved || !controller)
       return false;
@@ -96,7 +103,6 @@ export function RegionComments({
   useEffect(() => {
     if (!open || !controller?.position) return;
     let frame = 0;
-    let lastSourceOffset: number | undefined;
     const targets = new Map<string, { order: number; target: number }>();
     const layout = () => {
       const host = rail.current;
@@ -154,10 +160,10 @@ export function RegionComments({
       if (
         scroller &&
         controller.scrollOffset &&
-        sourceOffset !== lastSourceOffset
+        sourceOffset !== lastSourceOffset.current
       ) {
         scroller.scrollTop = sourceOffset;
-        lastSourceOffset = sourceOffset;
+        lastSourceOffset.current = sourceOffset;
       }
     };
     const schedule = () => {
@@ -182,10 +188,10 @@ export function RegionComments({
     };
   }, [
     open,
+    sidebarReady,
     controller,
     revision,
     detail.comments,
-    limit,
     reply,
     editing,
     draft,
@@ -193,15 +199,24 @@ export function RegionComments({
   useEffect(() => {
     if (active) {
       setOpen(true);
-      setLimit(detail.comments.length);
     }
   }, [active]);
   useEffect(() => {
     if (candidateIds?.length) {
       setOpen(true);
-      setLimit(detail.comments.length);
     }
   }, [candidateIds]);
+  useEffect(() => {
+    if (!revealComment || !detail.comments.some(comment => comment.id === revealComment)) return;
+    let second = 0;
+    const first = requestAnimationFrame(() => {
+      second = requestAnimationFrame(() => {
+        scrollCommentIntoView(panel.current?.querySelector(`[data-comment-id="${revealComment}"]`), "center", "instant");
+        setRevealComment(null);
+      });
+    });
+    return () => { cancelAnimationFrame(first); cancelAnimationFrame(second); };
+  }, [detail.comments, revealComment]);
   useEffect(() => {
     // Repeated clicks in the same region leave both the drawer and its scroll
     // position untouched. A new target only reveals its message vertically.
@@ -225,7 +240,8 @@ export function RegionComments({
     const outside = (e: PointerEvent) => {
       const target = e.target as HTMLElement;
       if (!isRegionCommentInteraction(panel.current, target)) {
-        if (!controller?.position) setOpen(false);
+        // This is a document sidebar, not a dismissible popover. Interacting
+        // with AI, upload errors or other host controls must keep its draft.
         setActive(null);
       }
     };
@@ -272,12 +288,14 @@ export function RegionComments({
           "PATCH",
           { version: editing.version, richBody },
         );
-      else
-        await api(`/resources/${detail.resource.id}/comments`, "POST", {
+      else {
+        const created = await api<{ id: string }>(`/resources/${detail.resource.id}/comments`, "POST", {
           richBody,
           parentId: reply ? (reply.parent_id ?? reply.id) : null,
           ...(!reply && draft ? { anchor: JSON.stringify(draft) } : {}),
         });
+        setRevealComment(created.id);
+      }
       setDraft(null);
       setReply(null);
       setEditing(null);
@@ -337,6 +355,7 @@ export function RegionComments({
           {roots.length > 0 && <small className="comment-control-count">{roots.length}</small>}
         </button>
       </div>
+      <CommentSidebar open={open} readyChanged={setSidebarReady}>
       {open && (
         <aside
           ref={panel}
@@ -347,7 +366,7 @@ export function RegionComments({
             <h3>
               {t("comment.region")} <small>{roots.length}</small>
             </h3>
-            <div className="region-comment-header-actions">
+            <div className="region-comment-header-actions comment-sidebar-actions">
               <CommentNavigation
                 ids={[...roots]
                   .sort((a, b) => {
@@ -367,7 +386,6 @@ export function RegionComments({
                 active={active}
                 select={(id) => {
                   const comment = roots.find((c) => c.id === id)!;
-                  setLimit(roots.length);
                   setActive(id);
                   controller?.reveal(JSON.parse(comment.anchor!));
                   // Ordered rails follow the source scroll; do not race it with
@@ -436,7 +454,6 @@ export function RegionComments({
                   return 0;
                 }
               })
-              .slice(0, limit)
               .map((root) => (
                 <article
                   key={root.id}
@@ -462,7 +479,6 @@ export function RegionComments({
                     root,
                     ...detail.comments.filter((c) => c.parent_id === root.id),
                   ]
-                    .slice(0, limit)
                     .map((c) => (
                       <CommentMessage
                         key={c.id}
@@ -494,12 +510,6 @@ export function RegionComments({
                     (editing &&
                       (editing.parent_id ?? editing.id) === root.id)) &&
                     composer}
-                  {detail.comments.filter((c) => c.parent_id === root.id)
-                    .length >= limit && (
-                    <button onClick={() => setLimit((n) => n + 10)}>
-                      {t("comment.moreReplies")}
-                    </button>
-                  )}
                 </article>
               ))}
           </div>
@@ -509,24 +519,9 @@ export function RegionComments({
               {composer}
             </article>
           )}
-          <div
-            className={
-              controller?.position ? "linked-comment-pagination" : undefined
-            }
-          >
-            {roots.length > limit && (
-              <button onClick={() => setLimit((n) => n + 10)}>
-                {t("comment.more")}
-              </button>
-            )}
-            {detail.commentsNextCursor != null && (
-              <button disabled={busy} onClick={() => void loadMoreComments?.()}>
-                {t("comment.moreLater")}
-              </button>
-            )}
-          </div>
         </aside>
       )}
+      </CommentSidebar>
     </>
   );
 }

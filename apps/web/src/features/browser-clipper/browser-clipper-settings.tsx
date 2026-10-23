@@ -210,6 +210,26 @@ export function BrowserClipperSettings() {
           <p>{t("clipper.description")}</p>
         </div>
       </header>
+      <div className="clipper-download">
+        <div>
+          <strong>{t("clipper.downloadTitle")}</strong>
+          <p>{t("clipper.websiteSession")}</p>
+        </div>
+        <button
+          className="primary"
+          disabled={busy}
+          onClick={() => void act(download)}
+        >
+          <ArrowDownToLine size={17} />
+          {t("clipper.download")}
+        </button>
+        <button
+          className="clipper-rules-link"
+          onClick={() => setTab("profiles")}
+        >
+          {t("clipper.rulesLink")}
+        </button>
+      </div>
       <SettingsTabs
         label={t("clipper.title")}
         value={tab}
@@ -287,10 +307,6 @@ export function BrowserClipperSettings() {
                 }
               >
                 {t("clipper.copy")}
-              </button>
-              <button className="primary" onClick={() => void act(download)}>
-                <ArrowDownToLine size={15} />
-                {t("clipper.download")}
               </button>
             </div>
           </div>

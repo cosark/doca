@@ -29,6 +29,19 @@ it("keeps a selected thread in overlapping candidates", () => {
   expect(activeCommentCandidate("a", [])).toBeNull();
 });
 
+it("keeps a docked sidebar active while its own editor resolves the clicked anchor", () => {
+  const cell = {} as Element;
+  const outside = { closest: () => null } as unknown as Element;
+  const surface = { contains: (node: Element) => node === cell };
+  const dock = { parentElement: { querySelector: () => surface } };
+  const panel = {
+    contains: () => false,
+    closest: (selector: string) => selector === ".document-comment-dock" ? dock : null,
+  } as unknown as HTMLElement;
+  expect(isRegionCommentInteraction(panel, cell)).toBe(true);
+  expect(isRegionCommentInteraction(panel, outside)).toBe(false);
+});
+
 it("still dismisses outside the editor and protects related popovers", () => {
   const { panel, outside } = fixture();
   expect(isRegionCommentInteraction(panel, outside)).toBe(false);

@@ -2,8 +2,18 @@ import { expect, it } from "vitest";
 import {
   aiTimeline,
   completionPresentation,
+  imageRetryBlocked,
   taskDuration,
 } from "../apps/web/src/features/ai/ai-timeline.js";
+import { encodeSystemError } from "@doca/i18n";
+
+it("blocks retry only for explicit current structured unresolved image failures", () => {
+  for (const code of ["image_result_uncertain", "image_save_failed", "image_save_failed_retry_blocked"])
+    expect(imageRetryBlocked(encodeSystemError({ code }))).toBe(true);
+  expect(imageRetryBlocked("图片生成未完成，结果和费用待核对")).toBe(false);
+  expect(imageRetryBlocked('{"type":"system_error","version":2,"code":"image_result_uncertain"}')).toBe(false);
+  expect(imageRetryBlocked(encodeSystemError({ code: "image_auth_failed" }))).toBe(false);
+});
 const keys = (items: ReturnType<typeof aiTimeline>) =>
   items.map((i) => (i.kind === "message" ? i.message.id : `task:${i.job.id}`));
 it("places each failed task immediately after its own question, including repeated prompts", () => {

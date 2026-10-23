@@ -32,3 +32,9 @@ it("centers offscreen content without setting a horizontal coordinate", () => {
   scrollCommentIntoView(f.target, "center");
   expect(f.panel.scrollTo).toHaveBeenCalledWith({ top: -200, behavior: "smooth" });
 });
+it("can finish new-composer positioning before focus reveals another scroll ancestor", () => {
+  const f = fixture(650, 750);
+  scrollCommentIntoView(f.target, "nearest", "instant");
+  expect(f.panel.scrollTo).toHaveBeenCalledWith({ top: 350, behavior: "instant" });
+  expect(f.outer.scrollTo).not.toHaveBeenCalled();
+});

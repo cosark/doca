@@ -26,6 +26,11 @@ import {
 } from "../services/browser-clipper-protocol.js";
 import { browserExtensionPackage } from "../services/browser-clipper-package.js";
 import { uploadLimits } from "../services/storage-policy.js";
+import {
+  createBrowserQuickNote,
+  quickNoteInput,
+  quickNoteCommit,
+} from "../services/browser-quick-note.js";
 
 export const browserClipperRoute = { config: { docaBrowserClipper: true } };
 const idSchema = z.object({ id: z.string().uuid() }).strict();
@@ -49,6 +54,22 @@ export function registerBrowserClipper(
   const management = "/api/v1/me/browser-clipper",
     external = "/api/v1/browser-clipper";
   const service = createBrowserClipper(db, storage, notify);
+  const quickNote = createBrowserQuickNote(db, origin, notify);
+  api.get(`${external}/quick-note/targets`, browserClipperRoute, (req) =>
+    quickNote.targets(req.headers.authorization),
+  );
+  api.post(
+    `${external}/quick-note/prepare`,
+    { ...browserClipperRoute, bodyLimit: 100 * 1024 },
+    async (req) => {
+      const { actor } = await authenticateBrowserConnection(db, req.headers.authorization);
+      await limit(`clipper-quick-note:${actor.id}`, 60);
+      return quickNote.prepare(req.headers.authorization, parseClipper(quickNoteInput, req.body));
+    },
+  );
+  api.post(`${external}/quick-note/commit`, browserClipperRoute, (req) =>
+    quickNote.commit(req.headers.authorization, parseClipper(quickNoteCommit, req.body)),
+  );
   async function owned(req: FastifyRequest, tx = db) {
     const actor = auth(req),
       id = parseClipper(idSchema, req.params).id;
@@ -678,6 +699,7 @@ export function registerBrowserClipper(
   timer.unref();
   api.addHook("onClose", async () => {
     clearInterval(timer);
+    quickNote.close();
     await cleaning;
   });
 }

@@ -8,112 +8,165 @@
   </head>
   <body>
     <header>
+      <button id="back" class="icon-button" hidden>
+        <svg viewBox="0 0 24 24" width="19" height="19" aria-hidden="true">
+          <path d="m14 6-6 6 6 6" />
+        </svg>
+      </button>
       <img src="icon.svg" width="30" height="30" alt="" />
-      <div>
+      <div class="identity">
         <strong>Doca</strong><small id="identity">Browser Assistant</small>
       </div>
-      <select id="locale" aria-label="Language">
-        <option value="zh">中文</option>
-        <option value="en">English</option>
-      </select>
+      <button id="settings" class="icon-button">
+        <svg viewBox="0 0 24 24" width="19" height="19" aria-hidden="true">
+          <path
+            d="m9 3-.6 2.2-1.7 1L4.5 6l-2 3.5L4 11v2l-1.5 1.5 2 3.5 2.2-.2 1.7 1L9 21h4l.6-2.2 1.7-1 2.2.2 2-3.5L18 13v-2l1.5-1.5-2-3.5-2.2.2-1.7-1L13 3Z"
+          />
+          <circle cx="11" cy="12" r="3" />
+        </svg>
+      </button>
     </header>
-    <nav aria-label="Doca">
-      <button data-tab="capture" data-label="capture" class="active"></button
-      ><button data-tab="assistant" data-label="assistant"></button
-      ><button data-tab="connection" data-label="connection"></button>
-    </nav>
     <main>
       <div id="notice" role="status" aria-live="polite" hidden></div>
       <section id="capture-pane">
-        <h1 data-label="capture"></h1>
-        <p class="muted" data-label="description"></p>
-        <label class="field"
-          ><span data-label="profile"></span
+        <label class="field rule-field"
+          ><span data-label="selectProfile"></span
           ><select id="profile"></select
         ></label>
         <p id="profile-detail" class="profile-detail"></p>
-        <button
-          id="capture-page"
-          class="primary wide"
-          data-label="page"
-        ></button
-        ><button
-          id="capture-selection"
-          class="secondary wide"
-          data-label="selection"
-        ></button>
+        <div class="capture-actions">
+          <button id="capture-page" class="capture-action primary">
+            <svg viewBox="0 0 24 24" width="21" height="21" aria-hidden="true">
+              <rect x="3" y="4" width="18" height="16" rx="3" />
+              <path d="M3 9h18M7 6.5h.01M10 6.5h.01m-3 7h10m-10 3h7" /></svg
+            ><span data-label="page"></span>
+          </button>
+          <button id="capture-selection" class="capture-action secondary">
+            <svg viewBox="0 0 24 24" width="21" height="21" aria-hidden="true">
+              <path
+                d="M8 3H4a1 1 0 0 0-1 1v4m13-5h4a1 1 0 0 1 1 1v4M3 16v4a1 1 0 0 0 1 1h4m8 0h4a1 1 0 0 0 1-1v-4M8 8h8v8H8Z"
+              /></svg
+            ><span data-label="selection"></span>
+          </button>
+          <button id="open-assistant" class="capture-action ai-action">
+            <svg viewBox="0 0 24 24" width="21" height="21" aria-hidden="true">
+              <path
+                d="m12 3 2.6 6.4L21 12l-6.4 2.6L12 21l-2.6-6.4L3 12l6.4-2.6ZM20 2v4m-2-2h4"
+              /></svg
+            ><span data-label="handoff"></span
+            ><svg
+              class="action-arrow"
+              viewBox="0 0 24 24"
+              width="16"
+              height="16"
+              aria-hidden="true"
+            >
+              <path d="m9 5 7 7-7 7" />
+            </svg>
+          </button>
+        </div>
         <button
           id="retry"
           class="text-button wide"
           data-label="retry"
           hidden
         ></button>
-        <p class="muted small" data-label="loadedOnly"></p>
-        <button
-          id="open-assistant"
-          class="secondary wide"
-          data-label="openAssistant"
-        ></button>
-        <a
-          id="settings-link"
-          class="settings-link"
-          target="_blank"
-          rel="noopener noreferrer"
-          data-label="settings"
-        ></a>
-      </section>
-      <section id="assistant-pane" hidden>
-        <div class="assistant-controls">
-          <label
-            ><span data-label="profile"></span
-            ><select id="ai-profile" aria-label="Capture profile"></select
-          ></label>
-          <label
-            ><span data-label="model"></span
-            ><select id="model" aria-label="Model"></select
-          ></label>
+        <p class="capture-help" data-label="imagesHelp"></p>
+        <details id="quick-note" class="quick-note">
+          <summary data-label="quicknote.title"></summary>
+          <p class="muted small" data-label="quicknote.help"></p>
+          <label class="field">
+            <span data-label="quicknote.target"></span>
+            <select id="quick-note-target"></select>
+          </label>
           <button
-            id="new-chat"
+            id="quick-note-refresh"
+            type="button"
             class="text-button"
-            data-label="newChat"
+            data-label="quicknote.refresh"
           ></button>
-        </div>
-        <div id="conversation" aria-live="polite"></div>
-        <form id="composer">
-          <label class="attach"
-            ><input type="checkbox" id="attach-page" /><span
-              data-label="attach"
-            ></span
-          ></label>
-          <p class="muted small" data-label="sendHelp"></p>
-          <textarea
-            id="prompt"
-            rows="3"
-            maxlength="18000"
-            data-placeholder="prompt"
-          ></textarea>
-          <div class="composer-actions">
-            <a
-              id="continue-link"
-              target="_blank"
-              rel="noopener noreferrer"
-              data-label="continue"
-              hidden
-            ></a
-            ><button
-              id="send"
-              class="primary"
-              type="submit"
-              data-label="send"
+          <p
+            id="quick-note-empty"
+            class="muted small"
+            data-label="quicknote.empty"
+            hidden
+          ></p>
+          <label class="field">
+            <span data-label="quicknote.text"></span>
+            <textarea
+              id="quick-note-text"
+              rows="4"
+              data-placeholder="quicknote.placeholder"
+            ></textarea>
+          </label>
+          <a
+            id="quick-note-target-link"
+            target="_blank"
+            rel="noopener noreferrer"
+            data-label="quicknote.open"
+            hidden
+          ></a>
+          <p id="quick-note-status" role="status" aria-live="polite" hidden></p>
+          <button
+            id="quick-note-save"
+            type="button"
+            class="primary wide"
+            data-label="quicknote.save"
+          ></button>
+          <button
+            id="quick-note-retry"
+            type="button"
+            class="secondary wide"
+            data-label="quicknote.retry"
+            hidden
+          ></button>
+          <button
+            id="quick-note-clear"
+            type="button"
+            class="text-button wide"
+            data-label="quicknote.reset"
+            hidden
+          ></button>
+          <div id="quick-note-reset-confirmation" hidden>
+            <p class="small" data-label="quicknote.reset.help"></p>
+            <button
+              id="quick-note-confirm-reset"
+              type="button"
+              class="secondary wide"
+              data-label="quicknote.confirm.reset"
+            ></button>
+            <button
+              id="quick-note-cancel-reset"
+              type="button"
+              class="text-button wide"
+              data-label="quicknote.cancel.reset"
             ></button>
           </div>
-        </form>
+        </details>
+      </section>
+      <section id="assistant-pane" hidden>
+        <label id="assistant-profile"
+          ><select id="ai-profile" aria-label="Capture profile"></select
+        ></label>
+        <div id="assistant-root"></div>
       </section>
       <section id="connection-pane" hidden>
-        <h1 id="connection-heading" data-label="notConnected"></h1>
-        <p class="muted" data-label="setup"></p>
+        <h1 data-label="extensionSettings"></h1>
+        <a
+          id="settings-link"
+          class="rules-link"
+          target="_blank"
+          rel="noopener noreferrer"
+          ><span data-label="manageProfiles"></span
+          ><svg viewBox="0 0 24 24" width="16" height="16" aria-hidden="true">
+            <path
+              d="M14 3h7v7m0-7L10 14M10 3H5a2 2 0 0 0-2 2v14a2 2 0 0 0 2 2h14a2 2 0 0 0 2-2v-5"
+            /></svg
+        ></a>
+        <p class="muted small" data-label="profileSettingsHelp"></p>
+        <h2 id="connection-heading" data-label="notConnected"></h2>
         <p id="connection-detail" class="connection-detail"></p>
-        <button id="login" class="primary wide" data-label="login"></button>
+        <button id="login" class="secondary wide" data-label="login"></button>
         <form id="endpoint-form">
           <label class="field"
             ><span data-label="endpoint"></span
@@ -126,7 +179,7 @@
           <p class="muted small" data-label="endpointHelp"></p>
           <button
             type="submit"
-            class="secondary wide"
+            class="primary wide"
             data-label="saveEndpoint"
           ></button>
         </form>
@@ -137,7 +190,7 @@
               ><span data-label="config"></span
               ><textarea
                 id="config"
-                rows="7"
+                rows="5"
                 spellcheck="false"
                 data-placeholder="paste"
                 required
@@ -145,14 +198,24 @@
             </label>
             <p class="muted small" data-label="importHelp"></p>
             <button
-              class="primary wide"
+              class="secondary wide"
               type="submit"
               data-label="import"
             ></button>
           </form>
         </details>
+        <label class="field"
+          ><span data-label="locale"></span
+          ><select id="locale" aria-label="Language">
+            <option value="zh">中文</option>
+            <option value="en">English</option>
+          </select></label
+        >
+        <p id="shortcuts" class="muted small"></p>
+        <p class="muted small" data-label="shortcutHelp"></p>
       </section>
     </main>
+    <script src="select.js"></script>
     <script type="module" src="ui.js"></script>
   </body>
 </html>

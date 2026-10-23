@@ -4,6 +4,7 @@ import { useCallback, useEffect, useMemo, useRef, useState } from "react";
 import * as Y from "yjs";
 import { MessageSquare } from "lucide-react";
 import { useDocumentReadOnly } from "@web/features/documents/document-mode.js";
+import { useAttachmentPreview } from "./attachment-preview.js";
 import {
   PresentationWorkspace,
   type PresentationWorkspaceHandle,
@@ -81,6 +82,7 @@ export default function PresentationDocument({
   loadMoreComments?: () => Promise<void>;
 }) {
   const { locale, t } = useI18n();
+  const attachmentPreview = useAttachmentPreview();
   const id = detail.resource.id;
   const sync = useSurfaceSync(id, user?.id, "eppt-yjs-v6", factory, changed, 2);
   const model = sync.binding?.value;
@@ -294,6 +296,7 @@ export default function PresentationDocument({
       ref={root}
       className={`surface-editor presentation-document ${reading ? "is-reading" : ""} ${presenting ? "is-presenting" : ""}`}
     >
+      {attachmentPreview.dialog}
       <Feedback message={sync.error || error} tone="error" />
       {model && (!sync.connected || sync.blocked) && (
         <button
@@ -349,6 +352,7 @@ export default function PresentationDocument({
               chrome="embedded"
               readOnly={!editable}
               resources={resources}
+              onImagePreview={attachmentPreview.onSlidesImagePreview}
               presentation={presenting}
               onPresentationChange={changePresentation}
               sessionId={sync.presence.self}

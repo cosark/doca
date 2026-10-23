@@ -14,6 +14,8 @@ type HistoryOptions = {
   userId: string;
   sessionId: string;
   excludeId: string;
+  /** A restricted caller may only replay these jobs, never a shared thread summary. */
+  allowedJobIds?: readonly string[];
   /** Host preparation runs once after the owner-scoped load, before any model call. */
   beforeCompact?: (history: {
     messages: MastraDBMessage[];
@@ -92,14 +94,26 @@ export async function conversationHistory(options: HistoryOptions) {
     },
   });
   const scope = { threadId: options.sessionId, resourceId: owner };
+  const allowed = options.allowedJobIds === undefined
+    ? null
+    : new Set(options.allowedJobIds);
   // The caller has already authorized the session and all associated resources.
   const load = async () =>
     (await om.loadUnobservedMessages(scope))
       .filter((m) => m.id !== options.excludeId)
       .sort((a, b) => +new Date(a.createdAt) - +new Date(b.createdAt));
-  let messages = await load();
+  let messages = allowed
+    ? (await options.memory.memory.recall({
+        ...scope,
+        perPage: false,
+        orderBy: { field: "createdAt", direction: "ASC" },
+      })).messages.filter((message) => message.id !== options.excludeId && (
+        (message.role === "user" && allowed.has(message.id)) ||
+        (message.role === "assistant" && message.id.endsWith("-answer") && allowed.has(message.id.slice(0, -7)))
+      ))
+    : await load();
   let summary =
-    (await om.getObservations(scope.threadId, scope.resourceId)) ?? "";
+    allowed ? "" : (await om.getObservations(scope.threadId, scope.resourceId)) ?? "";
   await options.beforeCompact?.({ messages, summary });
   const counter = om.getTokenCounter();
   const size = (items: MastraDBMessage[]) =>
@@ -109,12 +123,19 @@ export async function conversationHistory(options: HistoryOptions) {
         content: {
           ...m.content,
           parts: [
-            ...contextParts(m.content.metadata?.promptContext),
+            ...(!allowed ? contextParts(m.content.metadata?.promptContext) : []),
             ...m.content.parts,
           ],
         },
       })),
     );
+  // Shared observations have no per-job authorization identity. Restricted
+  // execution reads original bound records and never reads/writes that cursor.
+  if (allowed) {
+    if (size(messages) > historyBudget)
+      fail(413, "单轮历史内容超过当前模型的压缩容量，请切换更大上下文的模型后继续");
+    return { messages, summary: "" };
+  }
   while (
     messages.length &&
     size(messages) + counter.countString(summary) > historyBudget

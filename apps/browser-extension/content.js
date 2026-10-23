@@ -37,162 +37,224 @@
   document.addEventListener(
     "keydown",
     (event) => {
-      if (event.key === "Escape") hide();
+      if (event.key === "Escape") dismiss();
     },
     true,
   );
+  let dropdown = null;
+  const originalHide = hide;
+  const dismiss = () => {
+    dropdown?.destroy();
+    dropdown = null;
+    originalHide();
+  };
   document.addEventListener(
     "mouseup",
-    async (event) => {
-      if (
-        !event.isTrusted ||
-        host?.contains(event.target) ||
-        event.composedPath().includes(host)
-      )
-        return;
-      const active =
-        event.target instanceof Element
-          ? event.target.closest("input,textarea,[contenteditable='true']")
-          : null;
+    (event) => {
+      if (!event.isTrusted || event.composedPath().includes(host)) return;
+      const editable =
+        event.target instanceof Element &&
+        event.target.closest("input,textarea,[contenteditable='true']");
       const selection = window.getSelection();
       if (
-        active ||
+        editable ||
         !selection?.rangeCount ||
         selection.isCollapsed ||
         !selection.toString().trim()
       ) {
-        hide();
+        dismiss();
         return;
       }
       range = selection.getRangeAt(0).cloneRange();
       snapshot = null;
       const rect = range.getBoundingClientRect();
-      hide();
+      dismiss();
       host = document.createElement("div");
       host.dataset.docaCaptureUi = "true";
-      host.style.cssText = `position:fixed;z-index:2147483647;top:${Math.max(8, rect.top - 50)}px;left:${Math.max(8, Math.min(innerWidth - 310, rect.left))}px;`;
+      host.style.cssText = `position:fixed;z-index:2147483647;top:${Math.max(8, Math.min(innerHeight - 42, rect.bottom + 6))}px;left:${Math.max(8, Math.min(innerWidth - 66, rect.right - 32))}px;`;
       const shadow = host.attachShadow({ mode: "closed" });
       const style = document.createElement("style");
-      style.textContent =
-        ":host{all:initial} .bar{font:13px/1.5 system-ui,sans-serif;display:flex;align-items:center;gap:4px;padding:5px;border:1px solid #dbe3ef;border-radius:10px;background:#fff;box-shadow:0 4px 20px #15264822;color:#1f2937;max-width:min(410px,90vw)}button,a{font:inherit;padding:6px 9px;border:0;border-radius:6px;background:transparent;color:inherit;text-decoration:none;cursor:pointer}button:hover{background:#edf3ff}button:first-of-type{color:#2462e9}button:disabled{opacity:.5}select{max-width:130px;border:0;background:#f5f7fa;color:inherit;padding:6px;border-radius:5px} .status{padding:4px 8px;max-width:280px} .status:empty{display:none}";
-      const bar = document.createElement("div");
-      bar.className = "bar";
-      const save = document.createElement("button"),
-        ai = document.createElement("button"),
+      style.textContent = `:host{all:initial;color-scheme:light}[hidden]{display:none!important}*{box-sizing:border-box}.launcher{display:flex;gap:3px;align-items:center;animation:enter .16s ease-out}button,a{font:12px/1.5 system-ui,sans-serif;cursor:pointer;color:#655276;text-decoration:none}button{border:1px solid #e7e1ee;border-radius:8px;background:#fff;padding:7px 10px;transition:background .15s,transform .12s}button:hover{background:#f4f0ff}button:active{transform:scale(.96)}button:disabled{opacity:.5}button:focus-visible{outline:2px solid #7051be;outline-offset:2px}.logo{display:flex;padding:0;border:0;background:none;width:32px;height:32px;box-shadow:0 3px 12px #30223b25;border-radius:9px}.logo svg{width:32px;height:32px}.close{border:0;padding:0;border-radius:50%;width:20px;height:20px;color:#8d7f99;box-shadow:0 1px 6px #30223b15}.panel{position:fixed;width:min(270px,calc(100vw - 16px));font:12px/1.5 system-ui,sans-serif;border:1px solid #e7e1ee;border-radius:12px;background:#fff;padding:10px;box-shadow:0 8px 28px #30223b24;color:#655276;animation:enter .16s ease-out}.actions{display:flex;gap:6px;margin-top:8px}.actions button{flex:1}.actions button:first-child{background:#3370ff;color:#fff;border-color:#3370ff}.actions button:last-child{background:#f7f3ff;color:#7051be;border-color:#e8ddff}.status{display:block;font-size:11px;color:#8d7f99;margin-top:6px;overflow-wrap:anywhere}.status:empty{display:none}.status a{color:#7051be}.doca-select{display:block;min-width:0}.doca-select-trigger{display:flex;justify-content:space-between;align-items:center;gap:8px;width:100%;text-align:left}.doca-select-trigger>span:first-child{overflow:hidden;text-overflow:ellipsis;white-space:nowrap}.doca-select-arrow{width:6px;height:6px;border-right:1px solid #a092af;border-bottom:1px solid #a092af;transform:rotate(45deg);margin:-3px 3px 0 0;flex:none}.doca-select-menu{position:fixed;z-index:2;background:#fff;border:1px solid #e7e1ee;border-radius:8px;padding:4px;overflow:auto;box-shadow:0 6px 22px #30223b22;animation:enter .14s ease-out}.doca-select-option{display:block;width:100%;border:0;text-align:left;overflow-wrap:anywhere}.doca-select-option.is-active,.doca-select-option:hover{background:#f4f0ff}.doca-select-option[aria-selected=true]{color:#7051be;font-weight:600}@keyframes enter{from{opacity:0;transform:translateY(3px)}to{opacity:1;transform:translateY(0)}}@media(prefers-reduced-motion:reduce){*{animation:none!important;transition:none!important}}`;
+      const launcher = document.createElement("div"),
+        icon = document.createElement("button"),
         close = document.createElement("button"),
-        profiles = document.createElement("select"),
-        status = document.createElement("span");
-      status.className = "status";
-      status.setAttribute("role", "status");
-      save.textContent = text.capture;
-      ai.textContent = text.ai;
+        panel = document.createElement("div");
+      launcher.className = "launcher";
+      icon.className = "logo";
+      close.className = "close";
       close.textContent = "×";
       close.title = text.close;
-      bar.addEventListener("mousedown", (event) => {
-        if (
-          !(event.target instanceof Element) ||
-          !event.target.closest("select")
-        )
-          event.preventDefault();
+      close.setAttribute("aria-label", text.close);
+      icon.setAttribute("aria-label", text.capture);
+      icon.setAttribute("aria-expanded", "false");
+      const svg = document.createElementNS("http://www.w3.org/2000/svg", "svg");
+      svg.setAttribute("viewBox", "0 0 128 128");
+      svg.setAttribute("aria-hidden", "true");
+      for (const [name, attributes] of [
+        ["rect", { width: 128, height: 128, rx: 30, fill: "#3370ff" }],
+        [
+          "path",
+          {
+            fill: "white",
+            d: "M36 29h27c24 0 39 14 39 35S87 99 63 99H36zm19 17v36h8c13 0 20-7 20-18s-7-18-20-18z",
+          },
+        ],
+        ["circle", { cx: 31, cy: 99, r: 9, fill: "#a7c6ff" }],
+      ]) {
+        const node = document.createElementNS(svg.namespaceURI, name);
+        for (const [key, value] of Object.entries(attributes))
+          node.setAttribute(key, String(value));
+        svg.append(node);
+      }
+      icon.append(svg);
+      launcher.append(icon, close);
+      panel.className = "panel";
+      panel.hidden = true;
+      const profiles = document.createElement("select"),
+        save = document.createElement("button"),
+        ai = document.createElement("button"),
+        status = document.createElement("span"),
+        actions = document.createElement("div");
+      status.className = "status";
+      status.setAttribute("role", "status");
+      actions.className = "actions";
+      actions.append(save, ai);
+      panel.append(profiles, actions, status);
+      shadow.append(style, launcher, panel);
+      document.documentElement.append(host);
+      const current = host;
+      function position() {
+        const box = icon.getBoundingClientRect();
+        panel.style.left =
+          Math.max(
+            8,
+            Math.min(
+              innerWidth - panel.offsetWidth - 8,
+              box.right - panel.offsetWidth,
+            ),
+          ) + "px";
+        panel.style.top =
+          (box.bottom + panel.offsetHeight + 8 <= innerHeight
+            ? box.bottom + 6
+            : Math.max(8, box.top - panel.offsetHeight - 6)) + "px";
+      }
+      close.onclick = dismiss;
+      // Keep the webpage selection while still allowing keyboard focus in the controls.
+      shadow.addEventListener("mousedown", (e) => {
+        if (e.target instanceof Element && e.target.closest("button,a"))
+          e.preventDefault();
       });
-      close.onclick = hide;
+      let loaded = false;
+      icon.onclick = async (event) => {
+        if (!event.isTrusted) return;
+        panel.hidden = !panel.hidden;
+        icon.setAttribute("aria-expanded", String(!panel.hidden));
+        if (panel.hidden) {
+          dropdown?.close();
+          return;
+        }
+        position();
+        if (loaded) return;
+        loaded = true;
+        save.disabled = ai.disabled = true;
+        save.textContent = text.capture;
+        ai.textContent = text.ai;
+        try {
+          const state = await send({ type: "state" });
+          if (host !== current) return;
+          text = state.locale === "en" ? en : zh;
+          save.textContent = text.capture;
+          ai.textContent = text.ai;
+          close.title = text.close;
+          close.setAttribute("aria-label", text.close);
+          icon.setAttribute("aria-label", text.capture);
+          if (!state.connected) {
+            profiles.hidden = true;
+            ai.hidden = true;
+            save.disabled = false;
+            save.textContent = text.login;
+            status.textContent = text.setup;
+            save.onclick = async (e) => {
+              if (e.isTrusted) {
+                await send({ type: "login" }).catch(() => {});
+                dismiss();
+              }
+            };
+            position();
+            return;
+          }
+          if (!state.profiles.length) {
+            profiles.hidden = true;
+            status.textContent = text.setup;
+            position();
+            return;
+          }
+          for (const profile of state.profiles) {
+            const option = document.createElement("option");
+            option.value = profile.id;
+            option.dataset.revision = String(profile.revision);
+            option.textContent =
+              profile.name +
+              (profile.isDefault
+                ? state.locale === "en"
+                  ? " · Default"
+                  : " · 默认"
+                : "");
+            profiles.append(option);
+          }
+          profiles.value = (
+            state.profiles.find((p) => p.isDefault) || state.profiles[0]
+          ).id;
+          profiles.setAttribute(
+            "aria-label",
+            state.locale === "en" ? "Capture profile" : "收录方案",
+          );
+          dropdown = globalThis.DocaSelect.enhance(profiles);
+          save.disabled = ai.disabled = false;
+          ai.hidden = !state.assistantEnabled;
+          position();
+        } catch {
+          status.textContent = text.setup;
+          position();
+        }
+      };
       async function run(event, assistant) {
         if (!event.isTrusted) return;
-        save.disabled = true;
-        ai.disabled = true;
+        save.disabled = ai.disabled = true;
         status.textContent = text.busy;
+        position();
         try {
           snapshot ||= globalThis.DocaCapture.capture("selection", range);
+          const result = await send({
+            type: assistant ? "openAssistant" : "capture",
+            capture: snapshot,
+            profileId: profiles.value,
+            profileRevision: Number(
+              profiles.selectedOptions[0]?.dataset.revision,
+            ),
+          });
           if (assistant) {
-            await send({
-              type: "openAssistant",
-              capture: snapshot,
-              profileId: profiles.value,
-              profileRevision: Number(
-                profiles.selectedOptions[0]?.dataset.revision,
-              ),
-            });
             status.textContent = "";
           } else {
-            const result = await send({
-              type: "capture",
-              capture: snapshot,
-              profileId: profiles.value,
-              profileRevision: Number(
-                profiles.selectedOptions[0]?.dataset.revision,
-              ),
-            });
-            status.replaceChildren();
             const link = document.createElement("a");
             link.textContent = text.saved;
             link.href = result.url;
             link.target = "_blank";
             link.rel = "noopener noreferrer";
-            status.append(link);
-            save.hidden = true;
-            ai.hidden = true;
-            profiles.hidden = true;
+            status.replaceChildren(link);
+            actions.hidden = true;
+            profiles.parentElement.hidden = true;
           }
         } catch {
           status.textContent = text.failed;
           save.textContent = text.retry;
         } finally {
-          save.disabled = false;
-          ai.disabled = false;
+          save.disabled = ai.disabled = false;
+          position();
         }
       }
-      save.onclick = (event) => run(event, false);
-      ai.onclick = (event) => run(event, true);
-      profiles.addEventListener("change", () => {
-        snapshot = null;
-      });
-      bar.append(profiles, save, ai, status, close);
-      shadow.append(style, bar);
-      document.documentElement.append(host);
-      const current = host;
-      try {
-        const state = await send({ type: "state" });
-        if (host !== current) return;
-        text = state.locale === "en" ? en : zh;
-        save.textContent = text.capture;
-        ai.textContent = text.ai;
-        if (!state.connected) {
-          profiles.hidden = true;
-          ai.hidden = true;
-          save.textContent = text.login;
-          save.onclick = async (event) => {
-            if (!event.isTrusted) return;
-            snapshot ||= globalThis.DocaCapture.capture("selection", range);
-            await send({ type: "login" }).catch(() => {});
-            hide();
-          };
-          status.textContent = text.setup;
-          return;
-        }
-        if (!state.profiles.length) {
-          profiles.hidden = true;
-          save.disabled = true;
-          ai.disabled = true;
-          status.textContent = text.setup;
-          return;
-        }
-        for (const profile of state.profiles) {
-          const option = document.createElement("option");
-          option.value = profile.id;
-          option.dataset.revision = String(profile.revision);
-          option.textContent = profile.name;
-          profiles.append(option);
-        }
-        profiles.value = (
-          state.profiles.find((profile) => profile.isDefault) ||
-          state.profiles[0]
-        ).id;
-        ai.hidden = !state.assistantEnabled;
-      } catch {
-        status.textContent = text.setup;
-        save.disabled = true;
-        ai.disabled = true;
-      }
+      save.onclick = (e) => run(e, false);
+      ai.onclick = (e) => run(e, true);
     },
     true,
   );
@@ -201,7 +263,14 @@
       try {
         snapshot = globalThis.DocaCapture.capture(
           message.mode,
-          message.mode === "selection" ? range : null,
+          message.mode === "selection"
+            ? (() => {
+                const current = window.getSelection();
+                return current?.rangeCount && !current.isCollapsed
+                  ? current.getRangeAt(0).cloneRange()
+                  : range;
+              })()
+            : null,
         );
         respond({ ok: true, value: snapshot });
       } catch (error) {

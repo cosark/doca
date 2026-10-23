@@ -21,7 +21,7 @@ import {
 import { DocumentScrollButtons } from "@web/features/documents/document-scroll-buttons.js";
 import "./ai.css";
 const AIChat = lazy(() =>
-  import("./ai-chat.js").then((module) => ({ default: module.AIChat })),
+  import("./ai-chat-host.js").then((module) => ({ default: module.AIChat })),
 );
 
 function usePanelWidth() {

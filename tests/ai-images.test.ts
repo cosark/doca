@@ -1160,6 +1160,10 @@ it("reports a local save failure separately from uncertain provider usage and pr
       relatedJobIds: [ctx.jobId, retry.ctx.jobId],
     }),
   ).rejects.toThrow("不能重复提交");
+  const changed = await generateImageAsset(db, retry.ctx, { prompt: "改写提示词不能绕过保存失败", size: "1536x1024" }, randomUUID(), {
+    ...options, relatedJobIds: [ctx.jobId, retry.ctx.jobId],
+  }).catch(error => error);
+  expect(systemErrorReason(changed)?.code).toBe("image_save_failed_retry_blocked");
   expect(calls).toBe(1);
   expect(await db.selectFrom("assets").selectAll().execute()).toHaveLength(0);
 });
@@ -1262,7 +1266,7 @@ it.each(["chat", "document"] as const)(
   },
 );
 
-it("keeps uncertain requests protected across retries without blocking different images or new requests", async () => {
+it("blocks changed prompts, sizes and models across uncertain retries while preserving independent new requests", async () => {
   const { ctx, sessionId } = await imageJob();
   const input = { prompt };
   await expect(
@@ -1278,6 +1282,8 @@ it("keeps uncertain requests protected across retries without blocking different
     .where("id", "=", ctx.jobId)
     .execute();
   const retry = await imageJob(sessionId);
+  await db.updateTable("ai_jobs").set({ input: JSON.stringify({ retryOf: ctx.jobId }) })
+    .where("id", "=", retry.ctx.jobId).execute();
   let calls = 0;
   const options = {
     storage: { ...storageRuntime(), root },
@@ -1291,14 +1297,34 @@ it("keeps uncertain requests protected across retries without blocking different
     generateImageAsset(db, retry.ctx, input, randomUUID(), options),
   ).rejects.toThrow("不能重复提交");
   expect(calls).toBe(0);
-  const different = await generateImageAsset(
-    db,
-    retry.ctx,
+  for (const changed of [
     { prompt: "画一朵红色的花" },
-    randomUUID(),
-    options,
-  );
-  expect(different.state).toBe("saved");
+    { prompt, size: "1536x1024" },
+    { prompt, aspectRatio: "3:2" as const },
+  ]) {
+    const error = await generateImageAsset(db, retry.ctx, changed, randomUUID(), {
+      ...options, relatedJobIds: undefined,
+    }).catch(error => error);
+    expect(systemErrorReason(error)?.code).toBe("image_result_uncertain");
+  }
+  const { revision, ...config } = await aiConfig(db);
+  await saveAIConfig(db, {
+    ...config, imageModel: "image-two",
+    models: [...config.models, { ...config.models[0]!, id: "image-two", alias: "生图二" }],
+  }, revision);
+  const changedModel = await generateImageAsset(db, retry.ctx, input, randomUUID(), options).catch(error => error);
+  expect(systemErrorReason(changedModel)?.code).toBe("image_result_uncertain");
+  const parallel = await imageJob(sessionId);
+  await db.updateTable("ai_jobs").set({ input: JSON.stringify({ retryOf: ctx.jobId }) })
+    .where("id", "=", parallel.ctx.jobId).execute();
+  const blocked = await Promise.all([retry, parallel].map(item => generateImageAsset(
+    db, item.ctx, { prompt: "并发重试也不能重新付费" }, randomUUID(), options,
+  ).catch(error => error)));
+  expect(blocked.map(error => systemErrorReason(error)?.code)).toEqual([
+    "image_result_uncertain", "image_result_uncertain",
+  ]);
+  expect(calls).toBe(0);
+  expect(await db.selectFrom("ai_operations").select("id").execute()).toHaveLength(1);
   const fresh = await imageJob(sessionId);
   const requested = await generateImageAsset(
     db,
@@ -1311,7 +1337,7 @@ it("keeps uncertain requests protected across retries without blocking different
     },
   );
   expect(requested.state).toBe("saved");
-  expect(calls).toBe(2);
+  expect(calls).toBe(1);
   expect(
     (await usageSummary(db, user.id)).calls.filter(
       (c) => c.state === "pending",

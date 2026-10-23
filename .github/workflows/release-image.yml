@@ -36,6 +36,7 @@ jobs:
       - name: Install and build the comparison sources
         run: |
           corepack enable && corepack prepare pnpm@11.25.0 --activate
+          node scripts/verify-editor-package-sources.mjs
           pnpm install --frozen-lockfile
           pnpm build
           echo "VERSION=$(node -p 'require("./package.json").version')" >> "$GITHUB_ENV"
@@ -55,13 +56,15 @@ jobs:
         env:
           ARCH: ${{ matrix.arch }}
         run: |
-          mkdir -p .cache/ci-image
+          mkdir -p artifacts/verification/release-image/build
           docker buildx build --platform "linux/$ARCH" --load \
+            --cache-from "type=registry,ref=smartdoca/doca:buildcache-$ARCH" \
+            --cache-to "type=registry,ref=smartdoca/doca:buildcache-$ARCH,mode=max,image-manifest=true,oci-mediatypes=true" \
             --tag "smartdoca/doca:$VERSION-candidate" \
             --label "org.opencontainers.image.revision=$GITHUB_SHA" \
             --label "org.opencontainers.image.version=$VERSION" \
             --label org.opencontainers.image.source=https://github.com/smartdoca/doca \
-            --metadata-file .cache/ci-image/image-build-metadata.json .
+            --metadata-file artifacts/verification/release-image/build/image-build-metadata.json .
       - name: Verify original images, sign-in, logout and revocation
         env:
           DOCA_RELEASE_QA_ARCH: ${{ matrix.arch }}
@@ -81,7 +84,7 @@ jobs:
       - uses: actions/upload-artifact@v4
         with:
           name: release-image-${{ matrix.arch }}
-          path: .cache/ci-image/acceptance/
+          path: artifacts/verification/release-image/build/acceptance/
           include-hidden-files: true
           if-no-files-found: error
       - name: Clear runner registry credentials
@@ -101,7 +104,7 @@ jobs:
       - uses: actions/download-artifact@v4
         with:
           pattern: release-image-*
-          path: .cache/ci-inputs
+          path: artifacts/verification/release-image/inputs
       - name: Sign in to the image registry
         env:
           DOCKERHUB_USER: ${{ secrets.DOCA_RELEASE_DOCKERHUB_USER }}
@@ -114,7 +117,7 @@ jobs:
       - uses: actions/upload-artifact@v4
         with:
           name: release-published
-          path: .cache/ci-published/
+          path: artifacts/verification/release-image/published/
           include-hidden-files: true
           if-no-files-found: error
       - name: Clear runner registry credentials

@@ -7,7 +7,7 @@ import { resolve } from "node:path";
 const { version } = JSON.parse(await readFile("package.json", "utf8"));
 const image =
   process.env.DOCA_RELEASE_QA_IMAGE ?? `smartdoca/doca:${version}-candidate`;
-const output = resolve(`docs/verification/release-${version}`);
+const output = resolve(`artifacts/verification/release-${version}`);
 await mkdir(output, { recursive: true });
 const code = `
 import assert from 'node:assert/strict';
