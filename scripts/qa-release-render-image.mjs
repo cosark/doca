@@ -53,6 +53,7 @@ console.log(JSON.stringify({passed:true,arch:process.arch,uid:process.getuid(),s
 const { stdout } = await promisify(execFile)("docker", [
   "run", "--rm", "--pull", "never", "--platform", `linux/${arch}`,
   "--network", "none", "--read-only", "--tmpfs", "/tmp:rw,size=1g",
+  "--tmpfs", "/home/node:rw,uid=1000,gid=1000,size=256m",
   "--security-opt", `seccomp=${resolve("docker/chromium-seccomp.json")}`,
   "--shm-size", "1g", "--entrypoint", "node", image,
   "--import", "tsx", "--input-type=module", "-e", code,
