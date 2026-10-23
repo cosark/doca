@@ -52,4 +52,4 @@ AI 修复后精确场景在新合成文档只读复开：保留全部 41 个 ID�
 精确收据分别位于 `final/canvas-native-2/`、`final/canvas-preferences/`、`final/ai-native-readonly/`、`final/comments/` 和 `final/extension/`。源文档和项目/全局技能引用已经同步。GitHub/DockerHub 已发布，双架构实际大小见[最终回执](release.md)；生产站点没有由本轮升级。
 
 
-远端首轮 PostgreSQL 检查暴露干净检出未构建扩展资源：扩展下载测试因缺少 `generated/` 返回 500，其余数据库检查通过。测试现先构建实际扩展，并校验 ZIP 含助手 JS/CSS；不新增运行时回退。SQLite 14 项通过；从缺少 generated 目录开始，PostgreSQL 17/18 各 14 项独立通过，重建的 100 个资源与已验收 MV3 字节一致。远端最终 PostgreSQL 17/18 各 289 项通过，原失败不删除。
+远端首轮 PostgreSQL 检查暴露干净检出未构建扩展资源：扩展下载测试因缺少 `generated/` 返回 500，其余数据库检查通过。测试现先构建实际扩展，并校验 ZIP 含助手 JS/CSS；不新增运行时回退。SQLite 14 项通过；从缺少 generated 目录开始，PostgreSQL 17/18 各 14 项独立通过，测试模式重建资源稳定；另以 `NODE_ENV=production` 重建后，100 个资源与已验收 MV3 及两个原生镜像逐字节一致。远端最终 PostgreSQL 17/18 各 289 项通过，原失败不删除。
