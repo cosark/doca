@@ -2,7 +2,7 @@
 
 用户报告未勾选的“已解决”仍可见。隔离数据复现了根因：Univer 0.25.1 在追加行后直接修改 `FilterModel` 范围，不发范围 mutation；Sheet 0.2.11 的共享模型仍保存原范围，checkpoint 恢复后，后续记录落在范围外。
 
-用户已明确同意此次范围处理规则，见[协作契约](../collaboration-sdk-contract.zh-CN.md)。实现位于相邻 Sheet 仓库的 `src/structuralSession.ts`，候选版本 0.2.12；宿主依赖仍为正式 0.2.11，尚未发布、安装或部署候选包。
+用户已明确同意此次范围处理规则，见[协作契约](../collaboration-sdk-contract.zh-CN.md)。实现位于相邻 Sheet 仓库的 `src/structuralSession.ts`，已正式发布为 0.2.12；Doca 0.2.11 精确接入该 npm 版本。以下保留候选阶段验证范围，正式宿主验收见末节。
 
 实现只在明确提交有效筛选条件时，把原列范围向下扩至最后一条有内容的记录。紧邻追加内容与范围扩展进入同一 schema-6 事务，一次撤销即可同时恢复。打开、取消、清除条件、纯样式或其他列内容不会扩大范围。远端和恢复投影先恢复已保存范围，再派生隐藏行，避免引擎的隐式扩展造成不同客户端范围不一致。
 
@@ -17,3 +17,9 @@
 所有执行日志、JSON、候选归档和截图保存在 Git 忽略目录 `artifacts/verification/sheet-filter-range/`。可复用模型测试在 Sheet 的 `src/nativeFilterSession.test.ts`，浏览器步骤在 `tests/filter-range-browser.cua.js`，隔离入口为 `demo/filter-range-test.tsx`（`?filter-range-test&packed&room=<unique>`；加 `append` 测追加）。未编辑用户文档或用户数据库。
 
 正式接入前保留 Sheet 0.2.11 制品及 Doca 的清单/锁文件，发布候选包后更新服务端和 Web 并执行宿主验收。回退保留新范围、后续内容、原 baseline、epoch、checkpoint 和 pending update；不以旧数据库覆盖新写入。前一包可读原生保存范围，但不修复之后的隐式扩展。
+
+## 正式 npm 与宿主验收
+
+正式 npm 0.2.12 的 75 个安装文件与公开归档逐字节一致，公开 exports、依赖及 14 个声明文件与 0.2.11 相同。运行时仅 yjs ESM/CJS 及其 sourcemap 改变；model、preferences、XLSX 字节不变。Doca 的冻结安装及 2046 条依赖策略校验通过，其他依赖版本未变。
+
+`scripts/qa-sheet-filter-range.mts` 在正式 Web、真实宿主传输和内存 SQLite 上，以两组合成工作簿验证有效条件确认和原生粘贴追加。两者均只增加一次服务端 seq，epoch 保持不变，对端不产生 update；一次原生撤销恢复范围及追加内容，重做与刷新后恢复持久范围。测试不会访问用户文档。初稿将原范围内状态全设成同值，确认实际等价清除条件，该诊断超时不能作为产品故障证据；已改成三状态有效条件，原日志保留在 artifacts。后续空闲和最终发布结果见对应发行验收记录。

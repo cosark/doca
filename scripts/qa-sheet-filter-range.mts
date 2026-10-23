@@ -135,7 +135,18 @@ const fixture = async (append: boolean) => {
   for (let row = 1; row <= (append ? 31 : 42); row++)
     cells[row] = {
       0: { v: "测试事项 " + row },
-      3: { v: row === 40 || row === 41 ? "已解决" : "待解决" },
+      3: {
+        v:
+          row <= 31
+            ? row <= 7
+              ? "待解决"
+              : row <= 9
+                ? "解决中"
+                : "已解决"
+            : row === 40 || row === 41
+              ? "已解决"
+              : "待解决",
+      },
     };
   return createContent(db).create(owner, {
     kind: "document",
@@ -164,7 +175,9 @@ const fixture = async (append: boolean) => {
           data: JSON.stringify({
             s: {
               ref: { startRow: 0, endRow: 31, startColumn: 0, endColumn: 3 },
-              filterColumns: [{ colId: 3, filters: { filters: ["待解决"] } }],
+              filterColumns: [
+                { colId: 3, filters: { filters: ["待解决", "解决中"] } },
+              ],
             },
           }),
         },
