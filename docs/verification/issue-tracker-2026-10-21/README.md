@@ -6,7 +6,7 @@
 
 来源：[📚 doca问题跟进](https://doca.heyphp.com/#/r/2b36ba23-b14a-458f-bffd-5c0ef9bee86b)。原快照（本地产物：`issues.json`）共59项，使用原表行号2–60。另只读保存[问题清单2.0](https://doca.heyphp.com/#/r/d470fbbe-6064-489f-a798-d8df8bfce20c)的6行快照（本地产物：`issues-v2.json`），使用其独立行号2–7；第4行包含5个评论子项，不混入原59行编号。
 
-**最终正式包及编译 Web 验收已完成：3335 项单测、类型及构建通过；原生两轮、Sheet 图库四轮、缩放 7 组、Canvas 原生 17 阶段/偏好 7 组、五格式评论、修复场景只读复开和打包 MV3 均通过。Doca 0.2.8 的 GitHub/DockerHub 发布与双架构镜像功能验收正在收尾；生产未部署。** UI 图片供应商 504 未返回图片、用量未知仍为外部限制，不自动重试。下文机器状态和逐行矩阵属于历史检查点，最新结论以 [npm-direct.md](npm-direct.md) 为准。
+**最终正式包及编译 Web 验收已完成：3335 项单测、类型及构建通过；原生两轮、Sheet 图库四轮、缩放 7 组、Canvas 原生 17 阶段/偏好 7 组、五格式评论、修复场景只读复开和打包 MV3 均通过。Doca 0.2.8 的 GitHub/DockerHub 发布与双架构镜像功能验收已完成，见[发布回执](release.md)；生产未部署。** UI 图片供应商 504 未返回图片、用量未知仍为外部限制，不自动重试。下文机器状态和逐行矩阵属于历史检查点，最新结论以 [npm-direct.md](npm-direct.md) 为准。
 
 ## 问题归属
 
@@ -76,7 +76,7 @@
 - 清单2.0行6：速记仅向已有授权富文本/Markdown追加纯文本，不用AI；目标和草稿仅在本次扩展视图内存保存。
 - 所有协作/删除/存储测试使用隔离合成文档与数据库；两份问题表只读。尚未执行本轮生产部署。
 
-## 逐行进度
+## 历史逐行检查点
 
 “通过”均限定于链接证据的检查和版本；行2/3/4/5/6/7/8/9/11/16/19/21/23/33/34/56已记录Canvas0.5.10安装组合的指定场景，其余按各自收据保留状态。当前官方Canvas0.5.12/Sheet0.2.9最后构建组合尚未验收。历史记录不因为问题表写着“已解决”就自动成为本轮验收。
 
@@ -142,7 +142,7 @@
 | 59 | Doca AI | 本轮网站检查通过（待最终包组合复跑） | [记录](ai-findings.md)、记录（本地产物：`ai-real-provider/results.json`）、记录（本地产物：`ai-real-provider/provider-requests.json`） |
 | 60 | Doca browser-scoped preferences、@smartdoca/canvas | 0.5.14 C1偏好7组通过（待正式对齐） | C1偏好（本地产物：`canvas-preferences-candidate-0.5.14-browser/results.json`）、官方偏好（本地产物：`canvas-preferences-official-0.5.12-browser/results.json`）、f2aa偏好7组（历史本地记录：`../../../.local/canvas-preferences-boundaries-final-2026-10-22/results.json`）、记录（本地产物：`coordination.json`） |
 
-## 最后编译Web与全量检查 — 2026-10-23
+## 历史检查点：编译Web与全量检查 — 2026-10-23
 
 此前冻结检查点为319个文件通过、2个文件跳过，3327项测试通过、7项跳过、0失败，见JSON（历史本地记录：`../../../.local/release-0.2.8/full-regression-final.json`）和日志（历史本地记录：`../../../.local/release-0.2.8/full-regression-final.log`）。JSON中的364是reporter suite计数，不是测试文件数。Web构建成功，index SHA256为bdf45a1b8fdfaa39a59e78df26fa9ab25ad83164d7dc9914ccfc5fbaaf0a2b64。
 
@@ -152,13 +152,13 @@
 
 两项已定位到Sheet原生边界：超链接焦点诊断（本地产物：`native-link-focus-failure/diagnosis.json`）证明前台页面仍有焦点时，原生DOCS_NORMAL抢回输入，显示文字留空而地址有效；图库卸载诊断（本地记录：`artifacts/verification/issue-tracker-2026-10-21/sheet-gallery-lifecycle-diagnostic/README.md`）证明Univer0.25.1验证提示的debounce完成回调在预览销毁后访问空workbook。图库普通4轮中2红2绿，额外待处理悬停/键盘关闭也失败。等待Sheet项目新包后，原生8组须两独立轮、图库完整5组至少4轮并覆盖待处理悬停关闭；旧失败收据保留。
 
-## Canvas官方原生与真实模型补验 — 2026-10-23
+## 历史检查点：Canvas官方原生与真实模型补验 — 2026-10-23
 
 另已核对官方Canvas0.5.12的独立范围：原生16阶段（本地产物：`canvas-official-0.5.12-browser/results.json`）15过、table撤销1失败；偏好7组（本地产物：`canvas-preferences-official-0.5.12-browser/results.json`）全部通过，6文档60秒零写。二者不能互相替代。表格焦点诊断（本地记录：`artifacts/verification/issue-tracker-2026-10-21/canvas-table-keyboard-diagnostic/README.md`）证明真实移动柄拖拽后焦点仍留在缩小button，Meta+z被0.5.12控件隔离过滤。三个几何指标通过不能把该场景标绿。PR18的两行修复仅在真实pointerdown归还本Canvas焦点，保留button/input隔离；0.5.13已正式安装且原16阶段/偏好7组通过，额外最小表格工具切换后撤销失败，见交付追加记录（本地产物：`subpackage-releases.json`）。
 
 Canvas0.5.12真实模型流程（本地产物：`ai-native-official-0.5.12-failure/diagnosis.json`）的手机、Web、三表两关系生成/review及网站reload零写通过，但续写删除重建了既有Text ID。独立review把“全部ID”弱化成核心ID误判通过，严格本地断言拦住整体失败，纠错/导出原轮未执行。原失败库保留；后续保留precontinue JSON的新合成板续写及明确补修/导出已取得指定范围收据，不重跑三次生成；原失败不改写，详见下节。既有outline的UTF16长度和review指令已加强，50项focused及1项document-read检查通过，无新API/字段/格式；它们不是实际续写通过。此轮语言/视觉有真实token消耗，生图调用0不等于全部模型零成本。
 
-## C1候选与后续AI补修 — 2026-10-23
+## 历史检查点：C1候选与后续AI补修 — 2026-10-23
 
 最新Canvas0.5.14 C1收据（本地产物：`canvas-candidate-0.5.14-acceptance.json`）在同一155文件、SHA256 ffd4201e877e36192b3982234c138d9c21a73c9cd6c27037eef582d92cfabb93上，原16加minimal-table共17阶段及偏好7组全部通过，errors为空，静置至少60秒零写。显式工具选择与自动complete的焦点处理分开，未放宽输入/控件隔离。原0.5.12/0.5.13失败保留，C1暂不等于正式0.5.14或最终编译Web。
 
@@ -181,7 +181,7 @@ AI续写补验（本地产物：`ai-native-guidance-recovery/diagnosis.json`）�
 
 ## 当前剩余范围（2026-10-23 最终验收后）
 
-- GitHub Release、部署资源与 DockerHub 双架构镜像正在发布，实际镜像功能、摘要及压缩大小以发布回执为准。
+- GitHub Release、部署资源与 DockerHub 双架构镜像已发布；功能、摘要及压缩大小见[发布回执](release.md)。
 - UI 生图外部限制：504 无返回图，网关取消且用量未知，未对账、不自动重试。数据保留、提示和禁重试处理已通过，不宣称 UI 生成成功。
 - Mastra memory 保留仍然必要的第三方反射补丁；当前 core 不具备新版 memory 所需的导出，不进行未经批准的 SDK/存储升级。五种编辑器已无本地补丁。
 - 生产站点未部署。关闭全部旧 sender、保留新旧队列和后续数据的升级/回退要求继续有效。

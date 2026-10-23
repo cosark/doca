@@ -37,9 +37,9 @@ Doca 原先仍引用已被子包否决的第一份 `7ff06a…` 本地候选。�
 
 同一最终包/锁文件/Web 上，原生 8 组两独立轮、图库 5 组四串行轮均通过，含延迟悬停及键盘关闭，页面错误 0。最终组合为 Canvas 0.5.14、Sheet 0.2.11、Slate 0.4.25、Markdown 0.4.4、Slides 0.3.0-alpha.4；Web index SHA256 `4e9e471f3033138ef4114d0462681e8982f1e4411edbdbca02c7bc0fe74dd376`。全量 320 个文件、3335 项通过，3 文件/10 项跳过。资源竞争下的并行渲染超时记录保留；单独渲染套件及限制两 worker 的完整重跑通过，没有放宽断言或产品限制。
 
-新增收据在 `artifacts/verification/sheet-zoom-2026-10-23/` 与 `artifacts/verification/npm-direct-2026-10-23/final/`。镜像清理、分层与增量下载见[专门记录](image-size.md)。完整镜像双架构功能验收和 GitHub/DockerHub 发布仍待完成。
+新增收据在 `artifacts/verification/sheet-zoom-2026-10-23/` 与 `artifacts/verification/npm-direct-2026-10-23/final/`。镜像清理、分层与增量下载见[专门记录](image-size.md)。完整镜像双架构功能验收和 GitHub/DockerHub 发布已完成，见[最终发布回执](release.md)。
 
-Mastra memory 是仍然需要的第三方 SDK 补丁，已核对其反射修复及当前 core 缺少的导出，不能仅删除保护；详见 [补丁说明](../../../patches/README.md)。本记录不声明 Doca 0.2.8 已发布到 GitHub/DockerHub，也不声明生产站点已升级。原 UI 图片请求的供应商未知用量和未返回图片仍是独立外部限制，禁止自动重试。
+Mastra memory 是仍然需要的第三方 SDK 补丁，已核对其反射修复及当前 core 缺少的导出，不能仅删除保护；详见 [补丁说明](../../../patches/README.md)。Doca 0.2.8 已发布 GitHub/DockerHub；生产站点未升级。原 UI 图片请求的供应商未知用量和未返回图片仍是独立外部限制，禁止自动重试。
 
 ## 最终编译网站的其余验收
 
@@ -49,7 +49,7 @@ AI 修复后精确场景在新合成文档只读复开：保留全部 41 个 ID�
 
 五格式评论全部通过，含实际键盘、上传/发送状态、草稿与分页；嵌入式 390px 手机视图检查通过，至少 61 秒零正文更新、页面异常 0。实际打包 MV3 的浏览器与服务端两份报告均通过，包含图片原字节、登录/退出/撤权、账号隔离、待发送恢复和速记；付费模型请求 0、用户数据使用 false。扩展 ZIP SHA256 `8238cdc375f5040ca0ab2877c9bee26afa540c1a110c884f9c1f6430cf702db3`，打包资源 SHA256 `a9123b3fa2341c2addd5a62b3c23f2fdbf330907ca7ea4d9120f3c070918f748`。
 
-精确收据分别位于 `final/canvas-native-2/`、`final/canvas-preferences/`、`final/ai-native-readonly/`、`final/comments/` 和 `final/extension/`。源文档和项目/全局技能引用已经同步。GitHub/DockerHub 发布状态及双架构实际大小将以最终发布回执为准；生产站点没有由本轮升级。
+精确收据分别位于 `final/canvas-native-2/`、`final/canvas-preferences/`、`final/ai-native-readonly/`、`final/comments/` 和 `final/extension/`。源文档和项目/全局技能引用已经同步。GitHub/DockerHub 已发布，双架构实际大小见[最终回执](release.md)；生产站点没有由本轮升级。
 
 
-远端首轮 PostgreSQL 检查暴露干净检出未构建扩展资源：扩展下载测试因缺少 `generated/` 返回 500，其余数据库检查通过。测试现先构建实际扩展，并校验 ZIP 含助手 JS/CSS；不新增运行时回退。SQLite 14 项通过；从缺少 generated 目录开始，PostgreSQL 17/18 各 14 项独立通过，重建的 100 个资源与已验收 MV3 字节一致。远端最终结果另记，原失败不删除。
+远端首轮 PostgreSQL 检查暴露干净检出未构建扩展资源：扩展下载测试因缺少 `generated/` 返回 500，其余数据库检查通过。测试现先构建实际扩展，并校验 ZIP 含助手 JS/CSS；不新增运行时回退。SQLite 14 项通过；从缺少 generated 目录开始，PostgreSQL 17/18 各 14 项独立通过，重建的 100 个资源与已验收 MV3 字节一致。远端最终 PostgreSQL 17/18 各 289 项通过，原失败不删除。
