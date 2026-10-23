@@ -6,7 +6,9 @@ import { createContent } from "@core/workflows/resources.js";
 import { aiDefaults, saveAIConfig } from "@core/modules/ai/config.js";
 import { createApp } from "@server/app/create-app.js";
 import { mockAI } from "./ai-mock.js";
-import { sessionSources } from "@server/services/ai/runner.js";
+import { sessionSources, createAIRunner } from "@server/services/ai/runner.js";
+import { databaseDriver, registerDriver } from "@db/transactions.js";
+import { inheritDatabaseRuntimeScope } from "@db/runtime-scope.js";
 
 it("detaches deleted document sources while preserving chat history and allowing another message", async () => {
   const db = await openTestDatabase({ driver: "sqlite", path: ":memory:" });
@@ -76,3 +78,45 @@ it("does not detach an existing source whose access was revoked even when author
     await db.destroy();
   }
 });
+
+
+it("waits for an in-flight queue claim before completing runner shutdown", async () => {
+  const db = await openTestDatabase({ driver: "sqlite", path: ":memory:" });
+  let entered!: () => void, release!: () => void;
+  const paused = new Promise<void>((resolve) => { entered = resolve; });
+  const proceed = new Promise<void>((resolve) => { release = resolve; });
+  const gated = new Set<object>();
+  let first = true;
+  const observed = db.withPlugin({
+    transformQuery({ node, queryId }) {
+      const text = JSON.stringify(node);
+      if (first && node.kind === "SelectQueryNode" && text.includes('"name":"ai_jobs"') && text.includes('"name":"lease_until"')) {
+        first = false;
+        gated.add(queryId);
+      }
+      return node;
+    },
+    async transformResult({ result, queryId }) {
+      if (gated.has(queryId)) { entered(); await proceed; }
+      return result;
+    },
+  });
+  registerDriver(observed, databaseDriver(db));
+  inheritDatabaseRuntimeScope(db, observed);
+  const runner = createAIRunner(observed);
+  const pumping = runner.pump();
+  let closing: Promise<void> | undefined;
+  try {
+    await paused;
+    closing = runner.close();
+    expect(await Promise.race([
+      closing.then(() => "closed"),
+      new Promise<string>((resolve) => setTimeout(() => resolve("waiting"), 100)),
+    ])).toBe("waiting");
+  } finally {
+    release();
+    await pumping;
+    await (closing ?? runner.close());
+    await db.destroy();
+  }
+}, 10000);

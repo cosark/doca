@@ -425,6 +425,7 @@ export function createAIRunner(
   let memoryPromise: Promise<AIMemory> | undefined,
     stopping = false,
     pumping = false;
+  let pumpingDone: Promise<void> = Promise.resolve();
   const active = new Map<
     string,
     { controller: AbortController; done: Promise<void> }
@@ -7410,6 +7411,8 @@ export function createAIRunner(
     }
     if (stopping || pumping || active.size >= concurrency) return;
     pumping = true;
+    let finishPump!: () => void;
+    pumpingDone = new Promise<void>((resolve) => { finishPump = resolve; });
     try {
       // An expired invocation may have reached a provider; never replay it blindly.
       const recoverable = await db
@@ -7624,6 +7627,7 @@ export function createAIRunner(
       }
     } finally {
       pumping = false;
+      finishPump();
     }
   }
   const timer = setInterval(() => void pump().catch(() => {}), 1000);
@@ -7642,6 +7646,9 @@ export function createAIRunner(
       stopping = true;
       clearInterval(timer);
       await reconcilingContinuations;
+      // An in-flight pump can still claim a job and add it to active.
+      // Drain it before taking the shutdown snapshot or closing the database.
+      await pumpingDone;
       for (const r of active.values()) r.controller.abort();
       await Promise.allSettled([...active.values()].map((r) => r.done));
       if (memoryPromise) await (await memoryPromise).close();

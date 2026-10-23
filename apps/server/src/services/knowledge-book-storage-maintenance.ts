@@ -140,8 +140,11 @@ async function replace(
   if (Number(result.numUpdatedRows) !== 1)
     throw new Error("Payload changed during offline conversion");
 }
-async function createInlineStructure(db: Kysely<any>) {
-  await createCurrentStructure(db);
+async function createInlineStructure(
+  db: Kysely<any>,
+  targetDriver = databaseDriver(db),
+) {
+  await createCurrentStructure(db, targetDriver);
   for (const name of [...bookPayloadTables].reverse())
     await sql.raw(`drop table ${name}`).execute(db);
 }

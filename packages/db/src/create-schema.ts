@@ -1,5 +1,8 @@
 import { createMcpStructure, mcpTables } from "./mcp-schema.js";
-import { createBrowserClipperStructure, browserClipperTables } from "./browser-clipper-schema.js";
+import {
+  createBrowserClipperStructure,
+  browserClipperTables,
+} from "./browser-clipper-schema.js";
 import {
   BOOK_PAYLOAD_BASELINE,
   BOOK_PAYLOAD_UPGRADE,
@@ -27,7 +30,7 @@ import { inheritDatabaseRuntimeScope } from "./runtime-scope.js";
 import { pluginStorageDeclarationParser } from "./plugin-storage-format.js";
 import type { DB } from "./schema.js";
 
-const schemaStatements = [
+const schemaStatements = (targetDriver: "sqlite" | "postgres") => [
   `CREATE TABLE IF NOT EXISTS "plugin_webview_auth" ("id" varchar(64) primary key,"kind" varchar(16) not null,"plugin_id" varchar(100) not null,"parent_session" varchar(64) not null,"expires_at" varchar(32) not null);`,
   `CREATE TABLE IF NOT EXISTS "navigation_settings" ("id" varchar(16) primary key, "revision" integer not null, "draft" text not null, "published" text not null);`,
   `CREATE TABLE IF NOT EXISTS "plugin_registry" ("id" varchar(16) primary key, "revision" integer not null, "state" text not null);`,
@@ -68,7 +71,7 @@ const schemaStatements = [
   `CREATE TABLE IF NOT EXISTS "user_preferences" ("user_id" varchar(36) primary key references "users" ("id"), "avatar" varchar(24) not null, "theme" varchar(16) not null, "density" varchar(16) not null, "default_sort" varchar(24) not null, "sort_order" varchar(4) not null, "version" integer not null, "avatar_asset_id" varchar(36));`,
   `CREATE TABLE IF NOT EXISTS "user_presence" ("user_id" varchar(36) primary key references "users" ("id"), "last_seen_at" varchar(32) not null);`,
   `CREATE TABLE IF NOT EXISTS "storage_profiles" ("id" varchar(64) primary key, "active" integer not null, "created_at" varchar(32) not null);`,
-  `CREATE TABLE IF NOT EXISTS "assets" ("id" varchar(36) primary key, "owner_id" varchar(36) not null references "users" ("id"), "resource_id" varchar(36) references "resources" ("id"), "purpose" varchar(16) not null, "profile_id" varchar(64) not null references "storage_profiles" ("id"), "object_key" varchar(512) not null, "filename" varchar(255) not null, "mime" varchar(128) not null, "size" integer not null, "created_at" varchar(32) not null, "deleted_at" varchar(32), "uploaded_by" text);`,
+  `CREATE TABLE IF NOT EXISTS "assets" ("id" varchar(36) primary key, "owner_id" varchar(36) not null references "users" ("id"), "resource_id" varchar(36) references "resources" ("id"), "purpose" varchar(${targetDriver === "postgres" ? 32 : 16}) not null, "profile_id" varchar(64) not null references "storage_profiles" ("id"), "object_key" varchar(512) not null, "filename" varchar(255) not null, "mime" varchar(128) not null, "size" integer not null, "created_at" varchar(32) not null, "deleted_at" varchar(32), "uploaded_by" text);`,
   `CREATE INDEX "assets_resource" on "assets" ("resource_id", "deleted_at");`,
   `CREATE TABLE IF NOT EXISTS "document_states" ("resource_id" varchar(36) primary key references "resources" ("id"), "codec" varchar(64) not null, "checkpoint" text not null, "checkpoint_seq" integer not null, "seq" integer not null, "text" text not null, "updated_at" varchar(32) not null);`,
   `CREATE TABLE IF NOT EXISTS "document_updates" ("resource_id" varchar(36) not null references "resources" ("id"), "seq" integer not null, "data" text not null, "author_id" varchar(36) not null references "users" ("id"), "created_at" varchar(32) not null, constraint "document_updates_pk" primary key ("resource_id", "seq"));`,
@@ -430,8 +433,11 @@ async function validatePluginStorageFormat(db: Kysely<any>) {
 }
 
 /** Latest structure only. Used for both fresh databases and upgrade planning. */
-export async function createCurrentStructure(db: Kysely<any>) {
-  for (const statement of schemaStatements)
+export async function createCurrentStructure(
+  db: Kysely<any>,
+  targetDriver = databaseDriver(db),
+) {
+  for (const statement of schemaStatements(targetDriver))
     await sql.raw(statement).execute(db);
   await createFileSchema(db);
   await createDiscoverySchema(db);
@@ -449,9 +455,10 @@ export async function createCurrentStructure(db: Kysely<any>) {
     .execute(db);
 }
 
-// These declarations authorize additive changes within the current compatibility generation.
+// Approved native attributes and additive changes within the current compatibility generation.
 // Historical values come from the latest DDL; installed footprints prevent repairing lost data as an upgrade.
 export const schemaEvolution = {
+  alignColumns: true,
   newTables: [
     ...browserClipperTables,
     ...mcpTables,

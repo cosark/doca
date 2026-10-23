@@ -1,22 +1,33 @@
 import Sqlite from "better-sqlite3";
 import { Kysely, SqliteDialect, sql } from "kysely";
 import { databaseDriver, registerDriver } from "./transactions.js";
+import { fixedSqliteColumn } from "./column-definition.js";
 
-type Column = { signature: string; definition: string };
+type Column = {
+  signature: string;
+  definition: string;
+  dataType?: string;
+  nullable?: boolean;
+  defaultValue?: string | null;
+  fixed?: string;
+};
 type Index = { signature: string; ddl: string; unique: boolean };
 type Table = {
   ddl: string;
+  options?: string;
   columns: Map<string, Column>;
   constraints: string[];
   indexes: Map<string, Index>;
 };
 type Catalog = Map<string, Table>;
 export type SchemaPolicy = {
+  alignColumns?: boolean;
   newTables: readonly string[];
   newColumns: readonly string[];
 };
 export type SchemaChange = {
-  kind: "create_table" | "add_column" | "create_index" | "review";
+  kind:
+    "create_table" | "add_column" | "create_index" | "alter_column" | "review";
   table: string;
   column?: string;
   reason?: string;
@@ -94,7 +105,13 @@ function sqliteTable(ddl: string): Table {
       });
     }
   }
-  return { ddl, columns, constraints: constraints.sort(), indexes: new Map() };
+  return {
+    ddl,
+    options: normalize(ddl.slice(ddl.lastIndexOf(")") + 1)),
+    columns,
+    constraints: constraints.sort(),
+    indexes: new Map(),
+  };
 }
 async function sqliteCatalog(db: Kysely<any>): Promise<Catalog> {
   const rows = await sql<{
@@ -102,7 +119,7 @@ async function sqliteCatalog(db: Kysely<any>): Promise<Catalog> {
     tbl_name: string;
     type: string;
     sql: string;
-  }>`select name,tbl_name,type,sql from sqlite_schema where type in ('table','index','view') and name not like 'sqlite_%' order by rowid`.execute(
+  }>`select name,tbl_name,type,sql from sqlite_schema where type in ('table','index','view','trigger') and name not like 'sqlite_%' order by rowid`.execute(
     db,
   );
   const catalog: Catalog = new Map();
@@ -119,6 +136,34 @@ async function sqliteCatalog(db: Kysely<any>): Promise<Catalog> {
               indexes: new Map(),
             },
       );
+  for (const [name, table] of catalog) {
+    if (!table.columns.size) continue;
+    const columns = await sql
+      .raw<{
+        name: string;
+        type: string;
+        notnull: number;
+        dflt_value: string | null;
+      }>(`pragma table_xinfo(${quote(name)})`)
+      .execute(db);
+    for (const row of columns.rows) {
+      const column = table.columns.get(row.name);
+      if (!column) continue;
+      const fixed = fixedSqliteColumn(column.definition);
+      Object.assign(column, {
+        signature: JSON.stringify([
+          normalize(row.type),
+          !row.notnull,
+          row.dflt_value === null ? null : normalize(row.dflt_value),
+          fixed === undefined ? normalize(column.definition) : normalize(fixed),
+        ]),
+        dataType: normalize(row.type),
+        nullable: !row.notnull,
+        defaultValue: row.dflt_value,
+        fixed: fixed === undefined ? undefined : normalize(fixed),
+      });
+    }
+  }
   for (const row of rows.rows)
     if (row.type === "index" && row.sql)
       catalog.get(row.tbl_name)?.indexes.set(row.name, {
@@ -138,9 +183,11 @@ async function postgresCatalog(
     type: string;
     nullable: boolean;
     default_value: string | null;
+    fixed: string;
   }>`
     select c.relname as table_name,a.attname as column_name,format_type(a.atttypid,a.atttypmod) as type,
-      not a.attnotnull as nullable,pg_get_expr(d.adbin,d.adrelid) as default_value
+      not a.attnotnull as nullable,pg_get_expr(d.adbin,d.adrelid) as default_value,
+      concat(a.attcollation, ':', a.attidentity, ':', a.attgenerated) as fixed
     from pg_class c join pg_namespace n on n.oid=c.relnamespace
     join pg_attribute a on a.attrelid=c.oid and a.attnum>0 and not a.attisdropped
     left join pg_attrdef d on d.adrelid=c.oid and d.adnum=a.attnum
@@ -163,7 +210,16 @@ async function postgresCatalog(
       definition:
         source.get(row.table_name)?.columns.get(row.column_name)?.definition ??
         "",
-      signature: JSON.stringify([row.type, row.nullable, row.default_value]),
+      signature: JSON.stringify([
+        row.type,
+        row.nullable,
+        row.default_value,
+        row.fixed,
+      ]),
+      dataType: row.type,
+      nullable: row.nullable,
+      defaultValue: row.default_value,
+      fixed: row.fixed,
     });
   }
   // PostgreSQL 18 also lists NOT NULL in pg_constraint. Nullability is already
@@ -199,12 +255,21 @@ async function postgresCatalog(
     });
   return catalog;
 }
+type TargetDriver = ReturnType<typeof databaseDriver>;
+// The reference runs on SQLite, but emits the same engine-specific current DDL
+// as fresh creation. This is target selection, never an old-schema conversion.
+type CreateStructure = (
+  db: Kysely<any>,
+  targetDriver?: TargetDriver,
+) => Promise<void>;
 const sourcePromises = new WeakMap<
-  (db: Kysely<any>) => Promise<void>,
-  Promise<Catalog>
+  CreateStructure,
+  Map<TargetDriver, Promise<Catalog>>
 >();
-function latestSource(create: (db: Kysely<any>) => Promise<void>) {
-  let pending = sourcePromises.get(create);
+function latestSource(create: CreateStructure, targetDriver: TargetDriver) {
+  let sources = sourcePromises.get(create);
+  if (!sources) sourcePromises.set(create, (sources = new Map()));
+  let pending = sources.get(targetDriver);
   if (pending) return pending;
   pending = (async () => {
     const db = new Kysely<any>({
@@ -212,13 +277,13 @@ function latestSource(create: (db: Kysely<any>) => Promise<void>) {
     });
     registerDriver(db, "sqlite");
     try {
-      await create(db);
+      await create(db, targetDriver);
       return await sqliteCatalog(db);
     } finally {
       await db.destroy();
     }
   })();
-  sourcePromises.set(create, pending);
+  sources.set(targetDriver, pending);
   return pending;
 }
 async function latestPostgres(db: Kysely<any>, source: Catalog) {
@@ -251,6 +316,7 @@ export function planSchemaChanges(
   actual: Catalog,
   target: Catalog,
   policy: SchemaPolicy,
+  driver: "sqlite" | "postgres" = "sqlite",
 ): SchemaChange[] {
   const changes: SchemaChange[] = [];
   for (const [name, expected] of target) {
@@ -268,6 +334,12 @@ export function planSchemaChanges(
             },
       );
     } else {
+      if (found.options !== expected.options)
+        changes.push({
+          kind: "review",
+          table: name,
+          reason: "table options changed",
+        });
       const added: string[] = [];
       for (const [column, definition] of expected.columns) {
         const current = found.columns.get(column);
@@ -296,15 +368,40 @@ export function planSchemaChanges(
                 },
           );
           if (safe) added.push(column);
-        } else if (current.signature !== definition.signature)
+        } else if (current.signature !== definition.signature) {
+          const oldWidth = current.dataType?.match(
+              /^character varying\((\d+)\)$/,
+            ),
+            newWidth = definition.dataType?.match(
+              /^character varying\((\d+)\)$/,
+            );
+          const safeType =
+            current.dataType === definition.dataType ||
+            (oldWidth && newWidth && Number(newWidth[1]) > Number(oldWidth[1]));
+          const unsupportedDefault =
+            driver === "sqlite" &&
+            current.defaultValue !== definition.defaultValue;
+          const safe =
+            !unsupportedDefault &&
+            policy.alignColumns &&
+            current.fixed !== undefined &&
+            current.fixed === definition.fixed &&
+            safeType;
           changes.push({
-            kind: "review",
+            kind: safe ? "alter_column" : "review",
             table: name,
             column,
-            reason: "column type, default or constraints changed",
+            reason: safe
+              ? "align approved column attributes"
+              : unsupportedDefault &&
+                  safeType &&
+                  current.fixed === definition.fixed
+                ? "SQLite DEFAULT changes require review; native ALTER COLUMN does not support them"
+                : "column type, default or constraints changed",
             installed: current.signature,
             target: definition.signature,
           });
+        }
       }
       for (const column of found.columns.keys())
         if (!expected.columns.has(column))
@@ -373,16 +470,21 @@ export function planSchemaChanges(
 /** Caller owns the transaction and schema lock. Never partly apply a plan needing review. */
 async function schemaContext(
   db: Kysely<any>,
-  create: (db: Kysely<any>) => Promise<void>,
+  create: CreateStructure,
   policy: SchemaPolicy,
 ) {
-  const source = await latestSource(create),
+  const source = await latestSource(create, databaseDriver(db)),
     pg = databaseDriver(db) === "postgres";
   const actual = pg
     ? await postgresCatalog(db, source)
     : await sqliteCatalog(db);
   const target = pg ? await latestPostgres(db, source) : source;
-  const changes = planSchemaChanges(actual, target, policy);
+  const changes = planSchemaChanges(
+    actual,
+    target,
+    policy,
+    pg ? "postgres" : "sqlite",
+  );
   if (actual.get("schema_baseline")?.columns.has("structure_json")) {
     const previous = (
       await sql<{
@@ -416,12 +518,12 @@ async function schemaContext(
           });
     }
   }
-  return { source, target, changes, pg };
+  return { source, actual, target, changes, pg };
 }
 
 export async function inspectSchema(
   db: Kysely<any>,
-  create: (db: Kysely<any>) => Promise<void>,
+  create: CreateStructure,
   policy: SchemaPolicy,
 ) {
   return (await schemaContext(db, create, policy)).changes;
@@ -429,18 +531,54 @@ export async function inspectSchema(
 
 export async function reconcileSchema(
   db: Kysely<any>,
-  create: (db: Kysely<any>) => Promise<void>,
+  create: CreateStructure,
   policy: SchemaPolicy,
 ) {
-  const { source, target, changes, pg } = await schemaContext(
+  const { source, actual, target, changes, pg } = await schemaContext(
     db,
     create,
     policy,
   );
   if (changes.some((c) => c.kind === "review"))
     throw new SchemaReviewRequired(changes);
+  const altering = changes.filter((change) => change.kind === "alter_column");
+  if (pg && altering.length)
+    await sql
+      .raw(
+        `lock table ${[...new Set(altering.map((c) => c.table))].sort().map(quote).join(",")} in access exclusive mode`,
+      )
+      .execute(db);
+  // Validate all tightened attributes before any persistent DDL.
+  for (const change of altering) {
+    const current = actual.get(change.table)!.columns.get(change.column!)!;
+    const next = target.get(change.table)!.columns.get(change.column!)!;
+    if (
+      current.nullable &&
+      !next.nullable &&
+      (
+        await sql
+          .raw(
+            `select 1 from ${quote(change.table)} where ${quote(change.column!)} is null limit 1`,
+          )
+          .execute(db)
+      ).rows.length
+    )
+      throw new SchemaReviewRequired([
+        {
+          ...change,
+          kind: "review",
+          reason:
+            "existing NULL values prevent NOT NULL; no values were filled or changed",
+        },
+      ]);
+  }
   // Create all tables before indexes. Source table order retains FK dependencies.
-  for (const kind of ["create_table", "add_column", "create_index"] as const)
+  for (const kind of [
+    "create_table",
+    "add_column",
+    "alter_column",
+    "create_index",
+  ] as const)
     for (const change of changes
       .filter((c) => c.kind === kind)
       .sort((a, b) =>
@@ -448,12 +586,34 @@ export async function reconcileSchema(
           ? [...source.keys()].indexOf(a.table) -
             [...source.keys()].indexOf(b.table)
           : 0,
-      ))
-      await sql.raw(change.sql!).execute(db);
+      )) {
+      if (kind === "alter_column") {
+        const current = actual.get(change.table)!.columns.get(change.column!)!;
+        const next = target.get(change.table)!.columns.get(change.column!)!;
+        const prefix = `alter table ${quote(change.table)} alter column ${quote(change.column!)}`;
+        if (current.dataType !== next.dataType)
+          await sql.raw(`${prefix} type ${next.dataType}`).execute(db);
+        if (current.defaultValue !== next.defaultValue)
+          await sql
+            .raw(
+              `${prefix} ${next.defaultValue === null ? "drop default" : "set default " + next.defaultValue}`,
+            )
+            .execute(db);
+        if (current.nullable !== next.nullable)
+          await sql
+            .raw(`${prefix} ${next.nullable ? "drop" : "set"} not null`)
+            .execute(db);
+      } else await sql.raw(change.sql!).execute(db);
+    }
   const checked = pg
     ? await postgresCatalog(db, source)
     : await sqliteCatalog(db);
-  const remaining = planSchemaChanges(checked, target, policy);
+  const remaining = planSchemaChanges(
+    checked,
+    target,
+    policy,
+    pg ? "postgres" : "sqlite",
+  );
   if (remaining.length) throw new SchemaReviewRequired(remaining);
   await recordSchemaStructure(db, create);
   return changes;
@@ -462,9 +622,9 @@ export async function reconcileSchema(
 /** Record only the currently installed footprint, never an accumulating migration history. */
 export async function recordSchemaStructure(
   db: Kysely<any>,
-  create: (db: Kysely<any>) => Promise<void>,
+  create: CreateStructure,
 ) {
-  const source = await latestSource(create);
+  const source = await latestSource(create, databaseDriver(db));
   const footprint = Object.fromEntries(
     [...source].map(([name, table]) => [name, [...table.columns.keys()]]),
   );
