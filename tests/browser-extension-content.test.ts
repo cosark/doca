@@ -17,6 +17,7 @@ async function fixture(replies: any[]) {
     runScripts: "outside-only",
   });
   const calls: any[] = [];
+  const messageListeners: any[] = [];
   const listeners = new Map<string, (event: any) => void>();
   const original = dom.window.document.addEventListener.bind(
     dom.window.document,
@@ -37,7 +38,9 @@ async function fixture(replies: any[]) {
     chrome: {
       runtime: {
         id: "fixture",
-        onMessage: { addListener() {} },
+        onMessage: {
+          addListener: (listener: any) => messageListeners.push(listener),
+        },
         sendMessage: async (message: any) => {
           calls.push(message);
           const reply = replies.shift();
@@ -77,6 +80,7 @@ async function fixture(replies: any[]) {
   return {
     dom,
     calls,
+    messageListeners,
     shadow,
     icon,
     save,
@@ -95,6 +99,37 @@ const connected = (
     assistantEnabled: true,
     profiles,
   },
+});
+
+it("keeps one capture receiver and toolbar when navigation recovery overlaps declarative injection", async () => {
+  const f = await fixture([connected()]);
+  try {
+    f.dom.window.eval(source);
+    expect(f.messageListeners).toHaveLength(1);
+    expect(
+      f.dom.window.document.querySelectorAll("[data-doca-capture-ui]"),
+    ).toHaveLength(1);
+    await f.open();
+    expect(f.calls).toHaveLength(1);
+    const capture = {
+      mode: "page",
+      url: "https://source.test/next",
+      markdown: "Next page",
+      images: [],
+    };
+    (f.dom.window as any).DocaCapture = { capture: () => capture };
+    let response: any;
+    f.messageListeners[0](
+      { type: "snapshot", mode: "page" },
+      {},
+      (value: any) => {
+        response = value;
+      },
+    );
+    expect(response).toEqual({ ok: true, value: capture });
+  } finally {
+    f.close();
+  }
 });
 
 it("retries a transient state failure without leaving both toolbar actions disabled", async () => {

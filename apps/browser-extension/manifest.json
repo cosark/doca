@@ -1,10 +1,10 @@
 {
   "manifest_version": 3,
   "name": "Doca Browser Assistant",
-  "version": "0.2.0",
+  "version": "0.2.1",
   "minimum_chrome_version": "116",
   "description": "Capture selected content and complete pages with original images, and use your Doca AI assistant.",
-  "permissions": ["storage", "activeTab", "sidePanel"],
+  "permissions": ["storage", "activeTab", "sidePanel", "scripting"],
   "host_permissions": ["http://*/*", "https://*/*"],
   "background": {
     "service_worker": "background.js",

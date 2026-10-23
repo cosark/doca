@@ -1,4 +1,7 @@
 (() => {
+  // Declarative document_idle injection can overlap an on-demand capture.
+  if (globalThis.docaContentScriptInstalled) return;
+  globalThis.docaContentScriptInstalled = true;
   let range = null,
     host = null,
     snapshot = null;

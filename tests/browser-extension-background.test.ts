@@ -77,6 +77,140 @@ function runtime() {
     handle: (message: any, sender: any) => context.handle(message, sender),
   };
 }
+it("recovers a missing capture receiver after navigation without reloading the page", async () => {
+  const r = runtime();
+  const capture = {
+    mode: "page",
+    url: "https://source.test/next",
+    markdown: "Next page",
+    images: [],
+  };
+  const calls: unknown[] = [];
+  let installed = false;
+  r.context.chrome.tabs.get = async (id: number) => ({ id, url: capture.url });
+  r.context.chrome.tabs.sendMessage = async (
+    id: number,
+    message: unknown,
+    options: unknown,
+  ) => {
+    calls.push({ id, message, options });
+    if (!installed)
+      throw Error(
+        "Could not establish connection. Receiving end does not exist.",
+      );
+    return { ok: true, value: capture };
+  };
+  r.context.chrome.scripting = {
+    executeScript: async (input: unknown) => {
+      calls.push(input);
+      installed = true;
+    },
+  };
+  await expect(r.context.snapshot("page", 7)).resolves.toEqual({
+    capture,
+    tabId: 7,
+  });
+  expect(calls).toEqual([
+    {
+      id: 7,
+      message: { type: "snapshot", mode: "page" },
+      options: { frameId: 0 },
+    },
+    {
+      target: { tabId: 7, frameIds: [0] },
+      files: ["capture.js", "select.js", "content.js"],
+      injectImmediately: true,
+    },
+    {
+      id: 7,
+      message: { type: "snapshot", mode: "page" },
+      options: { frameId: 0 },
+    },
+  ]);
+  await r.context.snapshot("page", 7);
+  expect(calls).toHaveLength(4);
+});
+
+it("recovers when only an unrelated content listener responds with no capture", async () => {
+  const r = runtime();
+  const capture = {
+    mode: "page",
+    url: "https://source.test/next",
+    markdown: "Next page",
+    images: [],
+  };
+  r.context.chrome.tabs.get = async (id: number) => ({ id, url: capture.url });
+  let installed = false;
+  r.context.chrome.tabs.sendMessage = async () =>
+    installed ? { ok: true, value: capture } : undefined;
+  r.context.chrome.scripting = {
+    executeScript: async () => {
+      installed = true;
+    },
+  };
+  await expect(r.context.snapshot("page", 7)).resolves.toEqual({
+    capture,
+    tabId: 7,
+  });
+});
+
+it("does not reinstall scripts for a capture error or inject into restricted pages", async () => {
+  const r = runtime();
+  let injections = 0;
+  r.context.chrome.scripting = {
+    executeScript: async () => {
+      injections++;
+    },
+  };
+  r.context.chrome.tabs.get = async (id: number) => ({
+    id,
+    url: "https://source.test/next",
+  });
+  r.context.chrome.tabs.sendMessage = async () => ({
+    ok: false,
+    error: "clipper_selection_missing",
+  });
+  await expect(r.context.snapshot("selection", 7)).rejects.toThrow(
+    "clipper_selection_missing",
+  );
+  expect(injections).toBe(0);
+  r.context.chrome.tabs.get = async (id: number) => ({
+    id,
+    url: "chrome://settings",
+  });
+  await expect(r.context.snapshot("page", 7)).rejects.toThrow(
+    "clipper_page_unsupported",
+  );
+  expect(injections).toBe(0);
+});
+
+it("stops after one recovery attempt when injection is denied or navigation loses the receiver again", async () => {
+  for (const denied of [false, true]) {
+    const r = runtime();
+    let injections = 0,
+      messages = 0;
+    r.context.chrome.tabs.get = async (id: number) => ({
+      id,
+      url: "https://source.test/next",
+    });
+    r.context.chrome.tabs.sendMessage = async () => {
+      messages++;
+      throw Error("no receiver");
+    };
+    r.context.chrome.scripting = {
+      executeScript: async () => {
+        injections++;
+        if (denied) throw Error("Cannot access contents of the page");
+      },
+    };
+    await expect(r.context.snapshot("page", 7)).rejects.toThrow(
+      "clipper_page_unsupported",
+    );
+    expect(injections).toBe(1);
+    expect(messages).toBe(denied ? 1 : 2);
+  }
+});
+
 it("recognizes extension UI opened in a tab and denies privileged page messages", async () => {
   const r = runtime(),
     ui = {
