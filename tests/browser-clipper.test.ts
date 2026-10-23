@@ -741,6 +741,7 @@ it("downloads a complete private package without caching secrets or changing the
     "icon.png",
     "generated/assistant.js",
     "generated/assistant.css",
+    "image-processing.js",
   ])
     expect(files[name]?.length).toBeGreaterThan(0);
   const manifest = JSON.parse(new TextDecoder().decode(files["manifest.json"]));

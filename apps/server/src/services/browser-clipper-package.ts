@@ -3,6 +3,7 @@ import { zipSync, strToU8 } from "fflate";
 const files = [
   "manifest.json",
   "background.js",
+  "image-processing.js",
   "content.js",
   "select.js",
   "login-bridge.js",
@@ -68,7 +69,7 @@ export async function browserExtensionPackage() {
         entries.find(([name]) => name === "manifest.json")![1],
       ),
     );
-    // Automatic selection tools and original-image transfers require HTTP(S) site access.
+    // The page toolbar and image transfers require HTTP(S) site access.
     // Authentication and destinations remain restricted to the configured Doca origin.
     manifest.host_permissions = ["http://*/*", "https://*/*"];
     return Buffer.from(

@@ -20,6 +20,7 @@ const source = fileURLToPath(
 for (const name of [
   "manifest.json",
   "background.js",
+  "image-processing.js",
   "capture.js",
   "select.js",
   "content.js",

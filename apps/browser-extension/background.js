@@ -1,3 +1,9 @@
+import {
+  prepareCaptureImage,
+  readCaptureImageResponse,
+  MAX_IMAGE_SOURCE_BYTES,
+} from "./image-processing.js";
+
 const local = chrome.storage.local,
   session = chrome.storage.session;
 const storageReady = Promise.all([
@@ -566,31 +572,26 @@ async function begin(capture, profileId, tabId, profileRevision) {
   return pending;
 }
 async function bytes(image, tabId) {
+  let data;
   try {
     const response = await fetch(image.url, {
       credentials: "include",
       redirect: "follow",
     });
-    if (!response.ok) throw Error("clipper_image_failed");
-    const data = new Uint8Array(await response.arrayBuffer());
-    if (!data.length || data.length > 20 * 1024 ** 2)
-      throw Error("clipper_image_invalid");
-    return data;
+    data = await readCaptureImageResponse(response);
   } catch (error) {
-    if (!tabId) throw error;
+    if (!tabId || error.message === "clipper_image_invalid") throw error;
     const fallback = await chrome.tabs.sendMessage(tabId, {
       type: "image",
       id: image.id,
       url: image.url,
     });
     if (!fallback?.ok) throw Error("clipper_image_failed");
-    const data = Uint8Array.from(atob(fallback.value), (char) =>
-      char.charCodeAt(0),
-    );
-    if (!data.length || data.length > 20 * 1024 ** 2)
+    data = Uint8Array.from(atob(fallback.value), (char) => char.charCodeAt(0));
+    if (!data.length || data.length > MAX_IMAGE_SOURCE_BYTES)
       throw Error("clipper_image_invalid");
-    return data;
   }
+  return prepareCaptureImage(data);
 }
 async function prepare(pending, requireImages = true) {
   const config = await connection();
@@ -642,9 +643,12 @@ async function prepare(pending, requireImages = true) {
       // Keep its manifest intact: a later archive still requires every image.
       if (
         requireImages ||
-        !["clipper_image_invalid", "clipper_image_failed"].includes(
-          error.message,
-        )
+        ![
+          "clipper_image_invalid",
+          "clipper_image_failed",
+          "clipper_image_compression_failed",
+          "clipper_animated_image_too_large",
+        ].includes(error.message)
       )
         throw error;
     }
@@ -695,10 +699,50 @@ async function handle(message, sender) {
   if (!fromUi && !fromPage) throw Error("clipper_scope_denied");
   if (
     fromPage &&
-    !["state", "login", "capture", "openAssistant"].includes(message.type)
+    ![
+      "state",
+      "login",
+      "capture",
+      "openAssistant",
+      "openSettings",
+      "dockPreferences",
+    ].includes(message.type)
   )
     throw Error("clipper_scope_denied");
   if (!fromPage && !fromUi) throw Error("clipper_scope_denied");
+  if (message.type === "openSettings") {
+    await chrome.tabs.create({
+      url: chrome.runtime.getURL("ui.html#settings"),
+    });
+    return { opened: true };
+  }
+  if (message.type === "dockPreferences") {
+    await storageReady;
+    if (message.operation === "set") {
+      if (
+        typeof message.position !== "number" ||
+        !Number.isFinite(message.position) ||
+        message.position < 0 ||
+        message.position > 1
+      )
+        throw Error("clipper_invalid_input");
+      await local.set({ dockPosition: message.position });
+    } else if (message.operation !== "get")
+      throw Error("clipper_invalid_input");
+    const preferences = await local.get(["dockPosition", "locale"]);
+    if (
+      preferences.dockPosition !== undefined &&
+      (typeof preferences.dockPosition !== "number" ||
+        !Number.isFinite(preferences.dockPosition) ||
+        preferences.dockPosition < 0 ||
+        preferences.dockPosition > 1)
+    )
+      throw Error("clipper_invalid_input");
+    return {
+      position: preferences.dockPosition ?? null,
+      locale: preferences.locale || "zh",
+    };
+  }
   if (message.type === "state") return state(fromUi && !!message.interactive);
   if (message.type === "login") {
     await ensureLogin(true);

@@ -1,13 +1,14 @@
 import { translate } from "./messages.js";
 const loadAssistant = () => import("./generated/assistant.js");
 const isSidebar = /^#assistant(?:\?|$)/.test(location.hash);
+const isSettings = location.hash === "#settings";
 const launchProfile = new URLSearchParams(location.hash.split("?")[1] || "");
 let applyLaunchProfile = true,
   sharedAssistantModule = null,
   rejectedLaunchProfile = false;
 const $ = (id) => document.getElementById(id);
 let state = { locale: "zh", connected: false, profiles: [] },
-  tab = isSidebar ? "assistant" : "capture",
+  tab = isSidebar ? "assistant" : isSettings ? "connection" : "capture",
   busy = false,
   activeTab = null,
   renderedOrigin,
@@ -30,6 +31,7 @@ if (isSidebar) {
   css.href = "generated/assistant.css";
   document.head.append(css);
 }
+if (isSettings) document.body.classList.add("settings-page");
 const dropdowns = [...document.querySelectorAll("select")].map((select) =>
   globalThis.DocaSelect.enhance(select),
 );
@@ -68,7 +70,7 @@ function selectTab(value) {
   for (const item of ["capture", "assistant", "connection"]) {
     $(item + "-pane").hidden = item !== value;
   }
-  $("back").hidden = value !== "connection" || !state.connected;
+  $("back").hidden = isSettings || value !== "connection" || !state.connected;
   $("settings").hidden = value === "connection";
   if (value === "assistant")
     void syncAssistant().catch((error) => notice(errorMessage(error)));
@@ -321,8 +323,8 @@ function profileDetail() {
   );
   $("profile-detail").textContent = profile
     ? state.locale === "zh"
-      ? `${profile.strategy === "append" ? "追加到文档" : "新建文档"} · ${profile.destinationTitle || (profile.libraryId || profile.targetId ? "保存位置不可用" : "个人文档")}\n原图一起归档`
-      : `${profile.strategy === "append" ? "Append" : "New document"} · ${profile.destinationTitle || (profile.libraryId || profile.targetId ? "Destination unavailable" : "Personal documents")}\nOriginal images included`
+      ? `${profile.strategy === "append" ? "追加到文档" : "新建文档"} · ${profile.destinationTitle || (profile.libraryId || profile.targetId ? "保存位置不可用" : "个人文档")}\n${t("captureImagePolicy")}`
+      : `${profile.strategy === "append" ? "Append" : "New document"} · ${profile.destinationTitle || (profile.libraryId || profile.targetId ? "Destination unavailable" : "Personal documents")}\n${t("captureImagePolicy")}`
     : t("noProfiles");
 }
 function rememberProfile() {
@@ -457,7 +459,7 @@ $("configure").onsubmit = (event) => {
     state = await send({ type: "configure", config: $("config").value });
     $("config").value = "";
     pendingReference = null;
-    tab = isSidebar ? "assistant" : "capture";
+    tab = isSidebar ? "assistant" : isSettings ? "connection" : "capture";
     notice(t("connected"), true);
   }, "working");
 };

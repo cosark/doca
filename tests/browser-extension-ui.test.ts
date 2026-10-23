@@ -856,6 +856,25 @@ it("follows tab activation and in-page navigation instead of an older retained c
   }
 });
 
+it("opens settings directly as a standalone page without initializing AI", async () => {
+  const f = await fixture("#settings");
+  try {
+    expect(f.dom.window.document.body.classList.contains("settings-page")).toBe(
+      true,
+    );
+    expect(f.dom.window.document.getElementById("connection-pane").hidden).toBe(
+      false,
+    );
+    expect(f.dom.window.document.getElementById("capture-pane").hidden).toBe(
+      true,
+    );
+    expect(f.dom.window.document.getElementById("back").hidden).toBe(true);
+    expect(f.mounts).toEqual([]);
+  } finally {
+    f.dispose();
+  }
+});
+
 it("does not attach another tab's selection even when both tabs have the same URL", async () => {
   const f = await fixture("#assistant", {
     pendingReference: {
