@@ -500,14 +500,27 @@ async function state(interactive = false) {
 }
 async function snapshot(mode = "page", tabId) {
   const tab = tabId
-    ? { id: tabId }
+    ? await chrome.tabs.get(tabId).catch(() => null)
     : (await chrome.tabs.query({ active: true, currentWindow: true }))[0];
-  if (!tab?.id) throw Error("clipper_page_unsupported");
-  const response = await chrome.tabs
-    .sendMessage(tab.id, { type: "snapshot", mode })
-    .catch(() => {
+  if (!tab?.id || !/^https?:\/\//.test(tab.url || ""))
+    throw Error("clipper_page_unsupported");
+  const read = () =>
+    chrome.tabs.sendMessage(tab.id, { type: "snapshot", mode }, { frameId: 0 });
+  let response = await read().catch(() => null);
+  if (!response) {
+    // Navigation or a tab opened before installation can leave no receiver.
+    // Install our local scripts in the top frame and retry this capture once.
+    try {
+      await chrome.scripting.executeScript({
+        target: { tabId: tab.id, frameIds: [0] },
+        files: ["capture.js", "select.js", "content.js"],
+        injectImmediately: true,
+      });
+      response = await read();
+    } catch {
       throw Error("clipper_page_unsupported");
-    });
+    }
+  }
   if (!response?.ok) throw Error(response?.error || "clipper_page_unsupported");
   return { capture: response.value, tabId: tab.id };
 }

@@ -745,6 +745,7 @@ it("downloads a complete private package without caching secrets or changing the
     expect(files[name]?.length).toBeGreaterThan(0);
   const manifest = JSON.parse(new TextDecoder().decode(files["manifest.json"]));
   expect(manifest.manifest_version).toBe(3);
+  expect(manifest.permissions).toContain("scripting");
   expect(config.activationSecret).toBeUndefined();
   expect(
     JSON.stringify(
