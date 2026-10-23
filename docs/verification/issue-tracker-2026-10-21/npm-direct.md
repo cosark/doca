@@ -50,3 +50,6 @@ AI 修复后精确场景在新合成文档只读复开：保留全部 41 个 ID�
 五格式评论全部通过，含实际键盘、上传/发送状态、草稿与分页；嵌入式 390px 手机视图检查通过，至少 61 秒零正文更新、页面异常 0。实际打包 MV3 的浏览器与服务端两份报告均通过，包含图片原字节、登录/退出/撤权、账号隔离、待发送恢复和速记；付费模型请求 0、用户数据使用 false。扩展 ZIP SHA256 `8238cdc375f5040ca0ab2877c9bee26afa540c1a110c884f9c1f6430cf702db3`，打包资源 SHA256 `a9123b3fa2341c2addd5a62b3c23f2fdbf330907ca7ea4d9120f3c070918f748`。
 
 精确收据分别位于 `final/canvas-native-2/`、`final/canvas-preferences/`、`final/ai-native-readonly/`、`final/comments/` 和 `final/extension/`。源文档和项目/全局技能引用已经同步。GitHub/DockerHub 发布状态及双架构实际大小将以最终发布回执为准；生产站点没有由本轮升级。
+
+
+远端首轮 PostgreSQL 检查暴露干净检出未构建扩展资源：扩展下载测试因缺少 `generated/` 返回 500，其余数据库检查通过。测试现先构建实际扩展，并校验 ZIP 含助手 JS/CSS；不新增运行时回退。SQLite 14 项通过；从缺少 generated 目录开始，PostgreSQL 17/18 各 14 项独立通过，重建的 100 个资源与已验收 MV3 字节一致。远端最终结果另记，原失败不删除。

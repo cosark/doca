@@ -1,4 +1,5 @@
-import { afterEach, beforeEach, expect, it } from "vitest";
+import { afterEach, beforeAll, beforeEach, expect, it } from "vitest";
+import { build } from "vite";
 import { randomUUID, randomBytes, createHash } from "node:crypto";
 import { mkdtemp, rm } from "node:fs/promises";
 import { tmpdir } from "node:os";
@@ -16,6 +17,13 @@ import {
   createBrowserClipper,
   imageMarker,
 } from "@server/services/browser-clipper.js";
+
+beforeAll(async () => {
+  await build({
+    configFile: "apps/browser-extension/vite.config.ts",
+    logLevel: "silent",
+  });
+}, 30_000);
 
 let db: DB,
   app: Awaited<ReturnType<typeof createApp>>,
@@ -731,6 +739,8 @@ it("downloads a complete private package without caching secrets or changing the
     "ui.css",
     "messages.js",
     "icon.png",
+    "generated/assistant.js",
+    "generated/assistant.css",
   ])
     expect(files[name]?.length).toBeGreaterThan(0);
   const manifest = JSON.parse(new TextDecoder().decode(files["manifest.json"]));
