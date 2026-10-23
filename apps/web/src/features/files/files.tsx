@@ -1415,6 +1415,17 @@ export function FilesExplorer({
     setContextMenu(null);
     setTrashConfirm(removable);
   }
+  function selectAllVisible() {
+    const allSelected = allValues.length > 0 &&
+      allValues.every((value) => selectedIds.has(value.value.id));
+    if (allSelected) {
+      clearSelection();
+      return;
+    }
+    setSelectedIds(new Set(allValues.map((value) => value.value.id)));
+    setAnchorId(allValues[0]?.value.id ?? null);
+    setSelection(allValues[0] ?? null);
+  }
   async function executeTrash() {
     const removable = trashConfirm;
     if (!removable?.length) return;
@@ -2297,6 +2308,23 @@ export function FilesExplorer({
             </div>
           )}
           <span className="files-divider" />
+          <button
+            onClick={selectAllVisible}
+            disabled={!allValues.length || loading}
+            aria-pressed={allValues.length > 0 && allValues.every((value) => selectedIds.has(value.value.id))}
+          >
+            <Check size={16} />
+            {allValues.length > 0 && allValues.every((value) => selectedIds.has(value.value.id))
+              ? t("common.clearSelection") : t("common.selectAll")}
+          </button>
+          <button
+            onClick={requestTrash}
+            disabled={systemReadonly || !selectedValues.some((value) => !value.value.locked)}
+          >
+            <Trash2 size={16} />
+            {t("fileManager.trash")}
+            {selectedValues.length > 0 && <small>{selectedValues.length}</small>}
+          </button>
           <div
             className="files-view-switch"
             role="group"

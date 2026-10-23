@@ -23,6 +23,7 @@ import {
   thumbnailFor,
 } from "../services/stored-objects.js";
 import { sendFileContent } from "../services/file-content.js";
+import { assertFileTrashFolderContents, clearFileTrash, previewFileTrashClear } from "../services/file-trash-clear.js";
 import { randomUUID } from "node:crypto";
 import { Type } from "@sinclair/typebox";
 import type { FastifyInstance, FastifyRequest } from "fastify";
@@ -2262,6 +2263,15 @@ export function registerFiles(
     },
   );
 
+  api.get("/api/v1/files/trash/clear-preview", async (req) =>
+    previewFileTrashClear(db, auth(req).id));
+  api.post<{ Body: { fingerprint: string } }>(
+    "/api/v1/files/trash/clear",
+    { schema: { tags: ["Files"], summary: "按已确认清单清空个人文件回收站",
+      body: Type.Object({ fingerprint: Type.String({ pattern: "^[a-f0-9]{64}$" }) }, { additionalProperties: false }) } },
+    async (req) => clearFileTrash(db, auth(req).id, req.body.fingerprint, enqueueFileSearch),
+  );
+
   api.get("/api/v1/files/trash", async (req) => {
     const actor = auth(req);
     const folders = await db
@@ -2453,13 +2463,16 @@ export function registerFiles(
           .selectFrom("file_items")
           .select("id")
           .where("owner_id", "=", actor.id)
+          .where("deleted_at", "is not", null)
           .where("parent_type", "=", "folder")
           .where("parent_id", "in", [...ids])
           .execute();
+        await assertFileTrashFolderContents(tx, [...ids], purgedFiles.map(file => file.id));
         for (const file of purgedFiles) await enqueueFileSearch(tx, file.id);
         await tx
           .deleteFrom("file_items")
           .where("owner_id", "=", actor.id)
+          .where("deleted_at", "is not", null)
           .where("parent_type", "=", "folder")
           .where("parent_id", "in", [...ids])
           .execute();
@@ -2467,6 +2480,7 @@ export function registerFiles(
           .deleteFrom("file_folders")
           .where("id", "in", [...ids])
           .where("owner_id", "=", actor.id)
+          .where("deleted_at", "is not", null)
           .execute();
       });
       return { ok: true };

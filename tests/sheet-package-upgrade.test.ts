@@ -26,7 +26,7 @@ const fixture = JSON.parse(
   addedSheetId: string;
 };
 
-it("projects rc.19 appended sheets with approved dimensions without rewriting baseline, seeds or checkpoint", async () => {
+it("projects rc.19 appended sheets with approved larger defaults without rewriting baseline, seeds or checkpoint", async () => {
   const recovery = {
     ...fixture,
     update: new Uint8Array(Buffer.from(fixture.update, "base64")),
@@ -54,8 +54,8 @@ it("projects rc.19 appended sheets with approved dimensions without rewriting ba
       cellData: { 0: { 0: { v: "保留已有数据" } } },
     });
     expect(snapshot.sheets[fixture.addedSheetId]).toMatchObject({
-      defaultRowHeight: 19.8,
-      defaultColumnWidth: 79.2,
+      defaultRowHeight: 21.78,
+      defaultColumnWidth: 87.12,
     });
     expect(snapshot.sheets.unsized).not.toHaveProperty("defaultRowHeight");
     expect(snapshot.sheets.unsized).not.toHaveProperty("defaultColumnWidth");
@@ -83,7 +83,7 @@ it("projects rc.19 appended sheets with approved dimensions without rewriting ba
   }
 });
 
-it("creates the host's first worksheet with the same compact dimensions as native appended worksheets", async () => {
+it("creates new host worksheets with ten percent larger default cells", async () => {
   const db = await openTestDatabase({ driver: "sqlite", path: ":memory:" });
   try {
     const owner = {
@@ -111,8 +111,8 @@ it("creates the host's first worksheet with the same compact dimensions as nativ
     const loaded = await restoreSurface(db, resource.id, "spreadsheet");
     const first = loaded.baseline!.snapshot.sheetOrder[0]!;
     expect(loaded.baseline!.snapshot.sheets[first]).toMatchObject({
-      defaultRowHeight: 19.8,
-      defaultColumnWidth: 79.2,
+      defaultRowHeight: 21.78,
+      defaultColumnWidth: 87.12,
     });
     expect(loaded.state.seq).toBe(0);
   } finally {

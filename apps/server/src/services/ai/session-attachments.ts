@@ -4,6 +4,7 @@ import type { ToolContext } from "@core/workflows/ai-documents.js";
 import { authorizeFileItem } from "@core/modules/access/file-access.js";
 import { fail } from "@core/shared/errors.js";
 import type { StoredExtractPart } from "./file-extract.js";
+import { browserAssistantBoundary, resourceScope } from "@core/modules/browser-clipper/access.js";
 
 export async function sessionAttachmentIds(db: DB, ctx: ToolContext) {
   if (!ctx.jobId) fail(404, "attachment_session_required");
@@ -16,12 +17,15 @@ export async function sessionAttachmentIds(db: DB, ctx: ToolContext) {
     .where("s.user_id", "=", ctx.actor.id)
     .executeTakeFirst();
   if (!job) fail(404, "attachment_session_missing");
+  const browser = await browserAssistantBoundary(db, job.session_id, ctx.jobId);
+  const allowed = browser ? resourceScope.parse(JSON.parse(browser.binding.job_ids)).ids : null;
   const jobs = await db
     .selectFrom("ai_jobs")
     .select("input")
     .where("session_id", "=", job.session_id)
     .where("user_id", "=", ctx.actor.id)
     .where("created_at", "<=", job.created_at)
+    .$if(allowed !== null, query => query.where("id", "in", allowed!))
     .orderBy("created_at", "asc")
     .execute();
   const ids = new Set<string>();

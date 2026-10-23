@@ -10,6 +10,7 @@ import {
   Check,
   Trash2,
   RotateCcw,
+  LoaderCircle,
 } from "lucide-react";
 import {
   api,
@@ -33,6 +34,7 @@ import { relativeTime } from "@web/features/documents/document-experience.js";
 import "@web/features/comments/rich-comments.css";
 import { EmojiPicker } from "@web/shared/components/emoji-picker.js";
 import { useI18n } from "@web/shared/i18n.js";
+import { scrollCommentIntoView } from "./comment-scroll.js";
 export type MentionUser = {
   id: string;
   display_name: string;
@@ -124,6 +126,12 @@ export function CommentComposer({
   const { t } = useI18n();
   const input = useRef<HTMLTextAreaElement>(null),
     file = useRef<HTMLInputElement>(null);
+  const upload = useRef<AbortController | null>(null);
+  const mounted = useRef(true);
+  useEffect(() => {
+    mounted.current = true;
+    return () => { mounted.current = false; upload.current?.abort(); };
+  }, []);
   const grow = (el: HTMLTextAreaElement | null) => {
     if (!el) return;
     const max = 320;
@@ -132,7 +140,20 @@ export function CommentComposer({
     el.style.overflowY = el.scrollHeight > max ? "auto" : "hidden";
   };
   useEffect(() => {
-    if (autoFocus) input.current?.focus({ preventScroll: true });
+    if (!autoFocus) return;
+    input.current?.focus({ preventScroll: true });
+    let second = 0;
+    const first = requestAnimationFrame(() => {
+      second = requestAnimationFrame(() => {
+        const drawer = input.current?.closest(".content-comments");
+        // A Markdown document has an outer page scrollport as well as its
+        // comment scrollport. Reveal the drawer first if that page moved away.
+        if (drawer && /^(auto|scroll)$/.test(getComputedStyle(drawer).overflowY))
+          scrollCommentIntoView(drawer, "nearest", "instant");
+        scrollCommentIntoView(input.current, "center", "instant");
+      });
+    });
+    return () => { cancelAnimationFrame(first); cancelAnimationFrame(second); };
   }, [autoFocus]);
   const [text, setText] = useState(
     () =>
@@ -177,8 +198,28 @@ export function CommentComposer({
     [index, setIndex] = useState(0),
     [folderPicker, setFolderPicker] = useState<boolean | "materials">(false),
     [sourcePicker, setSourcePicker] = useState(false),
-    [busy, setBusy] = useState(false),
+    [pending, setPending] = useState<"send" | "upload" | null>(null),
     [error, setError] = useState("");
+  const busy = pending !== null;
+  async function attach(source: File | ((signal: AbortSignal) => Promise<File>)) {
+    if (upload.current || !mounted.current) return;
+    const controller = new AbortController();
+    upload.current = controller;
+    setPending("upload");
+    setError("");
+    try {
+      const file = typeof source === "function" ? await source(controller.signal) : source;
+      controller.signal.throwIfAborted();
+      const asset = await uploadFile(file, "comment_image", resourceId, controller.signal);
+      controller.signal.throwIfAborted();
+      setImages(value => [...value, { type: "image", assetId: asset.id, alt: asset.filename }]);
+    } finally {
+      if (upload.current === controller) {
+        upload.current = null;
+        if (mounted.current) setPending(null);
+      }
+    }
+  }
   useEffect(() => {
     if (!replyTo || initial) return;
     let active = true;
@@ -256,10 +297,18 @@ export function CommentComposer({
   return (
     <form
       className="rich-comment-composer"
+      aria-busy={busy}
+      // Editors own document shortcuts; an adjacent comment owns its keyboard,
+      // clipboard and portalled file pickers, including the native textarea undo.
+      onKeyDown={event => event.stopPropagation()}
+      onKeyUp={event => event.stopPropagation()}
+      onCopy={event => event.stopPropagation()}
+      onCut={event => event.stopPropagation()}
+      onPaste={event => event.stopPropagation()}
       onSubmit={async (e) => {
         e.preventDefault();
         if (busy || disabled || (!text.trim() && !images.length)) return;
-        setBusy(true);
+        setPending("send");
         setError("");
         try {
           await submit(composeComment(text, mentions, images));
@@ -269,7 +318,7 @@ export function CommentComposer({
         } catch (e) {
           setError((e as Error).message);
         } finally {
-          setBusy(false);
+          setPending(null);
         }
       }}
     >
@@ -400,18 +449,10 @@ export function CommentComposer({
             const f = e.target.files?.[0];
             e.target.value = "";
             if (!f) return;
-            setBusy(true);
-            setError("");
             try {
-              const a = await uploadFile(f, "comment_image", resourceId);
-              setImages((v) => [
-                ...v,
-                { type: "image", assetId: a.id, alt: a.filename },
-              ]);
+              await attach(f);
             } catch (e) {
-              setError((e as Error).message);
-            } finally {
-              setBusy(false);
+              if ((e as Error).name !== "AbortError") setError((e as Error).message);
             }
           }}
         />
@@ -419,23 +460,18 @@ export function CommentComposer({
           <FolderFilePicker
             initialSource={folderPicker === "materials" ? "materials" : "folders"}
             accept={(item) => item.mime.startsWith("image/")}
-            close={() => setFolderPicker(false)}
+            close={() => {
+              upload.current?.abort();
+              setFolderPicker(false);
+            }}
             select={async (item: FileItem) => {
-              const response = await fetch(
-                `/api/v1/files/items/${item.id}/content`,
-              );
-              if (!response.ok) throw new Error(t("comment.imageFailed"));
-              const uploaded = await uploadFile(
-                new File([await response.blob()], item.name, {
+              await attach(async signal => {
+                const response = await fetch(`/api/v1/files/items/${item.id}/content`, { signal });
+                if (!response.ok) throw new Error(t("comment.imageFailed"));
+                return new File([await response.blob()], item.name, {
                   type: item.mime,
-                }),
-                "comment_image",
-                resourceId,
-              );
-              setImages((value) => [
-                ...value,
-                { type: "image", assetId: uploaded.id, alt: uploaded.filename },
-              ]);
+                });
+              });
             }}
           />
         )}
@@ -453,20 +489,23 @@ export function CommentComposer({
             type="button"
             title={t("comment.close")}
             aria-label={t("comment.close")}
+            disabled={busy}
             onClick={close}
           >
             <X size={17} />
           </button>
         )}
         <button
+          type="submit"
           className="send-comment"
           title={t("comment.send")}
           aria-label={t("comment.send")}
           disabled={busy || disabled || (!text.trim() && !images.length)}
         >
-          <Send size={17} />
+          {pending === "send" ? <LoaderCircle size={17} className="comment-pending-spinner" /> : <Send size={17} />}
         </button>
       </div>
+      {pending && <p className="comment-pending-status" role="status">{t(pending === "upload" ? "common.uploading" : "chat.sending")}</p>}
       {error && <Feedback message={error} tone="error" />}
     </form>
   );
@@ -488,7 +527,7 @@ export function CommentMessage({
 }) {
   const { t } = useI18n();
   return (
-    <div className="comment-message">
+    <div className="comment-message" data-comment-id={c.id}>
       <UserBadge id={c.author_id} name={c.display_name} avatarOnly />
       <div className="grow">
         <div className="comment-byline">

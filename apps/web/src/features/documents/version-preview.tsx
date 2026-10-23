@@ -29,6 +29,7 @@ export default function VersionPreview({
         initialValue={value}
         mode="readonly"
         onAttachmentPreview={attachmentPreview.onRichAttachmentPreview}
+        onMediaPreview={attachmentPreview.onRichMediaPreview}
         resources={{
           resolveUrl: (path) =>
             /^[a-f0-9-]{36}$/.test(path)

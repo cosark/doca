@@ -1,4 +1,5 @@
-import { afterEach, beforeEach, expect, it } from "vitest";
+import { afterEach, beforeAll, beforeEach, expect, it } from "vitest";
+import { build } from "vite";
 import { randomUUID, randomBytes, createHash } from "node:crypto";
 import { mkdtemp, rm } from "node:fs/promises";
 import { tmpdir } from "node:os";
@@ -12,7 +13,17 @@ import { createContent } from "@core/workflows/resources.js";
 import { readAIDocument } from "@core/workflows/ai-documents.js";
 import { createApp } from "@server/app/create-app.js";
 import { storageRuntime } from "@server/adapters/storage.js";
-import { imageMarker } from "@server/services/browser-clipper.js";
+import {
+  createBrowserClipper,
+  imageMarker,
+} from "@server/services/browser-clipper.js";
+
+beforeAll(async () => {
+  await build({
+    configFile: "apps/browser-extension/vite.config.ts",
+    logLevel: "silent",
+  });
+}, 30_000);
 
 let db: DB,
   app: Awaited<ReturnType<typeof createApp>>,
@@ -316,6 +327,237 @@ it("uses a frozen profile and rejects stale preparation instead of retargeting a
   ).toBe("故障记录");
 });
 
+it("describes the frozen new-document title and destination without writes, including after the live profile changes", async () => {
+  const content = createContent(db);
+  const library = await content.create(owner, {
+    kind: "library",
+    format: "rich_text",
+    title: "故障知识库",
+  });
+  const parent = await content.create(owner, {
+    kind: "document",
+    format: "markdown",
+    title: "维护记录",
+    libraryId: library.id,
+  });
+  const replacement = await content.create(owner, {
+    kind: "library",
+    format: "rich_text",
+    title: "新的保存位置",
+  });
+  const p = await profile({
+    libraryId: library.id,
+    parentId: parent.id,
+    titleTemplate: "归档 {date} · {title}",
+  });
+  const c = await connect();
+  const input = { ...capture(p), capturedAt: "2026-10-21T10:00:00.000Z" };
+  expect((await external("POST", "/clips", c.token, input)).statusCode).toBe(
+    200,
+  );
+  const clipper = createBrowserClipper(
+    db,
+    { ...storageRuntime(), root },
+    async () => {},
+  );
+  const before = await db
+    .selectFrom("browser_clipper_receipts")
+    .selectAll()
+    .execute();
+  const resourcesBefore = await db
+    .selectFrom("resources")
+    .selectAll()
+    .execute();
+  const description = await clipper.describeCapture(
+    owner,
+    c.connectionId,
+    input.requestId,
+  );
+  expect(description).toEqual({
+    profileId: p.id,
+    profileRevision: p.revision,
+    strategy: "create",
+    title: "归档 2026-10-21 · 故障记录",
+    path: "故障知识库 / 维护记录",
+  });
+  expect(
+    await db.selectFrom("browser_clipper_receipts").selectAll().execute(),
+  ).toEqual(before);
+  expect(await db.selectFrom("resources").selectAll().execute()).toEqual(
+    resourcesBefore,
+  );
+  await expect(
+    clipper.describeCapture(other, c.connectionId, input.requestId),
+  ).rejects.toMatchObject({ status: 404 });
+  await expect(
+    clipper.describeCapture(owner, randomUUID(), input.requestId),
+  ).rejects.toMatchObject({ status: 404 });
+
+  const { id, ...values } = p;
+  const changed = await request("PUT", `/me/browser-clipper/profiles/${id}`, {
+    ...values,
+    libraryId: replacement.id,
+    parentId: null,
+    titleTemplate: "新规则 {title}",
+  });
+  expect(changed.statusCode, changed.body).toBe(200);
+  expect(
+    await clipper.describeCapture(owner, c.connectionId, input.requestId),
+  ).toEqual(description);
+  const committed = await external(
+    "POST",
+    `/clips/${input.requestId}/commit`,
+    c.token,
+    {},
+  );
+  expect(committed.statusCode, committed.body).toBe(200);
+  const saved = await db
+    .selectFrom("resources")
+    .select(["title", "library_id", "parent_id"])
+    .where("id", "=", committed.json().resourceId)
+    .executeTakeFirstOrThrow();
+  expect(saved).toEqual({
+    title: description.title,
+    library_id: library.id,
+    parent_id: parent.id,
+  });
+  expect(
+    (
+      await db
+        .selectFrom("browser_clipper_receipts")
+        .select("payload_json")
+        .where("request_id", "=", input.requestId)
+        .executeTakeFirstOrThrow()
+    ).payload_json,
+  ).toBe("");
+  await expect(
+    clipper.describeCapture(owner, c.connectionId, input.requestId),
+  ).rejects.toMatchObject({ status: 409 });
+  const repeated = await clipper.commit(owner, c.connectionId, input.requestId);
+  expect(repeated.resourceId).toBe(committed.json().resourceId);
+  expect(
+    await db
+      .selectFrom("resources")
+      .select("id")
+      .where("parent_id", "=", parent.id)
+      .execute(),
+  ).toHaveLength(1);
+});
+
+it("describes and appends to the frozen target even if the live profile switches to creating documents", async () => {
+  const content = createContent(db);
+  const target = await content.create(owner, {
+    kind: "document",
+    format: "markdown",
+    title: "原排查记录",
+    markdown: "# 原排查记录\n\n原有内容必须保留。",
+  });
+  await readAIDocument(db, { actor: owner }, target.id);
+  const replacement = await content.create(owner, {
+    kind: "library",
+    format: "rich_text",
+    title: "新建目的地",
+  });
+  const p = await profile({
+    strategy: "append",
+    targetId: target.id,
+    titleTemplate: "追加 {date} {title}",
+  });
+  const c = await connect();
+  const input = { ...capture(p), capturedAt: "2026-10-21T10:00:00.000Z" };
+  expect((await external("POST", "/clips", c.token, input)).statusCode).toBe(
+    200,
+  );
+  const clipper = createBrowserClipper(
+    db,
+    { ...storageRuntime(), root },
+    async () => {},
+  );
+  const description = await clipper.describeCapture(
+    owner,
+    c.connectionId,
+    input.requestId,
+  );
+  expect(description).toEqual({
+    profileId: p.id,
+    profileRevision: p.revision,
+    strategy: "append",
+    title: "追加 2026-10-21 故障记录",
+    path: "原排查记录",
+  });
+  const { id, ...values } = p;
+  const changed = await request("PUT", `/me/browser-clipper/profiles/${id}`, {
+    ...values,
+    strategy: "create",
+    targetId: null,
+    libraryId: replacement.id,
+    titleTemplate: "新的标题 {title}",
+  });
+  expect(changed.statusCode, changed.body).toBe(200);
+  expect(
+    await clipper.describeCapture(owner, c.connectionId, input.requestId),
+  ).toEqual(description);
+  const committed = await external(
+    "POST",
+    `/clips/${input.requestId}/commit`,
+    c.token,
+    {},
+  );
+  expect(committed.statusCode, committed.body).toBe(200);
+  expect(committed.json().resourceId).toBe(target.id);
+  const saved = await readAIDocument(db, { actor: owner }, target.id);
+  expect(JSON.stringify(saved.value)).toContain(description.title);
+  expect(JSON.stringify(saved.value)).toContain("原有内容必须保留");
+  expect(
+    (
+      await db
+        .selectFrom("resources")
+        .select("title")
+        .where("id", "=", target.id)
+        .executeTakeFirstOrThrow()
+    ).title,
+  ).toBe(description.path);
+  expect(
+    await db
+      .selectFrom("resources")
+      .select("id")
+      .where("library_id", "=", replacement.id)
+      .execute(),
+  ).toEqual([]);
+});
+
+it("uses the same expanded-title validation for capture descriptions and commits", async () => {
+  const p = await profile({ titleTemplate: "{date} {title}" });
+  const c = await connect();
+  const input = { ...capture(p), title: "x".repeat(160) };
+  expect((await external("POST", "/clips", c.token, input)).statusCode).toBe(
+    200,
+  );
+  const clipper = createBrowserClipper(
+    db,
+    { ...storageRuntime(), root },
+    async () => {},
+  );
+  await expect(
+    clipper.describeCapture(owner, c.connectionId, input.requestId),
+  ).rejects.toMatchObject({ status: 400, message: "clipper_title_too_long" });
+  const committed = await external(
+    "POST",
+    `/clips/${input.requestId}/commit`,
+    c.token,
+    {},
+  );
+  expect(committed.statusCode, committed.body).toBe(400);
+  expect(committed.json().message).toBe("clipper_title_too_long");
+  expect(
+    await db
+      .selectFrom("resources")
+      .select("id")
+      .where("kind", "=", "document")
+      .execute(),
+  ).toEqual([]);
+});
+
 it("supports single-use login exchange, atomic token replacement and explicit revocation without deleting saved data", async () => {
   const p = await profile(),
     c = await connect(),
@@ -497,6 +739,8 @@ it("downloads a complete private package without caching secrets or changing the
     "ui.css",
     "messages.js",
     "icon.png",
+    "generated/assistant.js",
+    "generated/assistant.css",
   ])
     expect(files[name]?.length).toBeGreaterThan(0);
   const manifest = JSON.parse(new TextDecoder().decode(files["manifest.json"]));

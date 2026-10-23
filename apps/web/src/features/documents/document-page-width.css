@@ -26,7 +26,7 @@
   display: flex;
 }
 .document-editor-shell[data-page-width].compact-document .content-comments {
-  right: var(--document-panel-right, 0px);
+  right: auto;
 }
 .document-editor-shell[data-page-width="fluid"] {
   --document-text-inset: clamp(24px, 4vw, 48px);

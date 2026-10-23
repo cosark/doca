@@ -1,12 +1,15 @@
 import { useCanvasRichExtensions } from "./canvas-rich-extensions.js";
-import { useEffect, useState } from "react";
+import { useCallback, useEffect, useRef, useState } from "react";
 import { useI18n } from "@web/shared/i18n.js";
 import * as Y from "yjs";
 import { PresentationWorkspace } from "@smartdoca/slides";
 import "@smartdoca/slides/styles.css";
 import { CanvasEditor } from "@smartdoca/canvas";
 import { CanvasModel } from "@smartdoca/canvas/model";
-import { SpreadsheetEditor } from "@smartdoca/sheet";
+import {
+  SpreadsheetEditor,
+  type SpreadsheetEditorHandle,
+} from "@smartdoca/sheet";
 import {
   restoreExlsxDocument,
   createExlsxCollaborationSession,
@@ -16,6 +19,7 @@ import { fromBase64 } from "@web/features/documents/realtime.js";
 import { assetUrl } from "@web/shared/api.js";
 import { Feedback } from "@web/shared/components/feedback.js";
 import { useAttachmentPreview } from "./attachment-preview.js";
+import { canvasImageGallery } from "./canvas-image-gallery.js";
 import "@smartdoca/canvas/style.css";
 import "@smartdoca/sheet/style.css";
 import "@web/features/documents/surface.css";
@@ -38,11 +42,23 @@ export default function SurfacePreview({
 }) {
   const { t, locale } = useI18n();
   const richTextExtensions = useCanvasRichExtensions();
-  const attachmentPreview = useAttachmentPreview({ trash, audit });
+  const sheetHandle = useRef<SpreadsheetEditorHandle | null>(null);
+  const sheetReady = useCallback((handle: SpreadsheetEditorHandle) => {
+    sheetHandle.current = handle;
+  }, []);
   const [model, setModel] = useState<
       CanvasModel | ExlsxCollaborationSession | Y.Doc | null
     >(null),
     [error, setError] = useState("");
+  const attachmentPreview = useAttachmentPreview({
+    trash,
+    audit,
+    imageResources: () =>
+      model instanceof CanvasModel
+        ? canvasImageGallery(model.getValue().scene)
+        : [],
+    sheetImages: () => sheetHandle.current?.getImageGallery() ?? [],
+  });
   useEffect(() => {
     let disposed = false,
       cleanup = () => {};
@@ -102,6 +118,7 @@ export default function SurfacePreview({
         <PresentationWorkspace
           locale={locale}
           document={model}
+          onImagePreview={attachmentPreview.onSlidesImagePreview}
           readOnly
           chrome="embedded"
           resources={{
@@ -134,6 +151,9 @@ export default function SurfacePreview({
         <SpreadsheetEditor
           locale={locale}
           onAttachmentPreview={attachmentPreview.onSheetAttachmentPreview}
+          onImagePreview={attachmentPreview.onSheetImagePreview}
+          onReady={sheetReady}
+          onError={(error) => setError(error.message)}
           workbookId={id}
           collaboration={model}
           readOnly

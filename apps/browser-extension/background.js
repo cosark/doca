@@ -4,7 +4,10 @@ const storageReady = Promise.all([
   local.setAccessLevel({ accessLevel: "TRUSTED_CONTEXTS" }),
   session.setAccessLevel({ accessLevel: "TRUSTED_CONTEXTS" }),
 ]);
-let booting, submitting, authenticating;
+let booting,
+  submitting,
+  authenticating,
+  interactiveLoginRequested = false;
 function originOf(value) {
   const url = new URL(value);
   if (
@@ -103,7 +106,11 @@ async function rememberAuthorization(next) {
   });
 }
 function startLogin(interactive) {
-  if (authenticating) return authenticating;
+  if (authenticating) {
+    interactiveLoginRequested ||= interactive;
+    return authenticating;
+  }
+  interactiveLoginRequested = interactive;
   authenticating = (async () => {
     const site = await siteConfig(),
       installationId = (await local.get("installationId")).installationId;
@@ -138,20 +145,23 @@ function startLogin(interactive) {
           state,
           verifier,
           origin: site.origin,
-          interactive,
+          interactive: interactiveLoginRequested,
           expiresAt: Date.now() + 180_000,
         },
       });
       const tab = await chrome.tabs.create({
+        url: "about:blank",
+        active: false,
+      });
+      const flow = (await session.get("loginFlow")).loginFlow;
+      if (flow?.state !== state) throw Error("clipper_login_required");
+      await session.set({ loginFlow: { ...flow, tabId: tab.id } });
+      await chrome.tabs.update(tab.id, {
         url:
           site.origin +
           "/#/browser-connect?" +
           new URLSearchParams({ state, challenge, installationId }),
-        active: false,
       });
-      const flow = (await session.get("loginFlow")).loginFlow;
-      if (flow?.state === state)
-        await session.set({ loginFlow: { ...flow, tabId: tab.id } });
       return await result;
     } finally {
       clearTimeout(timer);
@@ -159,6 +169,7 @@ function startLogin(interactive) {
     }
   })().finally(() => {
     authenticating = null;
+    interactiveLoginRequested = false;
     delete globalThis.finishDocaLogin;
   });
   return authenticating;
@@ -186,7 +197,7 @@ async function loginResult(message, sender) {
       }).catch(() => {});
     }
     await session.set({ loginRequired: true });
-    if (flow.interactive) {
+    if (flow.interactive || interactiveLoginRequested) {
       await chrome.tabs.update(flow.tabId, { active: true });
       return { waiting: true };
     }
@@ -245,6 +256,19 @@ async function loginResult(message, sender) {
     throw error;
   }
 }
+async function authorizationIsCurrent(site, auth) {
+  const currentSite = await siteConfig(),
+    current = (await session.get("authorization")).authorization;
+  if (currentSite.origin !== site.origin) return false;
+  if (!auth || !current) return auth === current;
+  return (
+    current.version === auth.version &&
+    current.origin === auth.origin &&
+    current.connectionId === auth.connectionId &&
+    current.token === auth.token &&
+    current.expiresAt === auth.expiresAt
+  );
+}
 async function ensureLogin(interactive = false) {
   const site = await siteConfig(),
     auth = (await session.get("authorization")).authorization;
@@ -256,6 +280,8 @@ async function ensureLogin(interactive = false) {
       "cookieProbeUnsupported",
       "websiteProofAt",
     ]);
+    if (!(await authorizationIsCurrent(site, auth)))
+      return ensureLogin(interactive);
     if (proof.cookieProbeUnsupported) {
       if (!interactive && Date.now() - (proof.websiteProofAt || 0) < 30_000)
         return auth;
@@ -270,8 +296,14 @@ async function ensureLogin(interactive = false) {
         headers: { Authorization: "Bearer " + auth.token },
       },
     );
+    // A website probe belongs to the grant it started with. A late result must
+    // not return an old account or start another login after a completed one.
+    if (!(await authorizationIsCurrent(site, auth)))
+      return ensureLogin(interactive);
     if (response.ok) return auth;
     const failure = await response.json();
+    if (!(await authorizationIsCurrent(site, auth)))
+      return ensureLogin(interactive);
     if (failure.message === "clipper_connection_revoked")
       throw Error(failure.message);
   }
@@ -281,48 +313,155 @@ async function ensureLogin(interactive = false) {
       redirect: "error",
       cache: "no-store",
     });
-    if (!response.ok || !(await response.json()).user)
-      throw Error("clipper_login_required");
+    const signedIn = response.ok && (await response.json()).user;
+    if (!(await authorizationIsCurrent(site, auth)))
+      return ensureLogin(interactive);
+    if (!signedIn) throw Error("clipper_login_required");
   }
+  if (!(await authorizationIsCurrent(site, auth)))
+    return ensureLogin(interactive);
   return startLogin(interactive);
 }
 const allowedPath =
   /^\/(?:me|profiles|clips(?:\/[a-f0-9-]{36}(?:\/commit|\/images\/[a-f0-9-]{36})?)?|assistant\/(?:options|sessions(?:\/[a-f0-9-]{36}(?:\/messages|\/events)?)?|jobs\/[a-f0-9-]{36}\/(?:cancel|approval)))$/;
 async function request(path, method = "GET", body, binary = false, expected) {
-  if (!allowedPath.test(path)) throw Error("clipper_scope_denied");
+  const uiPath =
+    /^\/assistant\/ui\/(?:options|sessions(?:\/[a-f0-9-]{36}(?:\/messages)?)?|jobs\/[a-f0-9-]{36}\/(?:cancel|approval))(?:\?[^#]*)?$/;
+  if (!allowedPath.test(path) && !uiPath.test(path))
+    throw Error("clipper_scope_denied");
+  let config = await connection();
+  for (let attempt = 0; attempt < 2; attempt++) {
+    if (
+      expected &&
+      (expected.connectionId !== config.connectionId ||
+        expected.origin !== config.origin)
+    )
+      throw Error("clipper_scope_denied");
+    const response = await fetch(
+      config.origin + "/api/v1/browser-clipper" + path,
+      {
+        method,
+        credentials: "omit",
+        redirect: "error",
+        cache: "no-store",
+        headers: {
+          Authorization: "Bearer " + config.token,
+          ...(body !== undefined
+            ? {
+                "Content-Type": binary
+                  ? "application/octet-stream"
+                  : "application/json",
+              }
+            : {}),
+        },
+        ...(body !== undefined
+          ? { body: binary ? body : JSON.stringify(body) }
+          : {}),
+      },
+    );
+    const value = await response.json().catch(() => {
+      throw Error("clipper_connection_failed");
+    });
+    if (response.ok) return value;
+    const failure = Object.assign(
+      Error(value.message || "clipper_connection_failed"),
+      {
+        status: response.status,
+      },
+    );
+    if (response.status === 401 && attempt === 0) {
+      let next;
+      try {
+        // A token exchange invalidates the old token before its replacement
+        // reaches storage. Only an existing rotation may finish here.
+        if (authenticating) await authenticating;
+        next = await connection();
+      } catch {
+        throw failure;
+      }
+      if (
+        next.origin === config.origin &&
+        next.connectionId === config.connectionId &&
+        next.token !== config.token
+      ) {
+        config = next;
+        continue;
+      }
+    }
+    throw failure;
+  }
+}
+async function quickNoteRequest(message) {
+  const operations = {
+    quickNoteTargets: { path: "targets", fields: [] },
+    quickNotePrepare: {
+      path: "prepare",
+      fields: ["requestId", "profileId", "profileRevision", "text"],
+    },
+    quickNoteCommit: { path: "commit", fields: ["requestId", "ticket"] },
+  };
+  const operation = operations[message.type],
+    fields = ["type", "origin", "connectionId", ...operation.fields],
+    uuid = /^[a-f0-9]{8}-[a-f0-9]{4}-[a-f0-9]{4}-[a-f0-9]{4}-[a-f0-9]{12}$/;
+  if (
+    Object.keys(message).some((key) => !fields.includes(key)) ||
+    typeof message.origin !== "string" ||
+    typeof message.connectionId !== "string" ||
+    (message.type !== "quickNoteTargets" &&
+      (typeof message.requestId !== "string" ||
+        !uuid.test(message.requestId))) ||
+    (message.type === "quickNotePrepare" &&
+      (typeof message.profileId !== "string" ||
+        !uuid.test(message.profileId) ||
+        !Number.isInteger(message.profileRevision) ||
+        message.profileRevision < 1 ||
+        typeof message.text !== "string" ||
+        !message.text.trim() ||
+        new TextEncoder().encode(message.text).byteLength > 64 * 1024)) ||
+    (message.type === "quickNoteCommit" &&
+      (typeof message.ticket !== "string" ||
+        !/^[a-f0-9]{64}$/.test(message.ticket)))
+  )
+    throw Error("clipper_invalid_input");
+  await ensureLogin(message.type !== "quickNoteTargets");
   const config = await connection();
   if (
-    expected &&
-    (expected.connectionId !== config.connectionId ||
-      expected.origin !== config.origin)
+    message.origin !== config.origin ||
+    message.connectionId !== config.connectionId
   )
     throw Error("clipper_scope_denied");
+  const body = operation.fields.length
+    ? Object.fromEntries(operation.fields.map((key) => [key, message[key]]))
+    : undefined;
+  if (!(await authorizationIsCurrent(config, config)))
+    throw Error("quick_note_signin_changed");
   const response = await fetch(
-    config.origin + "/api/v1/browser-clipper" + path,
+    config.origin + "/api/v1/browser-clipper/quick-note/" + operation.path,
     {
-      method,
+      method: body ? "POST" : "GET",
       credentials: "omit",
       redirect: "error",
       cache: "no-store",
       headers: {
         Authorization: "Bearer " + config.token,
-        ...(body !== undefined
-          ? {
-              "Content-Type": binary
-                ? "application/octet-stream"
-                : "application/json",
-            }
-          : {}),
+        ...(body ? { "Content-Type": "application/json" } : {}),
       },
-      ...(body !== undefined
-        ? { body: binary ? body : JSON.stringify(body) }
-        : {}),
+      ...(body ? { body: JSON.stringify(body) } : {}),
     },
   );
+  // Tickets bind to the exact sign-in token. Never replay them with a rotated
+  // grant or let a delayed response cross a website/account switch.
+  if (!(await authorizationIsCurrent(config, config)))
+    throw Error("quick_note_signin_changed");
   const value = await response.json().catch(() => {
     throw Error("clipper_connection_failed");
   });
-  if (!response.ok) throw Error(value.message || "clipper_connection_failed");
+  if (!(await authorizationIsCurrent(config, config)))
+    throw Error("quick_note_signin_changed");
+  if (!response.ok)
+    throw Object.assign(Error(value?.message || "clipper_connection_failed"), {
+      status: response.status,
+    });
   return value;
 }
 async function state(interactive = false) {
@@ -546,6 +685,145 @@ async function handle(message, sender) {
     await local.set({ locale: message.locale });
     return state();
   }
+  if (
+    ["quickNoteTargets", "quickNotePrepare", "quickNoteCommit"].includes(
+      message.type,
+    )
+  )
+    return quickNoteRequest(message);
+  if (message.type === "assistantRequest") {
+    if (
+      !fromUi ||
+      typeof message.path !== "string" ||
+      !message.path.startsWith("/assistant/") ||
+      !["GET", "POST", "PATCH", "DELETE"].includes(message.method || "GET")
+    )
+      throw Error("clipper_scope_denied");
+    await ensureLogin(message.method && message.method !== "GET");
+    const result = await request(
+      message.path,
+      message.method || "GET",
+      message.body,
+      false,
+      {
+        origin: message.origin,
+        connectionId: message.connectionId,
+      },
+    );
+    if (
+      message.method === "POST" &&
+      /\/sessions\/[a-f0-9-]{36}\/messages$/.test(message.path)
+    )
+      await session.remove("assistantPending");
+    return result;
+  }
+  if (message.type === "assistantSession") {
+    const config = await connection();
+    if (
+      message.origin !== config.origin ||
+      message.connectionId !== config.connectionId
+    )
+      throw Error("clipper_scope_denied");
+    if (message.operation === "set") {
+      if (message.id !== null && !/^[a-f0-9-]{36}$/.test(message.id))
+        throw Error("clipper_invalid_input");
+      if (message.id)
+        await session.set({
+          assistant: {
+            origin: config.origin,
+            connectionId: config.connectionId,
+            profileId: message.profileId,
+            id: message.id,
+          },
+        });
+      else await session.remove("assistant");
+    }
+    const saved = (await session.get("assistant")).assistant;
+    return {
+      sessionId:
+        saved?.origin === config.origin &&
+        saved?.connectionId === config.connectionId &&
+        saved?.profileId === message.profileId
+          ? saved.id
+          : null,
+    };
+  }
+  if (message.type === "assistantPreparePage") {
+    await ensureLogin(true);
+    const config = await connection();
+    if (
+      message.origin !== config.origin ||
+      message.connectionId !== config.connectionId
+    )
+      throw Error("clipper_scope_denied");
+    let pending = (await session.get("assistantPending")).assistantPending;
+    if (
+      !pending ||
+      pending.origin !== config.origin ||
+      pending.connectionId !== config.connectionId ||
+      pending.profileId !== message.profileId
+    ) {
+      const source = await snapshot("page", message.tabId);
+      pending = await begin(
+        source.capture,
+        message.profileId,
+        source.tabId,
+        message.profileRevision,
+      );
+      await session.set({ assistantPending: pending });
+    } else if (pending.profileRevision !== message.profileRevision)
+      throw Error("clipper_profile_changed");
+    await prepare(pending);
+    return {
+      captureRequestId: pending.requestId,
+      title: pending.capture.title,
+      url: pending.capture.url,
+    };
+  }
+  if (message.type === "openAssistant") {
+    const tabId = sender.tab?.id || message.tabId;
+    if (!tabId) throw Error("clipper_page_unsupported");
+    if (
+      fromPage &&
+      message.capture &&
+      new URL(message.capture.url).origin !== new URL(sender.url).origin
+    )
+      throw Error("clipper_scope_denied");
+    let path = "ui.html#assistant";
+    if (message.profileId) {
+      if (
+        !/^[a-f0-9-]{36}$/.test(message.profileId) ||
+        !Number.isInteger(message.profileRevision) ||
+        message.profileRevision < 1
+      )
+        throw Error("clipper_profile_unavailable");
+      path +=
+        "?" +
+        new URLSearchParams({
+          profileId: message.profileId,
+          profileRevision: String(message.profileRevision),
+        });
+    }
+    // Preserve the originating click while opening the native panel, then verify sign-in.
+    const configured = chrome.sidePanel.setOptions({
+      tabId,
+      path,
+      enabled: true,
+    });
+    const opened = chrome.sidePanel.open({ tabId });
+    await Promise.all([configured, opened]);
+    await ensureLogin(true);
+    if (message.capture) {
+      const pending = await begin(
+        message.capture,
+        message.profileId,
+        tabId,
+        message.profileRevision,
+      );
+      await session.set({ assistantPending: pending });
+    }
+    return { opened: true };
+  }
   if (!["locale", "assistantNew"].includes(message.type))
     await ensureLogin(
       ["capture", "retry", "assistantSend", "assistantJob"].includes(
@@ -574,26 +852,6 @@ async function handle(message, sender) {
     const pending = (await session.get("pending")).pending;
     if (!pending) throw Error("clipper_capture_missing");
     return submit(pending);
-  }
-  if (message.type === "openAssistant") {
-    // Invoke open before awaiting anything, while the originating click's gesture is live.
-    const tabId = sender.tab?.id || message.tabId;
-    const opened = chrome.sidePanel.open(
-      tabId
-        ? { tabId }
-        : { windowId: sender.tab?.windowId || message.windowId },
-    );
-    await opened;
-    if (message.capture) {
-      const pending = await begin(
-        message.capture,
-        message.profileId,
-        sender.tab?.id,
-        message.profileRevision,
-      );
-      await session.set({ assistantPending: pending });
-    }
-    return { opened: true };
   }
   if (message.type === "assistantOptions") return request("/assistant/options");
   if (message.type === "assistantLoad") {
@@ -729,10 +987,39 @@ chrome.runtime.onMessage.addListener((message, sender, respond) => {
     .then((value) => respond({ ok: true, value }))
     .catch(async (error) => {
       await session.set({ lastError: error.message });
-      respond({ ok: false, error: error.message });
+      respond({ ok: false, error: error.message, status: error.status });
     });
   return true;
 });
 chrome.runtime.onInstalled.addListener(() => {
   void boot().catch(async (error) => session.set({ lastError: error.message }));
+});
+
+// Browser commands are user gestures. Freeze the source before sign-in can activate another tab.
+async function captureFromShortcut(command) {
+  if (!["capture-page", "capture-selection"].includes(command)) return;
+  await chrome.action.setBadgeBackgroundColor({ color: "#7051be" });
+  await chrome.action.setBadgeText({ text: "…" });
+  try {
+    const source = await snapshot(
+      command === "capture-page" ? "page" : "selection",
+    );
+    await ensureLogin(true);
+    await submit(await begin(source.capture, undefined, source.tabId));
+    await chrome.action.setBadgeText({ text: "✓" });
+    await chrome.action.setTitle({ title: "Doca · ✓" });
+  } catch (error) {
+    await session.set({ lastError: error.message });
+    await chrome.action.setBadgeBackgroundColor({ color: "#b45309" });
+    await chrome.action.setBadgeText({ text: "!" });
+    const locale = (await local.get("locale")).locale;
+    await chrome.action.setTitle({
+      title:
+        "Doca · " +
+        (locale === "en" ? "Open extension for details" : "打开扩展查看详情"),
+    });
+  }
+}
+chrome.commands.onCommand.addListener((command) => {
+  void captureFromShortcut(command);
 });

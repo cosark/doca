@@ -49,7 +49,7 @@ const web = await createServer({
   },
 });
 const output = resolve(
-  process.env.DOCA_QA_OUTPUT ?? "docs/verification/editor-packages-2026-10-20",
+  process.env.DOCA_QA_OUTPUT ?? "artifacts/verification/editor-packages-2026-10-20",
 );
 const packageVersions = JSON.parse(
   await readFile(resolve("package.json"), "utf8"),

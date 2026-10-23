@@ -550,13 +550,50 @@ function DocumentRecords({
     [busy, setBusy] = useState(false),
     [reload, setReload] = useState(0);
   const id = detail.resource.id;
+  // A snapshot lookup belongs to this panel and its most recent View action.
+  const previewRequest = useRef<AbortController | null>(null);
+  function cancelPreviewRequest() {
+    previewRequest.current?.abort();
+    previewRequest.current = null;
+  }
+  function closePreview() {
+    cancelPreviewRequest();
+    setPreview(null);
+  }
+  function closeRecords() {
+    cancelPreviewRequest();
+    close();
+  }
+  function openPreview(versionId: string) {
+    cancelPreviewRequest();
+    const request = new AbortController();
+    previewRequest.current = request;
+    setError("");
+    void api(
+      `/resources/${id}/versions/${versionId}`,
+      "GET",
+      undefined,
+      request.signal,
+    )
+      .then((value) => {
+        if (previewRequest.current === request && !request.signal.aborted)
+          setPreview(value);
+      })
+      .catch((e) => {
+        if (previewRequest.current === request && !request.signal.aborted)
+          setError(e.message);
+      })
+      .finally(() => {
+        if (previewRequest.current === request) previewRequest.current = null;
+      });
+  }
   const path =
     tab === "history"
       ? `/resources/${id}/versions`
       : `/resources/${id}/info?tab=${tab}`;
   useEffect(() => {
     setData(null);
-    setPreview(null);
+    closePreview();
     setError("");
     const c = new AbortController();
     api(path, "GET", undefined, c.signal)
@@ -564,7 +601,10 @@ function DocumentRecords({
       .catch((e) => {
         if (e.name !== "AbortError") setError(e.message);
       });
-    return () => c.abort();
+    return () => {
+      c.abort();
+      cancelPreviewRequest();
+    };
   }, [path, reload]);
   const tabs: [string, MessageKey][] =
     initial === "history"
@@ -581,7 +621,7 @@ function DocumentRecords({
   return (
     <Dialog
       title={initial === "history" ? t("doc.history") : t("doc.info")}
-      close={close}
+      close={closeRecords}
     >
       <div className="document-records">
         <nav aria-label={t("record.tabs")}>
@@ -667,11 +707,7 @@ function DocumentRecords({
               <time>{relativeTime(row.created_at, Date.now(), t)}</time>
               {tab === "history" && (
                 <button
-                  onClick={() =>
-                    void api(`/resources/${id}/versions/${row.id}`)
-                      .then(setPreview)
-                      .catch((e) => setError(e.message))
-                  }
+                  onClick={() => openPreview(row.id)}
                 >
                   {t("record.view")}
                 </button>
@@ -702,7 +738,7 @@ function DocumentRecords({
           {preview && (
             <Dialog
               title={preview.title || t("record.snapshotTitle")}
-              close={() => setPreview(null)}
+              close={closePreview}
               className="version-preview-dialog"
             >
               <p>
@@ -715,7 +751,7 @@ function DocumentRecords({
               </p>
               {error && <Feedback message={error} tone="error" />}
               <div className="version-preview">
-                <Suspense fallback={<pre>{preview.text}</pre>}>
+                <Suspense key={preview.id} fallback={<pre>{preview.text}</pre>}>
                   {preview.surface ? (
                     <SurfacePreview id={id} surface={preview.surface} />
                   ) : typeof preview.markdown === "string" ? (
@@ -726,7 +762,7 @@ function DocumentRecords({
                 </Suspense>
               </div>
               <footer>
-                <button type="button" onClick={() => setPreview(null)}>
+                <button type="button" onClick={closePreview}>
                   {t("record.close")}
                 </button>
                 {roleRank(detail.resource.role) >= 4 &&
@@ -743,7 +779,7 @@ function DocumentRecords({
                           { expectedSeq: preview.currentSeq },
                         )
                           .then(() => {
-                            close();
+                            closeRecords();
                           })
                           .catch((e) => setError(e.message))
                           .finally(() => setBusy(false));

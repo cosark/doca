@@ -36,26 +36,31 @@ jobs:
           node-version: "22"
       - name: Enable pnpm
         run: corepack enable && corepack prepare pnpm@11.25.0 --activate
+      - name: Verify published editor package sources
+        run: node scripts/verify-editor-package-sources.mjs
       - name: Install dependencies
         run: pnpm install --frozen-lockfile
       - name: Build the web app
         run: pnpm build
       - name: Pack web assets
         run: |
-          archive="doca-web-assets-${GITHUB_REF_NAME}.tar.gz"
+          mkdir -p artifacts/releases
+          archive="artifacts/releases/doca-web-assets-${GITHUB_REF_NAME}.tar.gz"
           tar -C apps/web/dist -czf "$archive" assets
           echo "archive=$archive" >> "$GITHUB_ENV"
       - name: Pack deployment files
         run: |
           node scripts/pack-deployment.mjs
-          echo "deployment_archive=.cache/deployment/doca-deploy-${GITHUB_REF_NAME}.tar.gz" >> "$GITHUB_ENV"
+          echo "deployment_archive=artifacts/releases/doca-deploy-${GITHUB_REF_NAME}.tar.gz" >> "$GITHUB_ENV"
       - name: Publish GitHub Release
         env:
           GH_TOKEN: ${{ github.token }}
         run: |
-          notes="$(mktemp)"
+          notes="artifacts/releases/release-notes.md"
           {
-            echo "Web assets are attached as \`$archive\`."
+            cat "docs/releases/${GITHUB_REF_NAME#v}.md"
+            echo
+            echo "Web assets are attached as \`$(basename "$archive")\`."
             echo "Extract it and publish the \`assets\` directory unchanged."
             echo "Set DOCA_ASSET_BASE to the HTTPS prefix that contains that assets directory, with no trailing slash."
             echo
@@ -63,8 +68,7 @@ jobs:
             echo "Transfer this bundle to servers without GitHub access; no source checkout is needed."
             echo "The container image is separate. Pull the matching smartdoca/doca image or transfer it with docker save/load."
             echo
-            gh api --method POST "/repos/${GITHUB_REPOSITORY}/releases/generate-notes" \
-              -f tag_name="$GITHUB_REF_NAME" --jq .body || true
+
           } > "$notes"
           gh release create "$GITHUB_REF_NAME" "$archive" "$deployment_archive" "$deployment_archive.sha256" \
             --title "$GITHUB_REF_NAME" \

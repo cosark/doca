@@ -5,6 +5,7 @@ export function isRegionCommentInteraction(panel: HTMLElement | null, target: El
   return Boolean(
     panel?.contains(target) ||
     panel?.closest(".surface-editor")?.contains(target) ||
+    panel?.closest(".document-comment-dock")?.parentElement?.querySelector(".surface-editor")?.contains(target) ||
     target.closest(".region-comment-toggle,.region-comment-add,.comment-popover,.user-card,[data-anchor-id],[data-comment-id]"),
   );
 }

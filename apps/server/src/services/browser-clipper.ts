@@ -41,6 +41,9 @@ const snapshotSchema = z
     input: profileInput,
   })
   .strict();
+export function parseClipperProfileSnapshot(value: string) {
+  return snapshotSchema.parse(JSON.parse(value));
+}
 const imagesSchema = z
   .array(
     z
@@ -81,6 +84,16 @@ const profileValues = ({
   revision: _rev,
   ...input
 }: ReturnType<typeof publicProfile>) => input;
+function captureTitle(
+  profile: { titleTemplate: string },
+  input: Pick<CaptureInput, "title" | "capturedAt">,
+) {
+  const title = profile.titleTemplate
+    .replaceAll("{title}", input.title)
+    .replaceAll("{date}", input.capturedAt.slice(0, 10));
+  if (!title.trim() || title.length > 160) fail(400, "clipper_title_too_long");
+  return title;
+}
 export async function describeClipperProfile(
   db: DB,
   actor: Actor,
@@ -186,7 +199,7 @@ export function createBrowserClipper(
       .where("user_id", "=", actor.id)
       .executeTakeFirst();
     if (!current?.enabled) fail(403, "clipper_profile_unavailable");
-    const snapshot = snapshotSchema.parse(JSON.parse(row.profile_json));
+    const snapshot = parseClipperProfileSnapshot(row.profile_json);
     await validateClipperTarget(tx, actor, snapshot.input);
     return snapshot;
   }
@@ -272,6 +285,32 @@ export function createBrowserClipper(
         await tx.insertInto("browser_clipper_receipts").values(row).execute();
         return result(row, actor, tx);
       });
+    },
+    async describeCapture(
+      actor: Actor,
+      connectionId: string,
+      requestId: string,
+    ) {
+      const row = await receipt(actor.id, requestId);
+      if (row.connection_id !== connectionId)
+        fail(404, "clipper_capture_missing");
+      const snapshot = await usable(row, actor);
+      if (row.status !== "pending") fail(409, "clipper_request_conflict");
+      const input = captureInput.parse(JSON.parse(row.payload_json));
+      const names: string[] = [];
+      for (const id of [
+        snapshot.input.libraryId,
+        snapshot.input.parentId,
+        snapshot.input.targetId,
+      ])
+        if (id) names.push((await authorize(db, actor, id, 3)).resource.title);
+      return {
+        profileId: snapshot.id,
+        profileRevision: snapshot.revision,
+        strategy: snapshot.input.strategy,
+        title: captureTitle(snapshot.input, input),
+        path: names.join(" / "),
+      };
     },
     async status(actor: Actor, connectionId: string, requestId: string) {
       const row = await receipt(actor.id, requestId);
@@ -391,11 +430,7 @@ export function createBrowserClipper(
         )
           fail(409, "clipper_images_missing");
         const profile = snapshot.input;
-        const title = profile.titleTemplate
-          .replaceAll("{title}", input.title)
-          .replaceAll("{date}", input.capturedAt.slice(0, 10));
-        if (!title.trim() || title.length > 160)
-          fail(400, "clipper_title_too_long");
+        const title = captureTitle(profile, input);
         const escape = (text: string) => text.replace(/[\\[\]*_`<>]/g, "\\$&");
         const sourceUrl = input.url.replace(/[()<>\s]/g, (character) =>
           encodeURIComponent(character),

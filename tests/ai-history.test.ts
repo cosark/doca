@@ -128,6 +128,13 @@ it("uses persistent Mastra block observations, keeps short conversations intact 
     const compacted = await conversationHistory(opts());
     expect(compacted.summary).toContain("中文调研报告");
     expect(compacted.messages.length).toBeLessThan(28);
+    const store = await memory.storage.getStore("memory");
+    const observation = await store!.getObservationalMemory(sid, owner);
+    const restricted = await conversationHistory({ ...opts(), allowedJobIds: ["message-0"] });
+    expect(restricted.messages.map(message => message.id)).toEqual(["message-0"]);
+    expect(messageText(restricted.messages[0])).toContain("请保留报告来源链接");
+    expect(restricted.summary).toBe("");
+    expect(await store!.getObservationalMemory(sid, owner)).toEqual(observation);
     expect(
       (
         await memory.memory.recall({

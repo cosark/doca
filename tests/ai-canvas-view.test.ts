@@ -1,6 +1,6 @@
 import { afterEach, beforeAll, beforeEach, expect, it } from "vitest";
 import { build } from "vite";
-import { randomUUID } from "node:crypto";
+import { randomBytes, randomUUID } from "node:crypto";
 import sharp from "sharp";
 import { openTestDatabase } from "./database.js";
 import { createUser } from "@core/modules/identity/passwords.js";
@@ -14,6 +14,7 @@ import { renderCanvas } from "@server/services/ai/canvas-render.js";
 import {
   createCanvasView,
   canvasViewSchema,
+  renderCanvasSnapshot,
 } from "@server/services/ai/canvas-view.js";
 import {
   bindToolImageFrames,
@@ -33,6 +34,8 @@ import {
   storageRuntime,
 } from "@server/adapters/storage.js";
 import { objectKey } from "@server/services/storage-policy.js";
+import type { Schema } from "@db/index.js";
+import { createAIRunner } from "@server/services/ai/runner.js";
 
 it("distinguishes requested automatic routing from native persisted drawing fields", () => {
   expect(canvasRoutingAudit([
@@ -505,6 +508,58 @@ it("renders an explicit empty viewport and embeds only authorized image assets",
   await expect(
     frozenView.tool.execute!({ resourceId }, {} as any),
   ).rejects.toThrow("无权读取画板图片");
+}, 30_000);
+
+it("inspects a host-accepted PNG over native IO's 10MiB limit without changing its source bytes or document", async () => {
+  const profile = await db.selectFrom("storage_profiles").selectAll().where("active", "=", 1).executeTakeFirstOrThrow();
+  const assetId = randomUUID(), runtime = storageRuntime(), key = objectKey(assetId, "image/png");
+  const data = await sharp(randomBytes(3000 * 1200 * 3), { raw: { width: 3000, height: 1200, channels: 3 } }).png({ compressionLevel: 0 }).toBuffer();
+  expect(data.length).toBeGreaterThan(10 * 1024 * 1024);
+  await createStorage(runtime).put(storageConfigForProfile(runtime, profile), key, data, "image/png", "large.png");
+  await db.insertInto("assets").values({ id: assetId, owner_id: ctx.actor.id, uploaded_by: ctx.actor.id, resource_id: resourceId, purpose: "attachment", profile_id: profile.id, object_key: key, filename: "large.png", mime: "image/png", size: data.length, created_at: new Date().toISOString(), deleted_at: null }).execute();
+  const initial = await read();
+  await editAIDocument(db, ctx, resourceId, { seq: initial.seq, epochId: initial.epochId! }, [{ type: "add", element: { id: "large-photo", tag: "Image", x: 400, y: 0, width: 400, height: 160, data: { resourcePath: assetId } } }], randomUUID());
+  const before = await read();
+  for (const query of [{ resourceId }, { resourceId, elementIds: ["large-photo"] }]) {
+    const { result } = await renderCanvasSnapshot({ db, ctx, read, storage: runtime }, query);
+    expect(result.warnings).toEqual(expect.arrayContaining([expect.objectContaining({ code: "LARGE_IMAGE_PREVIEW" })]));
+    expect((await sharp(Buffer.from(result.png, "base64")).metadata()).width).toBe(result.width);
+  }
+  expect(await read()).toEqual(before);
+  expect(await createStorage(runtime).read(storageConfigForProfile(runtime, profile), key, data.length)).toEqual(data);
+}, 30_000);
+
+it("exports the current canvas to one authorized downloadable PNG without image generation or canvas writes", async () => {
+  const now = new Date().toISOString();
+  const session: Schema["ai_sessions"] = { id: randomUUID(), user_id: ctx.actor.id, title: "Canvas export", model_id: null, resource_ids: JSON.stringify([resourceId]), mentioned_resource_ids: "[]", approved_resource_ids: "[]", archived: 0, revision: 1, created_at: now, updated_at: now };
+  const job: Schema["ai_jobs"] = { id: randomUUID(), session_id: session.id, user_id: ctx.actor.id, model_id: "mcp-client", status: "running", input: JSON.stringify({ text: "将当前画面发我PNG", scope: "all", references: [], attachments: [], files: [], skillIds: [], webSearch: false }), digest: "export", result: "", error: "", lease: randomUUID(), lease_until: new Date(Date.now() + 60000).toISOString(), attempts: 1, cancelled: 0, created_at: now, updated_at: now };
+  await db.insertInto("ai_sessions").values(session).execute();
+  await db.insertInto("ai_jobs").values(job).execute();
+  const runtime = storageRuntime();
+  const runner = createAIRunner(db, { storage: runtime, fetch: async () => { throw new Error("Export must not call a model"); } });
+  try {
+    const tools = await runner.externalTools(job, new AbortController().signal, { actor: ctx.actor, session, allowsTool: id => id === "canvas_export", allowsSkill: () => true, authorize: async () => {} });
+    expect(tools.tools.find(tool => tool.id === "canvas_export")?.inputSchema).toMatchObject({ type: "object" });
+    const before = await read(), requestId = randomUUID();
+    const args = { resourceId, name: "current-canvas.png" };
+    const exported: any = (await tools.call("canvas_export", args, requestId)).output;
+    expect(exported.ok).toBe(true);
+    expect(exported.file.mime).toBe("image/png");
+    expect(exported.file.downloadUrl).toBe(`/api/v1/files/items/${exported.file.id}/content?download=1`);
+    const replay: any = (await tools.call("canvas_export", args, requestId)).output;
+    expect(replay.file.id).toBe(exported.file.id);
+    expect(await db.selectFrom("file_items").select("id").where("name", "=", "current-canvas.png").execute()).toHaveLength(1);
+    const object = await db.selectFrom("file_items as f").innerJoin("file_storage_objects as o", "o.id", "f.storage_object_id").selectAll("o").where("f.id", "=", exported.file.id).executeTakeFirstOrThrow();
+    const profile = await db.selectFrom("storage_profiles").selectAll().where("id", "=", object.profile_id).executeTakeFirstOrThrow();
+    const png = await createStorage(runtime).read(storageConfigForProfile(runtime, profile), object.object_key, object.size);
+    expect((await sharp(png).metadata()).format).toBe("png");
+    expect((await sharp(png).stats()).channels[0]!.max).toBe(255);
+    expect(await db.selectFrom("ai_calls").select("id").execute()).toHaveLength(0);
+    expect(await read()).toEqual(before);
+    await expect(tools.call("canvas_export", { ...args, elementIds: ["red"], region: { x: 0, y: 0, width: 100, height: 100 } }, randomUUID())).rejects.toThrow("region 与 elementIds");
+  } finally {
+    await runner.close();
+  }
 }, 30_000);
 
 it.each([true, false])("checks canvas pixels with direct vision=%s and refuses review until the fixed snapshot was seen", async (directVision) => {

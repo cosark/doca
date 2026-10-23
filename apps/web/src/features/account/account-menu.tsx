@@ -1,7 +1,7 @@
 import { NavigationArea } from "@web/plugins/navigation.js";
 import { useEffect, useRef } from "react";
 import { Tooltip } from "antd";
-import { House, LogOut } from "lucide-react";
+import { Globe, House, LogOut } from "lucide-react";
 import type { Me, User } from "@web/shared/api.js";
 import { Avatar } from "@web/features/account/profile.js";
 import { useI18n } from "@web/shared/i18n.js";
@@ -80,8 +80,22 @@ export function AccountMenu({
           <strong className="account-menu-nickname">{displayName}</strong>
         </div>
         <nav aria-label={t("account.menuNav")}>
-          <NavigationArea slot="web.user" />
-          <a href="#/browser-assistant" onClick={close}><House size={16}/>{t("clipper.title")}</a>
+          <NavigationArea
+            slot="web.user"
+            afterEntry={{
+              id: "doca.mcp",
+              node: (
+                <a
+                  href="#/browser-assistant"
+                  onClick={close}
+                  data-entry-id="doca.browser-assistant"
+                >
+                  <Globe size={16} />
+                  <span>{t("clipper.title")}</span>
+                </a>
+              ),
+            }}
+          />
           {showWorkspaceLink && (
             <a href="#/home" onClick={close}>
               <House size={16} />

@@ -5,12 +5,14 @@ import { createPortal } from "react-dom";
 import { DocumentDownload, downloadResult } from "@web/features/documents/file-transfer.js";
 import { spreadsheetXlsxOptions } from "@web/features/documents/spreadsheet-xlsx.js";
 import { useDocumentReadOnly } from "@web/features/documents/document-mode.js";
+import { useSheetZoomPreference } from "@web/features/documents/sheet-zoom-preference.js";
 import {
   SpreadsheetEditor,
   type SpreadsheetEditorHandle,
   type ResourceAdapter,
   type SpreadsheetCellSelection,
   type SpreadsheetMenuExtension,
+  type SpreadsheetViewPreferences,
 } from "@smartdoca/sheet";
 import {
   restoreExlsxDocument,
@@ -99,6 +101,12 @@ export default function SheetDocument({
       EXLSX_SCHEMA_VERSION,
     );
   const createComment = useRef<() => void>(() => {});
+  const { zoomRatio, status: zoomStatus, onChange: changeZoom } = useSheetZoomPreference(user?.id, id);
+  const viewPreferences = useMemo<SpreadsheetViewPreferences>(() => ({ zoomRatio }), [zoomRatio]);
+  const changeViewPreferences = useCallback((value: SpreadsheetViewPreferences) => changeZoom(value.zoomRatio), [changeZoom]);
+  const zoomWarning = zoomStatus === "unsupported"
+    ? t("editor.sheetZoomUnsupported")
+    : zoomStatus === "unavailable" ? t("editor.sheetZoomUnavailable") : "";
   const rank = Math.min(roleRank(detail.resource.role), sync.rank);
   const reading = useDocumentReadOnly(sync.binding ? rank >= 3 : undefined);
   const editable = !reading && rank >= 3 && !!sync.binding && !sync.blocked;
@@ -108,7 +116,7 @@ export default function SheetDocument({
     [candidateIds, setCandidateIds] = useState<string[]>([]),
     [error, setError] = useState("");
   const [showCommentMarks, setShowCommentMarks] = useState(true);
-  const attachmentPreview = useAttachmentPreview();
+  const attachmentPreview = useAttachmentPreview({ sheetImages: () => ref.current?.getImageGallery() ?? [] });
   const pasteDocumentLink = useSheetDocumentLinks(handle, editable, setError);
   const documentPicker = useSheetDocumentPicker(id, editable);
   const [slots, setSlots] = useState<{
@@ -266,6 +274,7 @@ export default function SheetDocument({
         ]}
       />
       <Feedback message={sync.error || error} tone="error" />
+      <Feedback message={zoomWarning} tone="warning" />
       {sync.binding && (!sync.connected || sync.blocked) && (
         <button
           className="surface-recovery"
@@ -291,10 +300,13 @@ export default function SheetDocument({
         <SpreadsheetEditor
           locale={locale}
           toolbarLayout="two-row"
+          viewPreferences={viewPreferences}
+          onViewPreferencesChange={changeViewPreferences}
           menus={menus}
           cellRenderers={elements.renderers}
           renderCellObject={(object) => renderSheetObject(object, attachmentPreview.previewFile)}
           onAttachmentPreview={attachmentPreview.onSheetAttachmentPreview}
+          onImagePreview={attachmentPreview.onSheetImagePreview}
           onPasteContent={pasteDocumentLink}
           ref={ref}
           workbookId={id}

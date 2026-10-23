@@ -31,8 +31,9 @@ const files={};
 const walk=dir=>{for(const e of fs.readdirSync(dir,{withFileTypes:true})){if(['node_modules','dist'].includes(e.name))continue;const p=path.join(dir,e.name);if(e.isDirectory())walk(p);else if(/\\.(?:ts|tsx|mts|cts|js|mjs|cjs|json)$/.test(e.name))files[p]=digest(p)}};
 walk('apps/server');walk('packages');const walkExtension=dir=>{for(const e of fs.readdirSync(dir,{withFileTypes:true})){const p=path.join(dir,e.name);if(e.isDirectory())walkExtension(p);else files[p]=digest(p)}};walkExtension('apps/browser-extension');for(const p of ['package.json','tsconfig.json','apps/server/dist/canvas-render/renderer.js'])files[p]=digest(p);
 const webAssets={};const walkWeb=dir=>{for(const e of fs.readdirSync(dir,{withFileTypes:true})){const p=path.join(dir,e.name);if(e.isDirectory())walkWeb(p);else if(!/\\.(?:gz|br)$/.test(e.name))webAssets[p]=digest(p)}};walkWeb('apps/web/dist');
-const editorFiles=['node_modules/@smartdoca/canvas/dist/model.js','node_modules/@smartdoca/sheet/dist/model.js','node_modules/@smartdoca/sheet/dist/yjs.js'];
-const editors=Object.fromEntries(['canvas','sheet','slate','slides'].map(name=>[name,JSON.parse(fs.readFileSync('node_modules/@smartdoca/'+name+'/package.json')).version]));
+const editorNames=['canvas','sheet','slate','slides','markdown'];
+const editorFiles=['node_modules/@smartdoca/canvas/dist/model.js','node_modules/@smartdoca/sheet/dist/model.js','node_modules/@smartdoca/sheet/dist/yjs.js','node_modules/@smartdoca/markdown/dist/index.js',...editorNames.map(name=>'node_modules/@smartdoca/'+name+'/package.json')];
+const editors=Object.fromEntries(editorNames.map(name=>[name,JSON.parse(fs.readFileSync('node_modules/@smartdoca/'+name+'/package.json')).version]));
 console.log(JSON.stringify({files,webAssets,editors,editorFiles:Object.fromEntries(editorFiles.map(p=>[p,digest(p)])),uid:process.getuid()}));
 `,
   ],
@@ -54,7 +55,7 @@ for (const group of [result.files, result.webAssets, result.editorFiles]) {
 }
 assert(Object.keys(result.files).length > 400);
 assert(Object.keys(result.webAssets).length > 100);
-const output = resolve(`docs/verification/release-${version}`);
+const output = resolve(`artifacts/verification/release-${version}`);
 await mkdir(output, { recursive: true });
 await writeFile(
   resolve(output, `runtime-${arch}.json`),

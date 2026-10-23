@@ -926,10 +926,9 @@ it("runs model tool loops for all five native formats and blocks revoked convers
         .set({ deleted_at: new Date().toISOString() })
         .where("id", "=", r.id)
         .execute();
-      expect(
-        (await app.inject({ url: `/api/v1/ai/sessions/${s.id}`, headers }))
-          .statusCode,
-      ).toBe(403);
+      const detached = await app.inject({ url: `/api/v1/ai/sessions/${s.id}`, headers });
+      expect(detached.statusCode, detached.body).toBe(200);
+      expect(JSON.parse(detached.json().session.resource_ids)).not.toContain(r.id);
     }
     expect(calls).toHaveLength(31);
     const audits = calls.filter((c) =>
@@ -1409,10 +1408,9 @@ it("stops a queued or running job and prevents model follow-ups after source rev
     }
     expect(job.status).toBe("failed");
     expect(recorded.length - count).toBe(1);
-    expect(
-      (await app.inject({ url: `/api/v1/ai/sessions/${t.id}`, headers }))
-        .statusCode,
-    ).toBe(403);
+    const detached = await app.inject({ url: `/api/v1/ai/sessions/${t.id}`, headers });
+    expect(detached.statusCode, detached.body).toBe(200);
+    expect(JSON.parse(detached.json().session.resource_ids)).not.toContain(doc.id);
   } finally {
     await app.close();
   }

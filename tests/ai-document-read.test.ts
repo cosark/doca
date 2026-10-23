@@ -209,6 +209,27 @@ it("outlines canvas nodes and markdown headings", () => {
   });
 });
 
+it("pairs nested Canvas label UTF-16 lengths with the complete unchanged native text", () => {
+  const label = {
+    id: "orders-label",
+    tag: "Text",
+    data: { kind: "node-label" },
+    text: "orders\n───\nid\nuser_id\nbook_id\ncreated_at\n📄",
+  };
+  const value = { scene: { children: [{ id: "orders", tag: "Frame", children: [label] }] } };
+  const before = structuredClone(value);
+  const outlined = documentReadPayload("canvas", value).outline as any;
+  expect(outlined.children[0].children[0]).toMatchObject({
+    id: "orders-label",
+    parentId: "orders",
+    textLength: 43,
+  });
+  expect(outlined.children[0].children[0].text).not.toBe(label.text);
+  const full = documentReadPayload("canvas", value, { elementId: "orders-label" });
+  expect(JSON.parse(full.content!)).toEqual(label);
+  expect(value).toEqual(before);
+});
+
 it("moves first-call command shapes onto edit tools and recites edit state", () => {
   expect("firstEdit" in documentReadCapabilities("rich_text", 0)).toBe(false);
   expect(documentReadCapabilities("rich_text", 0).editTool).toBe("rich_text_edit");

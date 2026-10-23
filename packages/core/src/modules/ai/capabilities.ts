@@ -81,7 +81,7 @@ function compactEditingGuide(format: string, skillId?: string) {
         : format === "presentation"
           ? '删除元素用 {type:"remove",slideId,ids:[元素ID]}；样式用 {type:"formatText",slideId,ids:[元素ID],marks:{color:"#2563eb"}}；背景用 {type:"slideProperty",slideId,field:"background",value:"#ffffff"}。改正文用 {type:"replaceText",slideId,id,query:"原段落准确文字",text:"新文字"}；query 不跨段落。禁止 patch.paragraphs，SDK 不支持；省略 slideId/id 会全稿替换。不要用 blockId、elementId 或 params 代替 ids/marks。'
           : format === "canvas"
-            ? '流程图优先 createFlowchart，思维导图用 createMindmap，表格用 createTable/table，APP/手机/平板/网页 UI 用 createContainer（phone/tablet/web），将整页元素一次放在 children 数组内形成真实父子层级；不能把空设备壳和内容放到同层。后续 add 内容必须在操作顶层带所属容器 parentId。坐标均为父容器内像素。原生关联放 data.kind/parentId/sourceId/targetId；不能用普通 Rect 加文字冒充原生节点。table 使用零基行列，修改前按 elementId 读取完整表格。data 为整字段替换，patch 时保留原有元数据。'
+            ? '流程图优先 createFlowchart，思维导图用 createMindmap，表格用 createTable/table，APP/手机/平板/网页 UI 用 createContainer（phone/tablet/web），将整页元素一次放在 children 数组内形成真实父子层级；不能把空设备壳和内容放到同层。后续 add 内容必须在操作顶层带所属容器 parentId。坐标均为父容器内像素。原生关联放 data.kind/parentId/sourceId/targetId；不能用普通 Rect 加文字冒充原生节点。table 使用零基行列，修改前按 elementId 读取完整表格。data 为整字段替换，patch 时保留原有元数据。整段替换 Text 时，先读 outline 中该 ID 实际的 UTF-16 textLength，再按 elementId 读完完整正文；用 index=0、deleteCount=该 textLength，不按短预览、字节或显示宽度猜长度。不确定或替换后发现残留时先重新读 outline 与完整正文。用户要求保留已有 ID 时，Text 和 node-label 也必须原 ID 用 text/patch 修改，禁止 remove 后 add 新标签规避文字替换。'
             : "";
   return `editTool=${format}_edit。可用命令：${ops.join("、")}。${extra}完整手册 load_skill id=${skillId ?? format}。`.trim();
 }

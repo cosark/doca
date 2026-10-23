@@ -1,8 +1,10 @@
 # Verification records
 
-Reviewed verification summaries and documentation attachments are committed here, grouped by acceptance case or release. Keep the original dates, results and scope. Add retained evidence here and update the referring documentation.
+Reviewed verification summaries and documentation attachments are committed here, grouped by acceptance case or release. Keep the original dates, results and scope. Existing committed release evidence and attachments remain available to the documentation that cites them.
 
-Scripts write generated logs, screenshots, reports and caches to `artifacts/`, which is entirely ignored by Git. Reusable test inputs belong in `tests/fixtures/`. New local output requires no ignore-rule changes.
+Scripts write generated logs, screenshots, JSON reports and exports to `artifacts/verification/<case>/`, which is entirely ignored by Git. Reusable test inputs belong in `tests/fixtures/`; application icons, documentation images, package manifests and other source configuration stay in their source directories. New local output requires no ignore-rule changes.
+
+The untracked raw attachments and seven temporary diagnostic or intermediate-run READMEs from `issue-tracker-2026-10-21/` now live under `artifacts/verification/issue-tracker-2026-10-21/`. Raw attachment bytes are preserved. Long-term summaries and contracts remain here; references marked “本地产物”, “本地图片” or “本地记录” describe ignored local files and are not repository links. Historical results and source fingerprints describe their original runs, not a rerun after this path cleanup. Deliberately selected attachments required by published documentation may still be committed alongside their referring documentation. Required dependency patches and reusable test scripts remain tracked source inputs.
 
 - [PostgreSQL attachments and sending](ai-postgres-send-regression-2026-10-10/README.md)
 - [Released database schema startup](book-schema-startup-2026-10-13/verification.json)

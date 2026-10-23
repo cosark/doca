@@ -2,6 +2,7 @@ import { useState } from "react";
 import { ArrowUpRight, Download, File } from "lucide-react";
 import type { FileDelivery } from "@core/modules/ai/progress.js";
 import { fileUrl } from "@web/shared/api.js";
+import { useAIChatRuntime } from "./ai-runtime.js";
 
 function previewSrc(file: FileDelivery) {
   if (!file.mime?.startsWith("image/")) return "";
@@ -28,9 +29,10 @@ export function FileDeliveryCard({
   file: FileDelivery;
   onOpen?: (href: string) => void;
 }) {
+  const runtime = useAIChatRuntime();
   const downloadHref = file.downloadUrl || fileUrl(file.id, true);
   const open = file.href && onOpen ? () => onOpen(file.href!) : undefined;
-  const preview = previewSrc(file);
+  const preview = runtime.workspaceActions ? previewSrc(file) : "";
   const [previewFailed, setPreviewFailed] = useState(false);
   const body = (
     <>
@@ -69,7 +71,7 @@ export function FileDeliveryCard({
         <div className="ai-file-card-main">{body}</div>
       )}
       <span className="ai-file-card-actions">
-        <a
+        {runtime.workspaceActions && <a
           className="ai-file-card-download"
           href={downloadHref}
           download={file.name}
@@ -77,7 +79,7 @@ export function FileDeliveryCard({
           onClick={(event) => event.stopPropagation()}
         >
           <Download size={15} />
-        </a>
+        </a>}
         {open ? (
           <button
             type="button"

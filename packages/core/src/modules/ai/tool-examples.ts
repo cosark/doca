@@ -16,6 +16,7 @@ const editBase = {
 };
 
 export const TOOL_EXAMPLES: Record<string, Record<string, unknown>[]> = {
+  canvas_export: [{ resourceId: SAMPLE.doc, name: "画布画面.png" }],
   canvas_view: [
     { resourceId: SAMPLE.doc },
     { resourceId: SAMPLE.doc, elementIds: ["从 document_read 读取的对象ID"] },

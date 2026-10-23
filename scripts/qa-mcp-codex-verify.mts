@@ -127,7 +127,7 @@ try {
   assert.equal(folder.owner_id, fixture.adminId);
   const delegated = JSON.parse(
     await readFile(
-      resolve("docs/verification/mcp-2026-10-20/http-client.json"),
+      resolve("artifacts/verification/mcp-2026-10-20/http-client.json"),
       "utf8",
     ),
   ).delegated;
@@ -153,11 +153,11 @@ try {
     })),
   };
   await writeFile(
-    resolve("docs/verification/mcp-2026-10-20/codex.json"),
+    resolve("artifacts/verification/mcp-2026-10-20/codex.json"),
     JSON.stringify(report, null, 2),
   );
   await writeFile(
-    resolve("docs/verification/mcp-2026-10-20/codex-mcp-metrics.xlsx"),
+    resolve("artifacts/verification/mcp-2026-10-20/codex-mcp-metrics.xlsx"),
     xlsx,
   );
   await rpc("doca_context_close", { contextId: context.contextId });

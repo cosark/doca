@@ -3,8 +3,8 @@ import { useEffect, useRef, useState } from "react";
 import { Alert, Button, Modal, Space, Tag, Tooltip } from "antd";
 import { Download, FilePlus2 } from "lucide-react";
 import { api, assetUrl } from "@web/shared/api.js";
-import { SearchPanel } from "@web/features/search/search.js";
 import { AIAssetImage } from "./ai-asset-image.js";
+import { useAIChatRuntime } from "./ai-runtime.js";
 
 export function AIGeneratedImage({
   image,
@@ -23,6 +23,8 @@ export function AIGeneratedImage({
   sessionId?: string | null;
 }) {
 const { t } = useI18n();
+  const runtime = useAIChatRuntime();
+  const SearchPanel = runtime.workspace?.SearchPanel;
 
   const [picking, setPicking] = useState(false),
     [busy, setBusy] = useState(false),
@@ -35,7 +37,7 @@ const { t } = useI18n();
     setPending(!image.ready);
   }, [image.assetId, image.ready]);
   useEffect(() => {
-    if (ready || !pending) return;
+    if (ready || !pending || !runtime.workspaceActions) return;
     let active = true;
     const poll = async () => {
       try {
@@ -82,6 +84,7 @@ const { t } = useI18n();
       setBusy(false);
     }
   }
+  if (!runtime.workspaceActions) return <p className="ai-generated-image">{image.filename}</p>;
   if (!ready)
     return (
       <Alert
@@ -140,14 +143,14 @@ const { t } = useI18n();
             加入当前文档
           </Button>
         )}
-        <Button
+        {SearchPanel && <Button
           size="small"
           icon={<FilePlus2 size={14} />}
           onClick={() => {
             setError("");
             setPicking(true);
           }}
-        >{t("fileManager.addToDocument")}</Button>
+        >{t("fileManager.addToDocument")}</Button>}
       </Space>
       {inserted && (
         <p className="subtle">
@@ -168,7 +171,7 @@ const { t } = useI18n();
           文档追加到末尾，表格和画板放在已有内容下方，演示文稿新增一页图片。
         </p>
         {error && <Alert type="error" title={error} />}
-        <SearchPanel compact select={(r) => void insert(r)} />
+        {SearchPanel && <SearchPanel compact select={(r) => void insert(r)} />}
       </Modal>
     </div>
   );

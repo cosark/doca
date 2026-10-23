@@ -8,11 +8,11 @@ The current checkout integrates five editors. Use actual installed exports; targ
 
 | Format | Installed package | Host entry |
 | --- | --- | --- |
-| Rich text | @smartdoca/slate 0.4.23 | document-editor.tsx |
-| Markdown | @smartdoca/markdown 0.4.3 | markdown-editor.tsx |
-| Spreadsheet | @smartdoca/sheet 0.2.5 | spreadsheet-editor.tsx |
-| Canvas | @smartdoca/canvas 0.5.8 | canvas-editor.tsx |
-| Slides | @smartdoca/slides 0.3.0-alpha.3 | presentation-editor.tsx |
+| Rich text | @smartdoca/slate 0.4.25 | document-editor.tsx |
+| Markdown | @smartdoca/markdown 0.4.4 | markdown-editor.tsx |
+| Spreadsheet | @smartdoca/sheet 0.2.11 | spreadsheet-editor.tsx |
+| Canvas | @smartdoca/canvas 0.5.14 | canvas-editor.tsx |
+| Slides | @smartdoca/slides 0.3.0-alpha.4 | presentation-editor.tsx |
 
 Entries are in the [document feature](../apps/web/src/features/documents). Packages own models, editing commands, undo, rendering, selections, and conversion. The host owns identity, ACLs, uploads/downloads, references, user cards, navigation, comments, and collaboration transport. Locale updates chrome without translating content or rebuilding the editor.
 
@@ -24,7 +24,31 @@ Images, attachments, and materials use host resource callbacks. Progress, cancel
 
 Rich text and spreadsheets pass stable `onAttachmentPreview` callbacks to the installed editors. Rich text supplies `AttachmentElement.path/name/mimeType`; spreadsheet native inline attachments supply `event.node.refId/label`. The host resolves asset UUIDs to permission-checked content endpoints and opens the shared `DocumentFilePreview`, also in readonly/history/trash views with their existing access flags. Rich text selects an attachment on the first edit-mode click and previews on the next click or its preview button; readonly previews on the first click. Spreadsheet previews clicks on the native attachment label. The existing whole-cell object renderer remains available. Preview does not change the model, collaboration session, or persisted format.
 
+The installed rich text, Markdown, spreadsheet and slides packages expose their current image-preview callbacks. Doca combines those callbacks with Canvas resources in one authorized image gallery. The host preserves each image occurrence's stable ID, so repeated uses of one asset remain separate entries. Slides follow page/element order; spreadsheets use the public `getImageGallery()` snapshot, including native cell drafts and other sheets. Generated diagram/Mermaid SVG previews resolve lazily alongside ordinary image assets. The lightbox supports dragging, previous/next controls, arrow keys, horizontal wheel and touch gestures, and resets pan when changing images. Active, reading, history and trash surfaces keep their existing authorization flags. Opening, navigating or closing the gallery does not commit a draft or write collaborative content.
+
 Find/replace uses editor models or native capabilities. Rich text uses a host Slate adapter; other formats use installed package find/replace or native panels. Readonly, disconnected, and presentation modes offer no content replacement. There is no generic public arbitrary-editor mutation handle or promise of identical text ranges/regex across formats.
+
+## Issue-tracker package integration — 2026-10-23
+
+All five editors use exact official npm versions. Installed Canvas 0.5.14, Sheet 0.2.11 and Slate 0.4.25 files match their public archives; Canvas matches the previously accepted C1 bytes. Slate 0.4.25 includes the former DOCX patch, and Markdown 0.4.4 includes the former KaTeX/lazy-PDF patch. Obsolete editor patches have been removed; their source remains recoverable from Git history and retained local artifacts. The deployment and release checks reject local editor archives and active editor patches. Package audits and version-specific browser results are recorded in [the npm integration verification](verification/issue-tracker-2026-10-21/npm-direct.md). Sheet 0.2.11 adds the actual controlled view API and approved dimensions. Its 73 installed files match the official archive; final host website acceptance is recorded separately from earlier 0.2.10 receipts.
+
+Canvas exposes controlled `viewPreferences` / `onViewPreferencesChange` and `creationPreferences` / `onCreationPreferencesChange`, plus pure validators from `@smartdoca/canvas/preferences`. The user approved independent version-1 browser records scoped by origin, account and document. Doca writes only explicit native preference changes. Missing records retain existing behavior; unknown/malformed records are preserved, not consumed or overwritten. A storage failure keeps the explicit choice in the current mounted view and reports that it cannot be saved. View choices and explicit creation defaults never rewrite existing elements, API/AI insertions, imports, collaborative data or history. Defaults affect only later interactive creation. The existing module-level session style cache is not browser storage and is not promoted into a preference record. Rollback stops consuming these records while preserving them and all subsequent content.
+
+Canvas 0.5.14 retains the menu/projection/layout/title and native keyboard-ownership fixes and returns focus on real object-handle and explicit-tool interactions. Automatic tool completion remains separate from user-requested focus; public component/handle shapes remain unchanged. Sheet 0.2.10 retains clipboard/dropdown fixes and fixes hyperlink input focus and delayed validation work during gallery disposal. Sheet 0.2.11 changes only the approved default dimensions in its model/Yjs runtimes compared with 0.2.10; both XLSX runtimes remain byte-identical and schema 6 is unchanged. Ordinary cells, text drafts, formula bars, dialogs and readonly retain native behavior. PNG omits the SVG-only font portability notice; Doca translates the retained SVG notice. Existing approved diagram display rules, historical readers, normalization and exact schema checks stay in their established paths. No editor-format conversion, DDL, baseline, epoch or pending-update rewrite is introduced. Retain the preceding deployment, manifests, lockfile, artifacts and later document/chat/file writes for rollback.
+
+## Spreadsheet dimensions and personal zoom — 2026-10-23
+
+Sheet 0.2.11 exports `SpreadsheetViewPreferences`, `isSpreadsheetViewPreferences` and the optional `viewPreferences` / `onViewPreferencesChange` props; the pure validator is also available from `@smartdoca/sheet/preferences`. The host stores `{version:1,zoomRatio}` under `doca.sheet.zoom.v1:<account>:<document>` on the current origin. The default remains 100%; only explicit native zoom changes write a record. Missing records use 100%, anonymous views stay transient, and malformed/unknown/extra-field records are preserved and refused. Storage denial keeps the explicit choice in the current view with feedback. Zoom remains outside snapshots, XLSX content, collaboration, undo and history.
+
+The user explicitly approved default row height 21.78 and column width 87.12 for new worksheets and historical appended/recovery worksheets without recorded default dimensions. Explicit baseline dimensions, manual row/column sizes and original baseline/seed/checkpoint/update bytes are preserved. Opening does not backfill fields or migrate data. Reverting the package restores the preceding missing-field display defaults; reverting the host stops using the independent zoom records and preserves them and later content edits.
+
+## Native event ownership, comments and quick notes — 2026-10-22
+
+A document package must reject keyboard/clipboard events owned by a host composer or external editable target before native commands run. Host React propagation guards alone cannot protect a package-level keyboard dispatcher. Canvas 0.5.12 enforces this ownership without changing public props, stored scene fields or command schemas. Doca owns comment input, loading/upload feedback, draft retention, layout and authorized marker pagination. Keeping an editor element selected while typing, deleting, pasting or undoing in a comment must leave the document checkpoint and sequence unchanged. Permanent anchor formats, presence and the document outbox are unchanged.
+
+The user-approved extension quick note explicitly chooses an enabled authorized append-profile target, limited to existing rich text or Markdown, and appends plain text without AI. The target, text and ticket live only in the current extension view. The host uses existing native content commands, receipts and collaboration delivery; it does not grant arbitrary document access or add an editor autosave channel. Rich text appends literal paragraph leaves; Markdown appends the supplied ordinary source through its current renderer. An uncertain response retries the same ticket/request ID, never a newly prepared target. Tickets are process-local for five minutes; restart/expiry/revocation can stop an attempt while retaining its input. See the [quick-note contract](browser-quick-note.md).
+
+Official artifacts and case-specific receipts are recorded in [the issue tracker](verification/issue-tracker-2026-10-21/README.md). Earlier Canvas 0.5.12/0.5.13 failures retain their original scope. Official 0.5.14 matches the C1 archive that passed all 17 native stages and seven preference groups. Sheet 0.2.10 passed two independent native rounds and four serial gallery rounds on built Doca. Later package or host changes still require their own final compiled-Web verification. No production deployment is claimed.
 
 ## File import/export
 

@@ -10,9 +10,10 @@ import {
   type SetStateAction,
 } from "react";
 import { Sparkles } from "lucide-react";
-import { api, type FileItem, type Resource } from "@web/shared/api.js";
+import { type FileItem, type Resource } from "@web/shared/api.js";
 import type { AIReference } from "@core/workflows/ai-documents.js";
-import { usePendingSendRunner } from "@web/features/ai/ai-pending-runner.js";
+import { PendingMessageConflictError, usePendingSendRunner } from "@web/features/ai/ai-pending-runner.js";
+import { PendingQueueStorageError } from "./ai-pending-delivery.js";
 import {
   keepsAssistantSession,
   withSessionHash,
@@ -23,6 +24,7 @@ import {
   sidePanelSurface,
   writeSidePanel,
 } from "@web/features/ai/ai-side-open.js";
+import { useAIChatRuntime } from "./ai-runtime.js";
 
 type Bridge = {
   capture: () => unknown;
@@ -82,7 +84,11 @@ export function AIProvider({
   onResourcesChanged?: () => void;
   children: ReactNode;
 }) {
+  const { t } = useI18n();
+  const runtime = useAIChatRuntime();
+  const api = runtime.request;
   const [open, setOpenState] = useState(() => {
+      if (runtime.embedded) return true;
       const surface = sidePanelSurface(hash);
       return !!(userId && surface && readSidePanel(userId, surface).open);
     }),
@@ -144,6 +150,7 @@ export function AIProvider({
     if (
       next &&
       !open &&
+      !sessionId &&
       !sessionFromHash(hash) &&
       (resource?.id ||
         (sidePanelSurface(hash) &&
@@ -154,6 +161,13 @@ export function AIProvider({
       resumeAttempt.current = null;
     }
     setOpenState(next);
+    if (!runtime.embedded && !next && sessionFromHash(location.hash)) {
+      // Collapsing the assistant also removes its navigation state. Keep the
+      // mounted chat alive so an upload or response can still finish.
+      location.hash = withSessionHash(location.hash, null);
+    } else if (!runtime.embedded && next && sessionId && keepsAssistantSession(location.hash)) {
+      location.hash = withSessionHash(location.hash, sessionId);
+    }
     const surface = sidePanelSurface(hash);
     if (userId && surface)
       writeSidePanel(userId, surface, { open: next, sessionId });
@@ -281,7 +295,7 @@ export function AIProvider({
         }
       }),
     );
-  });
+  }, error => setError(error instanceof PendingMessageConflictError ? t("chat.pendingConflict") : error instanceof PendingQueueStorageError ? t("chat.draftSaveFailed") : error.message), runtime.embedded ? sessionId : undefined);
   const reveal = (ref: AIReference) => {
     const b = bridges.get(ref.resourceId);
     if (b?.ready() && ref.anchor) {
@@ -292,13 +306,15 @@ export function AIProvider({
       }
     } else {
       if (ref.anchor) setPendingReference(ref);
-      location.hash = `/r/${ref.resourceId}${sessionId ? `?session=${sessionId}` : ""}`;
+      runtime.navigate(`/r/${ref.resourceId}${sessionId ? `?session=${sessionId}` : ""}`);
     }
   };
   const selectSession = (id: string | null) => {
     if (userId && resource) resumeAttempt.current = `${userId}:${resource.id}`;
     setSessionId(id);
+    runtime.sessionChanged?.(id);
     sessionSeen.current = id;
+    if (runtime.embedded) return;
     const route = location.hash.replace(/^#/, "");
     if (!keepsAssistantSession(route)) return;
     const next = withSessionHash(location.hash, id);

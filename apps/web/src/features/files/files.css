@@ -1776,6 +1776,14 @@ button.shared-folder-row:hover { background: #f7f9fc; }
   flex-wrap: nowrap;
   justify-content: flex-start;
 }
+.files-toolbar-actions .files-search {
+  flex: 1 1 160px;
+  min-width: 100px;
+  max-width: 220px;
+}
+@media (max-width: 1300px) {
+  .files-toolbar-actions { flex-wrap: wrap; }
+}
 .files-toolbar-actions > button:not(.icon),
 .files-toggle,
 .files-sort,

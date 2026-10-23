@@ -34,15 +34,17 @@ RUN --mount=type=cache,id=pnpm-${TARGETARCH},target=/pnpm/store,sharing=locked \
 # The runtime stage keeps only modules the production server loads.
 COPY --parents apps/*/package.json packages/*/package.json ./
 RUN --mount=type=cache,id=pnpm-${TARGETARCH},target=/pnpm/store,sharing=locked \
-    pnpm install --frozen-lockfile --offline --reporter=append-only \
+    pnpm install --frozen-lockfile --prefer-offline --reporter=append-only \
     && pnpm config set verify-deps-before-run false
 
 COPY tsconfig.json ./
 COPY apps ./apps
 COPY packages ./packages
-COPY docker/prune-runtime-modules.mjs docker/prune-runtime-modules.mjs
+COPY docker/prune-runtime-modules.mjs docker/prune-runtime-build-inputs.mjs docker/split-runtime-modules.mjs ./docker/
 RUN pnpm build \
-    && node docker/prune-runtime-modules.mjs --apply /app
+    && node docker/prune-runtime-modules.mjs --apply /app \
+    && node docker/prune-runtime-build-inputs.mjs --apply /app \
+    && node docker/split-runtime-modules.mjs /app
 
 FROM ${NODE_IMAGE} AS render-runtime
 
@@ -76,12 +78,18 @@ FROM render-runtime AS runtime
 
 # AI's SQLite file defaults to ai.db alongside DOCA_SQLITE_PATH.
 # Supply the browser-facing HTTP(S) DOCA_ORIGIN at runtime, behind a proxy.
-COPY --from=build /app/package.json /app/tsconfig.json ./
-COPY --from=build /app/node_modules ./node_modules
-COPY --from=build /app/packages ./packages
-COPY --from=build /app/apps/server ./apps/server
-COPY --from=build /app/apps/browser-extension ./apps/browser-extension
-COPY --from=build /app/apps/web/dist ./apps/web/dist
+COPY --link --from=build /app/package.json /app/tsconfig.json ./
+COPY --link --from=build /app/artifacts/runtime-layers/common/node_modules ./node_modules
+COPY --link --from=build /app/artifacts/runtime-layers/canvas/node_modules ./node_modules
+COPY --link --from=build /app/artifacts/runtime-layers/markdown/node_modules ./node_modules
+COPY --link --from=build /app/artifacts/runtime-layers/sheet/node_modules ./node_modules
+COPY --link --from=build /app/artifacts/runtime-layers/slate/node_modules ./node_modules
+COPY --link --from=build /app/artifacts/runtime-layers/slides/node_modules ./node_modules
+COPY --link --from=build /app/artifacts/runtime-layers/metadata/node_modules ./node_modules
+COPY --link --from=build /app/packages ./packages
+COPY --link --from=build /app/apps/server ./apps/server
+COPY --link --from=build /app/apps/browser-extension ./apps/browser-extension
+COPY --link --from=build /app/apps/web/dist ./apps/web/dist
 
 
 # Mount a persistent volume here for SQLite, AI memory and local file storage.

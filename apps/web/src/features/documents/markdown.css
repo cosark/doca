@@ -90,12 +90,8 @@
   min-width: 0;
 }
 .markdown-document:has(.region-comments-drawer) .markdown-sdk-container {
-  width: calc(100% - 360px);
-}
-@media (max-width: 800px) {
-  .markdown-document:has(.region-comments-drawer) .markdown-sdk-container {
-    width: 100%;
-  }
+  width: 0;
+  flex: 1 1 0;
 }
 .markdown-document .region-comment-controls {
   top: 36px;
@@ -105,7 +101,7 @@
 }
 .markdown-document .region-comments-drawer > header {
   position: sticky;
-  top: -16px;
+  top: 0;
   z-index: 3;
   background: var(--surface, #fff);
   padding-block: 12px;

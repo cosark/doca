@@ -1,5 +1,18 @@
 # Doca development conventions
 
+## Generated verification artifacts
+
+Write generated screenshots, JSON reports, exports and execution logs under
+`artifacts/` (verification scripts use `artifacts/verification/<case>/`). This
+directory is ignored by Git. Keep reusable test inputs in `tests/fixtures/`,
+source assets and configuration in their source directories, and reviewed
+verification summaries in `docs/verification/`. Only commit documentation
+attachments deliberately needed by published documentation; do not add raw
+execution output there. Temporary diagnostic notes, per-run READMEs and
+intermediate acceptance baselines also belong under `artifacts/`, even when
+written in Markdown. Keep required dependency patches and reusable test scripts
+in Git. Do not ignore all JSON, image, Markdown or patch files by extension.
+
 ## Compatibility changes require prior agreement
 
 This rule applies to all work in this repository. Before introducing, retaining

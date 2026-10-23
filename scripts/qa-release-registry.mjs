@@ -8,7 +8,7 @@ import { resolve } from "node:path";
 const { version } = JSON.parse(await readFile("package.json", "utf8"));
 const tag = process.argv[2] ?? version;
 assert(tag === version || tag === "latest");
-const output = resolve(`docs/verification/release-${version}`);
+const output = resolve(`artifacts/verification/release-${version}`);
 const accepted = JSON.parse(
   await readFile(resolve(output, "image-build.json"), "utf8"),
 );

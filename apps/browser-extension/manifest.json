@@ -1,7 +1,7 @@
 {
   "manifest_version": 3,
   "name": "Doca Browser Assistant",
-  "version": "0.1.0",
+  "version": "0.2.0",
   "minimum_chrome_version": "116",
   "description": "Capture selected content and complete pages with original images, and use your Doca AI assistant.",
   "permissions": ["storage", "activeTab", "sidePanel"],
@@ -24,12 +24,34 @@
   "content_scripts": [
     {
       "matches": ["http://*/*", "https://*/*"],
-      "js": ["capture.js", "content.js", "login-bridge.js"],
+      "js": ["login-bridge.js"],
+      "run_at": "document_start",
+      "all_frames": false
+    },
+    {
+      "matches": ["http://*/*", "https://*/*"],
+      "js": ["capture.js", "select.js", "content.js"],
       "run_at": "document_idle",
       "all_frames": false
     }
   ],
   "content_security_policy": {
     "extension_pages": "script-src 'self'; object-src 'none'; base-uri 'none';"
+  },
+  "commands": {
+    "capture-page": {
+      "suggested_key": {
+        "default": "Ctrl+Shift+Y",
+        "mac": "Command+Shift+Y"
+      },
+      "description": "Save current page to Doca"
+    },
+    "capture-selection": {
+      "suggested_key": {
+        "default": "Ctrl+Shift+U",
+        "mac": "Command+Shift+U"
+      },
+      "description": "Save selected content to Doca"
+    }
   }
 }

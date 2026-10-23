@@ -35,6 +35,8 @@ export function decodeSystemError(value: string): SystemErrorReason | undefined 
 type Translator = (key: MessageKey, values?: MessageValues) => string;
 
 const reasonKeys = {
+  file_trash_changed: "trash.filesChanged",
+  file_trash_live_children: "trash.filesLiveChildren",
   mcp_invalid: "mcp.error.invalid",
   mcp_conflict: "mcp.error.conflict",
   mcp_unavailable: "mcp.error.unavailable",

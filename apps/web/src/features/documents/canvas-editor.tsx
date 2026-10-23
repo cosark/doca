@@ -18,7 +18,13 @@ import {
   type CanvasResourceUploadContext,
 } from "@smartdoca/canvas";
 import { CanvasModel, type CanvasPresence } from "@smartdoca/canvas/model";
+import {
+  isCanvasViewPreferences,
+  isCanvasCreationPreferences,
+} from "@smartdoca/canvas/preferences";
+import { useCanvasBrowserPreference } from "./canvas-browser-preferences.js";
 import { useAttachmentPreview } from "./attachment-preview.js";
+import { canvasImageGallery } from "./canvas-image-gallery.js";
 import {
   api,
   assetUrl,
@@ -108,11 +114,30 @@ export default function CanvasDocument({
   const { locale, t } = useI18n();
   const ai = useAI();
   const richTextExtensions = useCanvasRichExtensions();
-  const attachmentPreview = useAttachmentPreview();
   const aiRef = useRef(ai);
   aiRef.current = ai;
   const id = detail.resource.id,
     sync = useSurfaceSync(id, user?.id, "aidcanvas-yjs", factory, changed, 1);
+  const viewPreferences = useCanvasBrowserPreference(
+    user?.id,
+    id,
+    "view",
+    isCanvasViewPreferences,
+  );
+  const creationPreferences = useCanvasBrowserPreference(
+    user?.id,
+    id,
+    "creation",
+    isCanvasCreationPreferences,
+  );
+  const preferenceWarning =
+    viewPreferences.status === "unsupported" ||
+    creationPreferences.status === "unsupported"
+      ? t("editor.canvasPreferenceUnsupported")
+      : viewPreferences.status === "unavailable" ||
+          creationPreferences.status === "unavailable"
+        ? t("editor.canvasPreferenceUnavailable")
+        : "";
   const [renderFailed, setRenderFailed] = useState(false);
   const rank = Math.min(roleRank(detail.resource.role), sync.rank);
   const reading = useDocumentReadOnly(sync.binding ? rank >= 3 : undefined);
@@ -143,6 +168,7 @@ export default function CanvasDocument({
     [rank, sync.connected, sync.blocked, t],
   );
   const ref = useRef<CanvasEditorRef>(null),
+    commentHost = useRef<HTMLElement>(null),
     [handle, setHandle] = useState<CanvasEditorRef | null>(null),
     [active, setActive] = useState<string | null>(null),
     [error, setError] = useState("");
@@ -157,6 +183,10 @@ export default function CanvasDocument({
     });
   }, [id]);
   const model = sync.binding?.value;
+  const attachmentPreview = useAttachmentPreview({
+    imageResources: () =>
+      model ? canvasImageGallery(model.getValue().scene) : [],
+  });
   useEffect(() => {
     if (!editable) handle?.flush();
     model?.setReadOnly(!editable);
@@ -170,7 +200,8 @@ export default function CanvasDocument({
     const focus = (event: FocusEvent) => {
       if (
         event.target instanceof HTMLElement &&
-        !event.target.closest(".canvas-document")
+        !event.target.closest(".canvas-document") &&
+        !commentHost.current?.closest(".ai-document-main")?.querySelector(".document-comment-dock")?.contains(event.target)
       )
         handle.select([]);
     };
@@ -286,6 +317,7 @@ export default function CanvasDocument({
   );
   return (
     <section
+      ref={commentHost}
       className="surface-editor canvas-document"
       onKeyDownCapture={(event) => {
         // Native contenteditable history is replaced during CRDT projection.
@@ -316,19 +348,26 @@ export default function CanvasDocument({
         options={(["png", "svg"] as const).map((format) => ({
           label: format.toUpperCase() + " 图片",
           run: async () => {
-            if (handle)
-              downloadResult(
-                await handle.exportFile({
-                  format,
-                  scope: "all",
-                  filename: detail.resource.title,
-                }),
-              );
+            if (!handle) return;
+            const result = await handle.exportFile({
+              format,
+              scope: "all",
+              filename: detail.resource.title,
+            });
+            downloadResult({
+              ...result,
+              warnings: result.warnings.map((warning) =>
+                warning.code === "FONT_NOT_EMBEDDED_SYSTEM_FALLBACK"
+                  ? { ...warning, message: t("editor.canvasFontExportWarning") }
+                  : warning,
+              ),
+            });
           },
         }))}
       />
       {attachmentPreview.dialog}
       <Feedback message={sync.error || error} tone="error" />
+      <Feedback message={preferenceWarning} tone="warning" />
       {sync.binding && (!sync.connected || sync.blocked) && (
         <button
           className="surface-recovery"
@@ -354,6 +393,10 @@ export default function CanvasDocument({
           render={() => (
             <CanvasEditor
               locale={locale}
+              viewPreferences={viewPreferences.value}
+              onViewPreferencesChange={viewPreferences.onChange}
+              creationPreferences={creationPreferences.value}
+              onCreationPreferencesChange={creationPreferences.onChange}
               selectionActions={selectionActions}
               model={model}
               hostManaged
@@ -361,7 +404,7 @@ export default function CanvasDocument({
               mode={editable ? "edit" : "readonly"}
               showHeader={false}
               richTextExtensions={richTextExtensions}
-          className="doca-canvas"
+              className="doca-canvas"
               resources={resources}
               onResourcePreview={attachmentPreview.onCanvasResourcePreview}
               onAttachmentPreview={attachmentPreview.onCanvasAttachmentPreview}

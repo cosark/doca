@@ -8,6 +8,16 @@
 
 每次 Office 转换都在私有 `/tmp/doca-office-render-*` 临时目录中启动独立 headless 进程和全新的 LibreOffice 用户配置，120 秒超时，成功或失败后均清理临时目录。容器 `node` 用户必须能写入 `/tmp`；不要挂载桌面用户的 Office 配置，或改为 root 才能运行。旧二进制 Office 格式、主动内容和不支持的外部资源仍会拒绝，转换失败不会伪装成完整文本读取。详见 [AI 附件](ai-attachments.md)。
 
+## 镜像体积与更新下载量
+
+Chromium 以无窗口方式负责 PDF 导出、原生画布截图与 AI 看图；LibreOffice 负责 Office 文档渲染。完整镜像保留两种渲染器、沙箱和字体。
+
+Web 构建后会移除依赖类型声明、TypeScript 构建记录、SQLite 编译输入和其他平台的 SQLite 预编译文件。清理前先实际执行已安装的原生 SQLite 绑定，保留当前绑定、运行时 JS/TS、包清单及许可证。公开 npm 包、编辑器运行代码和应用数据不变。
+
+通用 Node 依赖、五个编辑器及 pnpm 安装记录分别使用独立 `COPY --link` 层；服务端源码、扩展和编译 Web 也分层。发布 CI 按架构读写 `buildcache-amd64` / `buildcache-arm64`，这些 BuildKit 缓存标签与运行镜像分开，使全新 CI runner 和后续业务更新也能复用未变的渲染器、依赖层。机制见 Docker 的[独立 COPY 层](https://docs.docker.com/reference/dockerfile/#copy---link)与[仓库构建缓存](https://docs.docker.com/build/cache/backends/registry/)。
+
+首次切换此布局需要下载新层；后续拉取会复用服务器已有层，基础镜像、渲染器或依赖变化时仍需下载对应新层。发布验收按架构记录压缩层字节。Docker Desktop 本地占用可包含双架构及解压内容，不等于单台服务器下载量。具体实验范围见[问题清单验收](verification/issue-tracker-2026-10-21/image-size.md)。
+
 ## Linux Chromium 沙箱
 
 应用明确启用 Chromium 沙箱，容器及宿主安全策略须允许用户命名空间。安装沙箱包并以非 root 运行仍不足以赋予这些权限。[Playwright 官方 Docker 文档](https://playwright.dev/docs/docker)使用默认 seccomp 策略，加上用户命名空间所需的 `clone`、`setns`、`unshare` 许可。

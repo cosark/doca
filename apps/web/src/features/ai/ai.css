@@ -1541,6 +1541,15 @@ body.ai-panel-resizing {
   border-color: #f0c2bd;
   background: #fff1ef;
 }
+.ai-browser-page-context {
+  display: block;
+  max-width: 100%;
+  overflow: hidden;
+  text-overflow: ellipsis;
+  white-space: nowrap;
+  margin: 0 10px 6px;
+  font-size: 12px;
+}
 .ai-archived-session > span {
   display: flex;
   min-width: 0;

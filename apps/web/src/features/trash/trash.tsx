@@ -5,9 +5,15 @@ import { FileText, Folder, RotateCcw, Trash2 } from "lucide-react";
 import { api, type Page, type Resource } from "@web/shared/api.js";
 import { Dialog } from "@web/features/documents/dialogs.js";
 import { Feedback } from "@web/shared/components/feedback.js";
-const TextPreview = lazy(() => import("@web/features/documents/version-preview.js"));
-const MarkdownPreview = lazy(() => import("@web/features/documents/markdown-preview.js"));
-const SurfacePreview = lazy(() => import("@web/features/documents/surface-preview.js"));
+const TextPreview = lazy(
+  () => import("@web/features/documents/version-preview.js"),
+);
+const MarkdownPreview = lazy(
+  () => import("@web/features/documents/markdown-preview.js"),
+);
+const SurfacePreview = lazy(
+  () => import("@web/features/documents/surface-preview.js"),
+);
 type Preview = {
   resource: Resource;
   value?: EditorValue;
@@ -44,12 +50,16 @@ export function TrashPreview({
   }, [id]);
   return (
     <Dialog
-      title={t("trash.previewTitle", { title: data?.resource.title ?? resource.title })}
+      title={t("trash.previewTitle", {
+        title: data?.resource.title ?? resource.title,
+      })}
       close={close}
     >
       <div className="trash-preview">
         <Feedback message={error} tone="error" />
-        <Suspense fallback={<p className="empty">{t("trash.loadingPreview")}</p>}>
+        <Suspense
+          fallback={<p className="empty">{t("trash.loadingPreview")}</p>}
+        >
           {data?.surface ? (
             <SurfacePreview id={id} surface={data.surface} trash />
           ) : typeof data?.markdown === "string" ? (
@@ -99,8 +109,7 @@ export function EmptyTrash({ done }: { done: () => void }) {
         );
         all.push(...page.items);
         cursor = page.nextCursor ?? undefined;
-        if (all.length > 1000)
-          throw Error(t("trash.tooMany"));
+        if (all.length > 1000) throw Error(t("trash.tooMany"));
       } while (cursor);
       setTargets(all);
     } catch (e) {
@@ -172,34 +181,80 @@ export function EmptyTrash({ done }: { done: () => void }) {
   );
 }
 
-type FileTrashItem = { id: string; kind: "folder" | "file"; name: string; version: number; deletedAt: string | null };
+type FileTrashItem = {
+  id: string;
+  kind: "folder" | "file";
+  name: string;
+  version: number;
+  deletedAt: string | null;
+};
+type FileTrashClearPreview = {
+  fingerprint: string;
+  fileCount: number;
+  folderCount: number;
+  names: string[];
+  omitted: number;
+};
 export function FileTrash() {
   const { t } = useI18n();
   const [items, setItems] = useState<FileTrashItem[]>([]),
     [error, setError] = useState(""),
     [purgeTarget, setPurgeTarget] = useState<FileTrashItem | null>(null),
+    [clearTarget, setClearTarget] = useState<FileTrashClearPreview | null>(
+      null,
+    ),
     [busy, setBusy] = useState(false);
   async function load() {
     try {
-      const data = await api<{ folders: FileTrashItem[]; files: FileTrashItem[] }>("/files/trash");
+      const data = await api<{
+        folders: FileTrashItem[];
+        files: FileTrashItem[];
+      }>("/files/trash");
       setItems([...data.folders, ...data.files]);
-    } catch (e) { setError(e instanceof Error ? e.message : t("trash.filesFailed")); }
+    } catch (e) {
+      setError(e instanceof Error ? e.message : t("trash.filesFailed"));
+    }
   }
-  useEffect(() => { void load(); }, []);
+  useEffect(() => {
+    void load();
+  }, []);
   async function restore(item: FileTrashItem) {
-    try { await api("/files/trash/restore", "POST", { kind: item.kind, id: item.id, version: item.version }); await load(); }
-    catch (e) { setError(e instanceof Error ? e.message : t("trash.restoreFailed")); }
+    try {
+      await api("/files/trash/restore", "POST", {
+        kind: item.kind,
+        id: item.id,
+        version: item.version,
+      });
+      await load();
+    } catch (e) {
+      setError(e instanceof Error ? e.message : t("trash.restoreFailed"));
+    }
   }
   async function purge(item: FileTrashItem) {
     setBusy(true);
     setError("");
     try {
       await api("/files/trash/purge", "POST", { kind: item.kind, id: item.id });
-      setItems((current) => current.filter((row) => row.id !== item.id || row.kind !== item.kind));
+      setItems((current) =>
+        current.filter((row) => row.id !== item.id || row.kind !== item.kind),
+      );
       setPurgeTarget(null);
       await load();
     } catch (e) {
       setError(e instanceof Error ? e.message : t("trash.purgeFailed"));
+    } finally {
+      setBusy(false);
+    }
+  }
+  async function prepareClear() {
+    setBusy(true);
+    setError("");
+    try {
+      setClearTarget(
+        await api<FileTrashClearPreview>("/files/trash/clear-preview"),
+      );
+    } catch (e) {
+      setError(e instanceof Error ? e.message : t("trash.filesFailed"));
     } finally {
       setBusy(false);
     }
@@ -211,7 +266,18 @@ export function FileTrash() {
           <h3>{t("trash.filesTitle")}</h3>
           <p>{t("trash.filesHint")}</p>
         </div>
-        <span>{t("home.itemCount", { count: items.length })}</span>
+        <div className="file-trash-actions">
+          <span>{t("home.itemCount", { count: items.length })}</span>
+          <button
+            type="button"
+            className="danger"
+            disabled={busy || !items.length}
+            onClick={() => void prepareClear()}
+          >
+            <Trash2 size={15} />
+            {t("trash.emptyFiles")}
+          </button>
+        </div>
       </div>
       <Feedback message={error} tone="error" />
       {items.length ? (
@@ -219,14 +285,32 @@ export function FileTrash() {
           {items.map((item) => (
             <div key={item.kind + item.id}>
               <span className="file-trash-icon">
-                {item.kind === "folder" ? <Folder size={17} /> : <FileText size={17} />}
+                {item.kind === "folder" ? (
+                  <Folder size={17} />
+                ) : (
+                  <FileText size={17} />
+                )}
               </span>
               <strong title={item.name}>{item.name}</strong>
-              <small>{item.kind === "folder" ? t("trash.folder") : t("trash.file")}</small>
-              <button type="button" className="icon" onClick={() => void restore(item)} aria-label={t("trash.restoreNamed", { name: item.name })}>
+              <small>
+                {item.kind === "folder" ? t("trash.folder") : t("trash.file")}
+              </small>
+              <button
+                type="button"
+                className="icon"
+                disabled={busy}
+                onClick={() => void restore(item)}
+                aria-label={t("trash.restoreNamed", { name: item.name })}
+              >
                 <RotateCcw size={15} />
               </button>
-              <button type="button" className="icon danger" onClick={() => setPurgeTarget(item)} aria-label={t("trash.purgeNamed", { name: item.name })}>
+              <button
+                type="button"
+                className="icon danger"
+                disabled={busy}
+                onClick={() => setPurgeTarget(item)}
+                aria-label={t("trash.purgeNamed", { name: item.name })}
+              >
                 <Trash2 size={15} />
               </button>
             </div>
@@ -234,6 +318,62 @@ export function FileTrash() {
         </div>
       ) : (
         <p className="file-trash-empty">{t("trash.filesEmpty")}</p>
+      )}
+      {clearTarget && (
+        <Dialog
+          title={t("trash.emptyFiles")}
+          close={() => {
+            if (!busy) setClearTarget(null);
+          }}
+          className="modal-compact"
+        >
+          <p className="warning">
+            {t("trash.emptyFilesBody", {
+              files: clearTarget.fileCount,
+              folders: clearTarget.folderCount,
+            })}
+          </p>
+          <div className="trash-confirm-list">
+            {clearTarget.names.map((name, index) => (
+              <div key={index}>{name}</div>
+            ))}
+            {clearTarget.omitted > 0 && (
+              <div>{t("trash.moreItems", { count: clearTarget.omitted })}</div>
+            )}
+          </div>
+          <footer>
+            <button disabled={busy} onClick={() => setClearTarget(null)}>
+              {t("common.cancel")}
+            </button>
+            <button
+              className="danger"
+              disabled={
+                busy || clearTarget.fileCount + clearTarget.folderCount === 0
+              }
+              onClick={async () => {
+                setBusy(true);
+                setError("");
+                try {
+                  await api("/files/trash/clear", "POST", {
+                    fingerprint: clearTarget.fingerprint,
+                  });
+                  setClearTarget(null);
+                  await load();
+                } catch (e) {
+                  setError(
+                    e instanceof Error ? e.message : t("trash.purgeFailed"),
+                  );
+                  setClearTarget(null);
+                  await load();
+                } finally {
+                  setBusy(false);
+                }
+              }}
+            >
+              {busy ? t("trash.emptying") : t("trash.emptyNow")}
+            </button>
+          </footer>
+        </Dialog>
       )}
       {purgeTarget && (
         <Dialog
@@ -243,12 +383,23 @@ export function FileTrash() {
           }}
           className="modal-compact"
         >
-          <p className="warning">{t("trash.purgeFile", { name: purgeTarget.name })}</p>
+          <p className="warning">
+            {t("trash.purgeFile", { name: purgeTarget.name })}
+          </p>
           <footer>
-            <button type="button" disabled={busy} onClick={() => setPurgeTarget(null)}>
+            <button
+              type="button"
+              disabled={busy}
+              onClick={() => setPurgeTarget(null)}
+            >
               {t("common.cancel")}
             </button>
-            <button type="button" className="danger" disabled={busy} onClick={() => void purge(purgeTarget)}>
+            <button
+              type="button"
+              className="danger"
+              disabled={busy}
+              onClick={() => void purge(purgeTarget)}
+            >
               {busy ? t("home.purging") : t("home.purge")}
             </button>
           </footer>

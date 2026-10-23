@@ -114,6 +114,7 @@ const toolKeys = {
   markdown_edit: "ai.progress.tool.markdownEdit",
   canvas_edit: "ai.progress.tool.canvasEdit",
   canvas_view: "ai.progress.tool.canvasView",
+  canvas_export: "ai.progress.tool.canvasExport",
   presentation_edit: "ai.progress.tool.presentationEdit",
   spreadsheet_edit: "ai.progress.tool.spreadsheetEdit",
   resource_manage: "ai.progress.tool.resourceManage",

@@ -1,4 +1,6 @@
 export const browserClipperEn = {
+  "clipper.downloadTitle": "Bring Doca to your browser",
+  "clipper.rulesLink": "View capture destinations and rules",
   "clipper.connecting": "Connecting your browser",
   "clipper.connectingHelp":
     "Your Doca sign-in is being linked. Return to the extension when this page closes.",
@@ -67,7 +69,7 @@ export const browserClipperEn = {
   "clipper.downloadHelp":
     "Download, unzip, then open chrome://extensions or edge://extensions. Enable Developer mode and load the unzipped extension folder. Your Doca sign-in is used automatically.",
   "clipper.siteAccess":
-    "The selection toolbar and original-image transfer require HTTP(S) site access. Page material is sent only when you capture it or explicitly attach it to AI.",
+    "The selection toolbar and original-image transfer require HTTP(S) site access. Page material is read when you capture it or send a message to the assistant.",
   "clipper.revokeTitle": "Revoke browser authorization",
   "clipper.revokeHelp":
     "The selected connection will stop accepting captures, uploads and assistant requests. Associated AI tasks are cancelled. Saved documents and images remain available.",
@@ -80,7 +82,7 @@ export const browserClipperEn = {
   "clipper.aiExamples":
     "Ask it to organize an article into symptoms, causes, diagnostic steps and solutions, or archive the original page with its images.",
   "clipper.aiPrivacy":
-    "Opening a page does not send its content to AI. Attach a page or selection explicitly. Conversations created by the extension can be continued in Doca.",
+    "The extension assistant can read the current page when you send a message. Opening it does not call a model. Browser conversations can be continued in Doca.",
   "clipper.formatHelp":
     "Append supports rich text and Markdown documents. Knowledge-book generated pages remain read-only.",
   "clipper.unavailable": "Destination unavailable",
@@ -98,6 +100,8 @@ export const browserClipperEn = {
   "clipper.error.clipper_invalid_input": "Check the form and try again.",
 };
 export const browserClipperZh: Record<keyof typeof browserClipperEn, string> = {
+  "clipper.downloadTitle": "把 Doca 带到浏览器",
+  "clipper.rulesLink": "查看收录位置与规则",
   "clipper.connecting": "正在连接浏览器",
   "clipper.connectingHelp":
     "正在验证当前 Doca 登录状态，完成后返回插件继续使用。",
@@ -162,7 +166,7 @@ export const browserClipperZh: Record<keyof typeof browserClipperEn, string> = {
   "clipper.downloadHelp":
     "下载并解压，打开 chrome://extensions 或 edge://extensions，开启开发者模式，加载已解压的扩展文件夹。使用时跟随当前浏览器的 Doca 登录状态，未登录则打开登录页。",
   "clipper.siteAccess":
-    "选区工具框与原图传输需要 HTTP(S) 站点访问权限。只有收录或明确附加给 AI 时才会发送网页内容。",
+    "选区工具框与原图传输需要 HTTP(S) 站点访问权限。点击收录或向助手发送消息时才会读取网页内容。",
   "clipper.revokeTitle": "撤销浏览器授权",
   "clipper.revokeHelp":
     "撤销后，该连接无法继续收录、上传图片或使用 AI 助手，关联的 AI 任务也会取消。已经保存的文档和图片会保留。",
@@ -175,7 +179,7 @@ export const browserClipperZh: Record<keyof typeof browserClipperEn, string> = {
   "clipper.aiExamples":
     "例如：将文章整理成故障现象、原因、排查步骤和解决方案，或把网页原文与原图一起归档。",
   "clipper.aiPrivacy":
-    "打开网页不会自动发送内容给 AI。需要明确附加网页或选区，扩展创建的会话也可以在 Doca 中继续。",
+    "插件 AI 助手默认可读取当前网页，发送消息时才调用模型；打开助手不会自动调用。浏览器会话也可以在 Doca 中继续。",
   "clipper.formatHelp":
     "追加支持富文本和 Markdown 文档。知识册生成的成果保持只读。",
   "clipper.unavailable": "保存位置不可用",

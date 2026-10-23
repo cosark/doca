@@ -43,8 +43,11 @@ type I18nValue = {
 
 const I18nContext = createContext<I18nValue | null>(null);
 
-export function LocaleProvider({ children }: { children: ReactNode }) {
-  const [locale, setLocaleState] = useState<Locale>(storedLocale);
+export function LocaleProvider({ children, initialLocale }: { children: ReactNode; initialLocale?: Locale }) {
+  const [locale, setLocaleState] = useState<Locale>(() => initialLocale ?? storedLocale());
+  useEffect(() => {
+    if (initialLocale) setLocaleState(initialLocale);
+  }, [initialLocale]);
   useLayoutEffect(() => {
     setAPIErrorLocale(locale);
   }, [locale]);

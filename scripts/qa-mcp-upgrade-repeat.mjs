@@ -1,7 +1,7 @@
 import { execFile } from "node:child_process";
 import { promisify } from "node:util";
 import { resolve } from "node:path";
-import { writeFile } from "node:fs/promises";
+import { mkdir, writeFile } from "node:fs/promises";
 if (process.env.DOCA_QA_ISOLATED !== "1")
   throw Error("Isolated release fixtures only");
 const exec = promisify(execFile),
@@ -36,8 +36,9 @@ for (const engine of ["sqlite", "pg17", "pg18"]) {
   );
   results.push({ engine, concurrentStarts: starts.length, starts });
 }
+await mkdir(resolve("artifacts/verification/mcp-2026-10-20"), { recursive: true });
 await writeFile(
-  resolve("docs/verification/mcp-2026-10-20/repeated-concurrent-upgrades.json"),
+  resolve("artifacts/verification/mcp-2026-10-20/repeated-concurrent-upgrades.json"),
   JSON.stringify({ passed: true, releasedVersion: "0.2.4", results }, null, 2),
 );
 console.log(JSON.stringify({ passed: true, results }));

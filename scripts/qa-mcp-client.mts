@@ -15,7 +15,7 @@ const fixture = JSON.parse(
 assert.match(fixture.origin, /^http:\/\/127\.0\.0\.1:\d+$/);
 const host = process.env.DOCA_MCP_QA_HOST ?? new URL(fixture.origin).host;
 const output = resolve(
-  process.env.DOCA_MCP_QA_OUTPUT ?? "docs/verification/mcp-2026-10-20",
+  process.env.DOCA_MCP_QA_OUTPUT ?? "artifacts/verification/mcp-2026-10-20",
 );
 await mkdir(output, { recursive: true });
 const client = new Client({
