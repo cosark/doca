@@ -12,6 +12,7 @@ on:
       - "tests/plugin-manager.test.ts"
       - "tests/plugin-credentials.test.ts"
       - "tests/schema-reconciliation*.test.ts"
+      - "tests/schema-column-alignment.test.ts"
       - "tests/database.ts"
       - "tests/mcp*.test.ts"
       - "tests/browser-*.test.ts"
@@ -47,6 +48,7 @@ on:
       - "tests/plugin-manager.test.ts"
       - "tests/plugin-credentials.test.ts"
       - "tests/schema-reconciliation*.test.ts"
+      - "tests/schema-column-alignment.test.ts"
       - "tests/database.ts"
       - "tests/mcp*.test.ts"
       - "tests/browser-*.test.ts"
@@ -108,4 +110,4 @@ jobs:
       - name: Verify isolated upgrades and folder sharing
         env:
           DOCA_TEST_POSTGRES: postgres://postgres:isolated-test@127.0.0.1:5432/doca_test
-        run: pnpm exec vitest run tests/schema-reconciliation-postgres.test.ts tests/mcp.test.ts tests/mcp-schema.test.ts tests/folder-sharing.test.ts tests/files.test.ts tests/knowledge-books.test.ts tests/knowledge-book-payload-storage.test.ts tests/knowledge-book-batch-checkpoints.test.ts tests/knowledge-book-checkpoint-runtime.test.ts tests/knowledge-book-startup-upgrade.test.ts tests/plugin-managed-storage.test.ts tests/plugin-databases.test.ts tests/plugin-postgres-permissions.test.ts tests/plugin-manager.test.ts tests/plugin-credentials.test.ts tests/editor-package-upgrade.test.ts tests/sheet-package-upgrade.test.ts tests/browser-clipper.test.ts tests/browser-clipper-schema.test.ts tests/browser-assistant.test.ts tests/browser-assistant-empty-scope.test.ts tests/file-trash-clear.test.ts tests/ai-session-source.test.ts tests/ai-source-lifecycle.test.ts --maxWorkers=2
+        run: pnpm exec vitest run tests/schema-column-alignment.test.ts tests/schema-reconciliation-postgres.test.ts tests/mcp.test.ts tests/mcp-schema.test.ts tests/folder-sharing.test.ts tests/files.test.ts tests/knowledge-books.test.ts tests/knowledge-book-payload-storage.test.ts tests/knowledge-book-batch-checkpoints.test.ts tests/knowledge-book-checkpoint-runtime.test.ts tests/knowledge-book-startup-upgrade.test.ts tests/plugin-managed-storage.test.ts tests/plugin-databases.test.ts tests/plugin-postgres-permissions.test.ts tests/plugin-manager.test.ts tests/plugin-credentials.test.ts tests/editor-package-upgrade.test.ts tests/sheet-package-upgrade.test.ts tests/browser-clipper.test.ts tests/browser-clipper-schema.test.ts tests/browser-assistant.test.ts tests/browser-assistant-empty-scope.test.ts tests/file-trash-clear.test.ts tests/ai-session-source.test.ts tests/ai-source-lifecycle.test.ts --maxWorkers=2

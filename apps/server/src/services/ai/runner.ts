@@ -425,6 +425,7 @@ export function createAIRunner(
   let memoryPromise: Promise<AIMemory> | undefined,
     stopping = false,
     pumping = false;
+  let pumpingDone: Promise<void> = Promise.resolve();
   const active = new Map<
     string,
     { controller: AbortController; done: Promise<void> }
@@ -854,7 +855,8 @@ export function createAIRunner(
     }
     if (retryId) fail(409, "该任务已多次重试，请核对结果后新建任务");
     if (checkpoint) checkpoint.messages = checkpointMessages(checkpoint.messages);
-    let rootJobId = previousJobIds.at(-1) ?? job.id;
+    const formalRootJobId = previousJobIds.at(-1) ?? job.id;
+    let rootJobId = formalRootJobId;
     if (checkpoint?.continuations !== undefined) {
       const restored = continuationStateSchema.parse(checkpoint.continuations);
       continuations.waits = restored.waits;
@@ -1001,7 +1003,9 @@ export function createAIRunner(
     async function requireReadyImageBatchRequest() {
       requireOpenImageBatchRequest();
       if (imageBatch) return;
-      routedImageTask ??= imageTaskRoute(db, batchRequirementContext, rootJobId, {
+      // External calls replace rootJobId with an operation namespace, which is
+      // not a persisted job and cannot supply the formal user's request.
+      routedImageTask ??= imageTaskRoute(db, batchRequirementContext, formalRootJobId, {
         model, fetch: options.fetch, signal,
       });
       const routed = await routedImageTask;
@@ -7407,6 +7411,8 @@ export function createAIRunner(
     }
     if (stopping || pumping || active.size >= concurrency) return;
     pumping = true;
+    let finishPump!: () => void;
+    pumpingDone = new Promise<void>((resolve) => { finishPump = resolve; });
     try {
       // An expired invocation may have reached a provider; never replay it blindly.
       const recoverable = await db
@@ -7621,6 +7627,7 @@ export function createAIRunner(
       }
     } finally {
       pumping = false;
+      finishPump();
     }
   }
   const timer = setInterval(() => void pump().catch(() => {}), 1000);
@@ -7639,6 +7646,9 @@ export function createAIRunner(
       stopping = true;
       clearInterval(timer);
       await reconcilingContinuations;
+      // An in-flight pump can still claim a job and add it to active.
+      // Drain it before taking the shutdown snapshot or closing the database.
+      await pumpingDone;
       for (const r of active.values()) r.controller.abort();
       await Promise.allSettled([...active.values()].map((r) => r.done));
       if (memoryPromise) await (await memoryPromise).close();

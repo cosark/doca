@@ -156,7 +156,7 @@ it("reports destructive differences before applying even safe additions", async 
     check.close();
   }
 });
-it("requires review for changed defaults", async () => {
+it("rejects unsupported SQLite default changes while preserving historical field values", async () => {
   const path = await oldDatabase(),
     raw = new Sqlite(path);
   raw.exec(
@@ -164,7 +164,7 @@ it("requires review for changed defaults", async () => {
   );
   raw.close();
   await expect(openDatabase({ driver: "sqlite", path })).rejects.toThrow(
-    /column type, default or constraints changed/,
+    /SQLite DEFAULT/,
   );
   const check = new Sqlite(path);
   try {

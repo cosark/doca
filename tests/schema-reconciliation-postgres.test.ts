@@ -2,6 +2,7 @@ import { currentSchemaTables } from "@db/introspection.js";
 import { expect, it } from "vitest";
 import { openTestDatabase } from "./database.js";
 import { createSchema } from "@db/create-schema.js";
+import { openDatabase } from "@db/connection.js";
 import { sql } from "kysely";
 
 it.skipIf(!process.env.DOCA_TEST_POSTGRES)(
@@ -120,27 +121,135 @@ it.skipIf(!process.env.DOCA_TEST_POSTGRES)(
 );
 
 it.skipIf(!process.env.DOCA_TEST_POSTGRES)(
-  "still rejects changes to existing PostgreSQL column nullability",
+  "aligns existing PostgreSQL column nullability after validating old rows",
   async () => {
     const db = await openTestDatabase({ driver: "sqlite", path: ":memory:" });
     try {
       await sql`alter table file_folder_share_links alter column revision drop not null`.execute(
         db,
       );
-      await expect(createSchema(db)).rejects.toMatchObject({
-        changes: expect.arrayContaining([
-          expect.objectContaining({
-            kind: "review",
-            table: "file_folder_share_links",
-            column: "revision",
-            reason: "column type, default or constraints changed",
-          }),
-        ]),
-      });
+      await createSchema(db);
       const column = (await currentSchemaTables(db))
         .find((table) => table.name === "file_folder_share_links")!
         .columns.find((column) => column.name === "revision")!;
-      expect(column.isNullable).toBe(true);
+      expect(column.isNullable).toBe(false);
+    } finally {
+      await db.destroy();
+    }
+  },
+);
+
+it.skipIf(!process.env.DOCA_TEST_POSTGRES)(
+  "stores candidates, widens old PostgreSQL purpose lengths, and rejects shrinking without partial writes",
+  async () => {
+    const db = await openTestDatabase({ driver: "sqlite", path: ":memory:" });
+    const width = async () =>
+      (
+        await sql<{ width: number }>`select character_maximum_length as width
+        from information_schema.columns where table_schema=current_schema()
+        and table_name='assets' and column_name='purpose'`.execute(db)
+      ).rows[0]!.width;
+    try {
+      expect(await width()).toBe(32);
+      const sqlite = await openDatabase({ driver: "sqlite", path: ":memory:" });
+      try {
+        await createSchema(sqlite);
+        const ddl = await sql<{
+          sql: string;
+        }>`select sql from sqlite_schema where name='assets'`.execute(sqlite);
+        expect(ddl.rows[0]!.sql).toContain('"purpose" varchar(16)');
+      } finally {
+        await sqlite.destroy();
+      }
+      const now = new Date().toISOString();
+      await db
+        .insertInto("users")
+        .values({
+          id: "image-owner",
+          login: "image-owner",
+          display_name: "Retained owner",
+          password_hash: "test-only",
+          admin: 0,
+          status: "active",
+          created_at: now,
+        })
+        .execute();
+      await db
+        .insertInto("storage_profiles")
+        .values({ id: "test-images", active: 0, created_at: now })
+        .execute();
+      await db
+        .insertInto("assets")
+        .values({
+          id: "candidate",
+          owner_id: "image-owner",
+          purpose: "ai_image_candidate",
+          profile_id: "test-images",
+          object_key: "original.png",
+          filename: "original.png",
+          mime: "image/png",
+          size: 42,
+          created_at: now,
+        })
+        .execute();
+      const saved = await db.selectFrom("assets").selectAll().execute();
+      await Promise.all([createSchema(db), createSchema(db)]);
+      await createSchema(db);
+      expect(await db.selectFrom("assets").selectAll().execute()).toEqual(
+        saved,
+      );
+      expect(await width()).toBe(32);
+
+      // A synthetic old-width fixture supplements the actual released-version QA.
+      await db.updateTable("assets").set({ purpose: "document" }).execute();
+      await sql`alter table assets alter column purpose type varchar(16)`.execute(
+        db,
+      );
+      await sql`drop index assets_resource`.execute(db);
+      const oldRows = await db.selectFrom("assets").selectAll().execute();
+      await Promise.all([createSchema(db), createSchema(db)]);
+      expect(await width()).toBe(32);
+      expect(await db.selectFrom("assets").selectAll().execute()).toEqual(
+        oldRows,
+      );
+      await sql`alter table assets alter column purpose type varchar(64)`.execute(
+        db,
+      );
+      await sql`drop index assets_resource`.execute(db);
+      const retained = await db.selectFrom("assets").selectAll().execute();
+      const baseline = await db
+        .selectFrom("schema_baseline")
+        .selectAll()
+        .execute();
+      for (const result of await Promise.allSettled([
+        createSchema(db),
+        createSchema(db),
+      ])) {
+        expect(result.status).toBe("rejected");
+        if (result.status === "rejected")
+          expect(result.reason).toMatchObject({
+            changes: expect.arrayContaining([
+              expect.objectContaining({
+                kind: "review",
+                table: "assets",
+                column: "purpose",
+              }),
+            ]),
+          });
+      }
+      expect(await width()).toBe(64);
+      expect(await db.selectFrom("assets").selectAll().execute()).toEqual(
+        retained,
+      );
+      expect(
+        await db.selectFrom("schema_baseline").selectAll().execute(),
+      ).toEqual(baseline);
+      expect(
+        (
+          await sql`select 1 from pg_indexes where schemaname=current_schema()
+        and indexname='assets_resource'`.execute(db)
+        ).rows,
+      ).toEqual([]);
     } finally {
       await db.destroy();
     }

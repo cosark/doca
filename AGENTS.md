@@ -46,8 +46,13 @@ the prior agreement described above.
   introduce ordinary per-release SQL migration chains or application-version
   branches to reconstruct old schemas.
 - Declare approved new tables/columns in `schemaEvolution`. Automatically apply
-  only the additions supported by the reconciler, with explicitly agreed values
-  for existing rows. Preserve stored data, permissions and configured values.
+  only declared additions and the approved native column alignment supported by
+  the reconciler, with explicitly agreed historical semantics. PostgreSQL may
+  widen varchar and align defaults/nullability; SQLite may align nullability.
+  Validate existing rows before NOT NULL; never backfill old values for an
+  attribute change. SQLite default changes still require review. Do not rebuild
+  tables or edit system schema to align attributes. Preserve stored data,
+  permissions and configured values.
 - Type/default/nullability/constraint changes, unique-index validation, renames,
   removals, unknown tables and semantic conversions need an approved preservation,
   validation and recovery plan. Startup must stop before persistent changes when
