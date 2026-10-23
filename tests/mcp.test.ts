@@ -11,6 +11,7 @@ import { storageRuntime } from "@server/adapters/storage.js";
 import { createApp } from "@server/app/create-app.js";
 import type { DB } from "@db/index.js";
 import { aiDefaults, saveAIConfig } from "@core/modules/ai/config.js";
+import sharp from "sharp";
 
 let db: DB,
   app: Awaited<ReturnType<typeof createApp>>,
@@ -18,6 +19,7 @@ let db: DB,
   owner: Actor,
   other: Actor,
   cookie: string;
+let imageFetch: typeof fetch;
 const origin = "http://localhost:39471",
   password = "isolated-mcp-password";
 const all = {
@@ -90,6 +92,9 @@ const call = (
     ...(userId ? { userId } : {}),
   });
 beforeEach(async () => {
+  imageFetch = async () => {
+    throw new Error("Unexpected image provider request");
+  };
   root = await mkdtemp(join(tmpdir(), "doca-mcp-test-"));
   db = await openTestDatabase({ driver: "sqlite", path: ":memory:" });
   owner = {
@@ -111,7 +116,10 @@ beforeEach(async () => {
   app = await createApp(db, {
     origin,
     storage: { ...storageRuntime(), root: join(root, "objects") },
-    ai: { memory: { driver: "sqlite", url: ":memory:" } },
+    ai: {
+      memory: { driver: "sqlite", url: ":memory:" },
+      imageFetch: (...args) => imageFetch(...args),
+    },
   });
   const login = await request(
     "POST",
@@ -760,7 +768,7 @@ it("lets an owner delete a closed MCP session without deleting saved documents o
   ).toBeGreaterThan(0);
 });
 
-it("exposes the configured image and network tool schemas without exposing provider credentials", async () => {
+it("executes an image request from its formal MCP task and exposes schemas without provider credentials", async () => {
   await saveAIConfig(
     db,
     {
@@ -801,7 +809,7 @@ it("exposes the configured image and network tool schemas without exposing provi
   );
   const key = await service(),
     context = await rpc(key.token, "doca_tools", {
-      purpose: "complete configured tool catalog",
+      purpose: "生成一张测试图片，并检查工具目录",
     });
   expect(context.error, JSON.stringify(context)).toBeUndefined();
   expect(context.tools.map((tool: any) => tool.id)).toEqual(
@@ -824,4 +832,56 @@ it("exposes the configured image and network tool schemas without exposing provi
   });
   expect(described[0].inputSchema).toBeTruthy();
   expect(JSON.stringify(described)).not.toContain("NO_PROVIDER_SECRET_IN_MCP");
+  let calls = 0;
+  imageFetch = async () => {
+    calls++;
+    return Response.json({
+      data: [
+        {
+          b64_json: (
+            await sharp({
+              create: {
+                width: 1024,
+                height: 1024,
+                channels: 3,
+                background: "#248a66",
+              },
+            })
+              .png()
+              .toBuffer()
+          ).toString("base64"),
+        },
+      ],
+      usage: { input_tokens: 12, output_tokens: 30 },
+    });
+  };
+  const requestId = randomUUID();
+  const image = await call(
+    key.token,
+    context.contextId,
+    "image_generate",
+    { prompt: "生成一张测试图片", size: "1024x1024" },
+    undefined,
+    requestId,
+  );
+  expect(image.error, JSON.stringify(image)).toBeUndefined();
+  expect(image.state).toBe("saved");
+  expect(image.assetId).toBeTruthy();
+  expect(image.rawCandidate).toBeTruthy();
+  expect(
+    (
+      await call(
+        key.token,
+        context.contextId,
+        "image_generate",
+        { prompt: "生成一张测试图片", size: "1024x1024" },
+        undefined,
+        requestId,
+      )
+    ).error,
+  ).toBeDefined();
+  expect(calls).toBe(1);
+  expect(await db.selectFrom("ai_calls").select("id").execute()).toHaveLength(
+    1,
+  );
 });

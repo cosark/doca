@@ -127,3 +127,9 @@ Seedream 4.0 最低 921,600 像素，4.5 和 5.0 Lite 最低 3,686,400；这三�
 本地模型仍须按本次实际输入顺序明确图片用途：原页作为图 1，身份参考从图 2 起；只加入当前目标需要的参考。六视图可先完整查看，再用已有 `referenceCrops` 选择适合本页的身份视角，保留原附件及引用关系。不能把一页只需爸爸替换的任务同时塞入全家照片并仅写“我爸爸”，也不能沿用其他页的图号。
 
 这一做法参考 [Black Forest Labs 官方多参考图实践](https://github.com/black-forest-labs/skills/blob/master/skills/flux-image-best-practices/rules/multi-reference-editing.md)中的明确图片角色、图片索引及减少无关参考建议。官方 [Qwen Image Edit 2511 说明](https://qwen.ai/blog?id=qwen-image-edit-2511)描述了人物一致性改进；这些能力说明不证明当前人物替换已经通过。最终仍按实际原页、保存成品和正式用户要求独立验收。
+
+## 火山 Agent Plan 直连（2026-10-23）
+
+厂商选豆包，Base URL 使用 `https://ark.cn-beijing.volces.com/api/plan/v3`，实际调用模型为 `doubao-seedream-5.0-pro`，图片规格显式选择 `doubao-seedream-5-0-pro-260628`，再在工具配置选择该模型。使用 Agent Plan 专属密钥，保留 `/plan`，不自动转到普通后付费 `/api/v3`；官方说明见[接入视觉模型](https://docs.volcengine.com/docs/ark/agent-plan-personal-visual-models?lang=en)。这是现有连接配置，未增加协议转换或旧数据迁移。
+
+一次真实单图请求在 63.354 秒后返回并持久保存，见[核验范围](verification/ui-image-ark-plan-2026-10-23.md)。中间代理若在 60 秒截断，可造成图片结果未知；切换后仍需保留原未知调用，不能因新请求成功而把旧请求补记为免费或已完成。生产配置不会随代码发布自动切换。

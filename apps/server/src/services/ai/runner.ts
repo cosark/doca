@@ -854,7 +854,8 @@ export function createAIRunner(
     }
     if (retryId) fail(409, "该任务已多次重试，请核对结果后新建任务");
     if (checkpoint) checkpoint.messages = checkpointMessages(checkpoint.messages);
-    let rootJobId = previousJobIds.at(-1) ?? job.id;
+    const formalRootJobId = previousJobIds.at(-1) ?? job.id;
+    let rootJobId = formalRootJobId;
     if (checkpoint?.continuations !== undefined) {
       const restored = continuationStateSchema.parse(checkpoint.continuations);
       continuations.waits = restored.waits;
@@ -1001,7 +1002,9 @@ export function createAIRunner(
     async function requireReadyImageBatchRequest() {
       requireOpenImageBatchRequest();
       if (imageBatch) return;
-      routedImageTask ??= imageTaskRoute(db, batchRequirementContext, rootJobId, {
+      // External calls replace rootJobId with an operation namespace, which is
+      // not a persisted job and cannot supply the formal user's request.
+      routedImageTask ??= imageTaskRoute(db, batchRequirementContext, formalRootJobId, {
         model, fetch: options.fetch, signal,
       });
       const routed = await routedImageTask;
